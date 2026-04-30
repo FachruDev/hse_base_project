@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\SaveProcessTemplateRequest;
-use App\Models\ProcessTemplate;
+use App\Models\Master\ProcessTemplate;
 use Illuminate\Http\JsonResponse;
 
 class ProcessTemplateController extends Controller

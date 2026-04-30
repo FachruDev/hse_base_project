@@ -1,0 +1,107 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
+class RolePermissionSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $rolePermissionMap = [
+            'superadmin' => [
+                'admin.*',
+                'master.*',
+                'ipal.*',
+            ],
+            'admin' => [
+                'admin.*',
+                'master.*',
+                'ipal.logs.view',
+            ],
+            'supervisor' => [
+                'master.checklist.view',
+                'master.process.view',
+                'master.batch.view',
+                'ipal.logs.view',
+                'ipal.logs.approve',
+            ],
+            'operator' => [
+                'master.checklist.view',
+                'master.process.view',
+                'master.batch.view',
+                'ipal.logs.create',
+                'ipal.logs.view',
+                'ipal.logs.submit',
+            ],
+        ];
+
+        $allPermissions = $this->allPermissions();
+
+        foreach ($rolePermissionMap as $roleName => $patterns) {
+            $role = Role::query()->updateOrCreate(
+                [
+                    'name' => $roleName,
+                    'guard_name' => 'web',
+                ],
+            );
+
+            $resolvedPermissions = [];
+
+            foreach ($patterns as $pattern) {
+                if (str_ends_with($pattern, '*')) {
+                    $prefix = rtrim($pattern, '*');
+                    $resolvedPermissions = array_merge(
+                        $resolvedPermissions,
+                        array_values(array_filter($allPermissions, static fn (string $permission): bool => str_starts_with($permission, $prefix))),
+                    );
+
+                    continue;
+                }
+
+                $resolvedPermissions[] = $pattern;
+            }
+
+            $role->syncPermissions(Arr::sort(array_values(array_unique($resolvedPermissions))));
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allPermissions(): array
+    {
+        return [
+            'admin.users.view',
+            'admin.users.create',
+            'admin.users.update',
+            'admin.users.delete',
+            'admin.roles.view',
+            'admin.roles.create',
+            'admin.roles.update',
+            'admin.roles.delete',
+            'admin.permissions.view',
+            'admin.permissions.create',
+            'admin.permissions.update',
+            'admin.permissions.delete',
+            'master.checklist.view',
+            'master.checklist.manage',
+            'master.process.view',
+            'master.process.manage',
+            'master.batch.view',
+            'master.batch.manage',
+            'ipal.logs.create',
+            'ipal.logs.view',
+            'ipal.logs.submit',
+            'ipal.logs.approve',
+        ];
+    }
+}

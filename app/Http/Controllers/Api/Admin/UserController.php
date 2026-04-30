@@ -12,6 +12,7 @@ class UserController extends Controller
     public function index(): JsonResponse
     {
         $users = User::query()
+            ->with('department:id,name')
             ->orderByDesc('id')
             ->paginate(20);
 
@@ -31,7 +32,7 @@ class UserController extends Controller
     public function show(User $user): JsonResponse
     {
         return response()->json([
-            'data' => $user,
+            'data' => $user->load('department:id,name'),
         ]);
     }
 
@@ -41,7 +42,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User berhasil diperbarui.',
-            'data' => $user->fresh(),
+            'data' => $user->fresh()->load('department:id,name'),
         ]);
     }
 

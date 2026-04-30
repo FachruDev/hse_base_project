@@ -1,32 +1,32 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Master;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class BatchItem extends Model
+class Department extends Model
 {
     use HasFactory;
 
-    protected $table = 'm_batch_items';
+    protected $table = 'm_departments';
 
     protected $fillable = [
         'name',
-        'input_type',
-        'order_no',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'order_no' => 'integer',
+            'is_active' => 'boolean',
         ];
     }
 
-    public function values(): HasMany
+    public function users(): HasMany
     {
-        return $this->hasMany(IpalBatchValue::class, 'item_id');
+        return $this->hasMany(User::class, 'department_id');
     }
 }

@@ -2,8 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Ipal\IpalChecklistApproval;
+use App\Models\Ipal\IpalDailyLog;
+use App\Models\Ipal\IpalProcessApproval;
+use App\Models\Master\Department;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -13,6 +18,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;
+
     use HasRoles;
     use Notifiable;
 
@@ -21,6 +27,7 @@ class User extends Authenticatable
     protected $fillable = [
         'external_id',
         'name',
+        'department_id',
         'is_active',
     ];
 
@@ -33,8 +40,14 @@ class User extends Authenticatable
     {
         return [
             'is_active' => 'boolean',
+            'department_id' => 'integer',
             'created_at' => 'datetime',
         ];
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
     }
 
     public function ipalDailyLogs(): HasMany

@@ -1,33 +1,27 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Ipal;
 
+use App\Models\Master\ChecklistTemplate;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ChecklistItem extends Model
+class IpalChecklist extends Model
 {
     use HasFactory;
 
-    protected $table = 'm_checklist_items';
+    protected $table = 'ipal_checklists';
 
     protected $fillable = [
+        'log_id',
         'template_id',
-        'name',
-        'category',
-        'standard_condition',
-        'order_no',
-        'is_active',
     ];
 
-    protected function casts(): array
+    public function dailyLog(): BelongsTo
     {
-        return [
-            'is_active' => 'boolean',
-            'order_no' => 'integer',
-        ];
+        return $this->belongsTo(IpalDailyLog::class, 'log_id');
     }
 
     public function template(): BelongsTo
@@ -37,6 +31,6 @@ class ChecklistItem extends Model
 
     public function values(): HasMany
     {
-        return $this->hasMany(IpalChecklistValue::class, 'item_id');
+        return $this->hasMany(IpalChecklistValue::class, 'checklist_id');
     }
 }

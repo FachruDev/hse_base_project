@@ -35,6 +35,7 @@ class SaveUserRequest extends FormRequest
                 Rule::unique('users', 'external_id')->ignore($ignoreId),
             ],
             'name' => ['required', 'string', 'max:255'],
+            'department_id' => ['nullable', 'integer', 'exists:m_departments,id'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

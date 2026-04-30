@@ -65,7 +65,7 @@ return new class extends Migration
         Schema::create('ipal_daily_log', function (Blueprint $table) {
             $table->id();
             $table->date('tanggal');
-            $table->foreignId('operator_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('operator_id')->constrained('users');
             $table->timestamp('created_at')->useCurrent();
 
             $table->unique(['tanggal', 'operator_id']);
@@ -74,14 +74,14 @@ return new class extends Migration
         Schema::create('ipal_checklists', function (Blueprint $table) {
             $table->id();
             $table->foreignId('log_id')->unique()->constrained('ipal_daily_log')->cascadeOnDelete();
-            $table->foreignId('template_id')->constrained('m_checklist_templates')->restrictOnDelete();
+            $table->foreignId('template_id')->constrained('m_checklist_templates');
             $table->timestamps();
         });
 
         Schema::create('ipal_checklist_values', function (Blueprint $table) {
             $table->id();
             $table->foreignId('checklist_id')->constrained('ipal_checklists')->cascadeOnDelete();
-            $table->foreignId('item_id')->constrained('m_checklist_items')->restrictOnDelete();
+            $table->foreignId('item_id')->constrained('m_checklist_items');
             $table->string('status');
             $table->text('note')->nullable();
             $table->timestamps();
@@ -90,7 +90,7 @@ return new class extends Migration
         Schema::create('ipal_process_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('log_id')->unique()->constrained('ipal_daily_log')->cascadeOnDelete();
-            $table->foreignId('template_id')->constrained('m_process_templates')->restrictOnDelete();
+            $table->foreignId('template_id')->constrained('m_process_templates');
             $table->string('status')->default('DRAFT');
             $table->timestamp('submitted_at')->nullable();
             $table->timestamps();
@@ -99,7 +99,7 @@ return new class extends Migration
         Schema::create('ipal_process_values', function (Blueprint $table) {
             $table->id();
             $table->foreignId('process_log_id')->constrained('ipal_process_logs')->cascadeOnDelete();
-            $table->foreignId('item_id')->constrained('m_process_items')->restrictOnDelete();
+            $table->foreignId('item_id')->constrained('m_process_items');
             $table->text('value_text')->nullable();
             $table->decimal('value_number', 15, 4)->nullable();
             $table->text('note')->nullable();
@@ -118,7 +118,7 @@ return new class extends Migration
         Schema::create('ipal_batch_values', function (Blueprint $table) {
             $table->id();
             $table->foreignId('batch_id')->constrained('ipal_batches')->cascadeOnDelete();
-            $table->foreignId('item_id')->constrained('m_batch_items')->restrictOnDelete();
+            $table->foreignId('item_id')->constrained('m_batch_items');
             $table->text('value_text')->nullable();
             $table->decimal('value_number', 15, 4)->nullable();
             $table->timestamps();
@@ -127,7 +127,7 @@ return new class extends Migration
         Schema::create('ipal_process_approvals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('process_log_id')->unique()->constrained('ipal_process_logs')->cascadeOnDelete();
-            $table->foreignId('operator_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('operator_id')->constrained('users');
             $table->timestamp('operator_signed_at')->nullable();
             $table->foreignId('supervisor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('supervisor_signed_at')->nullable();
@@ -138,7 +138,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedTinyInteger('month');
             $table->unsignedSmallInteger('year');
-            $table->foreignId('supervisor_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('supervisor_id')->constrained('users');
             $table->timestamp('approved_at')->nullable();
             $table->timestamps();
 

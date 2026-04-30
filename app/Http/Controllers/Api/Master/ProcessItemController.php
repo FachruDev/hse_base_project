@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\SaveProcessItemRequest;
-use App\Models\ProcessItem;
+use App\Models\Master\ProcessItem;
 use Illuminate\Http\JsonResponse;
 
 class ProcessItemController extends Controller

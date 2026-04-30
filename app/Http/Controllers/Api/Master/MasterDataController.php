@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api\Master;
 
-use App\Models\BatchItem;
-use App\Models\ChecklistTemplate;
 use App\Http\Controllers\Controller;
-use App\Models\ProcessTemplate;
+use App\Models\Master\BatchItem;
+use App\Models\Master\ChecklistTemplate;
+use App\Models\Master\ProcessTemplate;
 use Illuminate\Http\JsonResponse;
 
 class MasterDataController extends Controller

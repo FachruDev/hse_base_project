@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\Ipal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ipal\ApproveIpalLogRequest;
 use App\Http\Requests\Ipal\StoreIpalLogRequest;
-use App\Models\IpalDailyLog;
+use App\Models\Ipal\IpalDailyLog;
 use App\Models\User;
-use App\Services\IpalLogService;
+use App\Services\Ipal\IpalLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,8 +16,7 @@ class IpalLogController extends Controller
 {
     public function __construct(
         private readonly IpalLogService $ipalLogService,
-    ) {
-    }
+    ) {}
 
     public function store(StoreIpalLogRequest $request): JsonResponse
     {

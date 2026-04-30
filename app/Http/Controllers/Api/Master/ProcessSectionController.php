@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\SaveProcessSectionRequest;
-use App\Models\ProcessSection;
+use App\Models\Master\ProcessSection;
 use Illuminate\Http\JsonResponse;
 
 class ProcessSectionController extends Controller

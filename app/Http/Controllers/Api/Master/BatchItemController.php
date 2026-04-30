@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\SaveBatchItemRequest;
-use App\Models\BatchItem;
+use App\Models\Master\BatchItem;
 use Illuminate\Http\JsonResponse;
 
 class BatchItemController extends Controller

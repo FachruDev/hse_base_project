@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\SaveChecklistTemplateRequest;
-use App\Models\ChecklistTemplate;
+use App\Models\Master\ChecklistTemplate;
 use Illuminate\Http\JsonResponse;
 
 class ChecklistTemplateController extends Controller

@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Ipal;
 
-use App\Models\BatchItem;
-use App\Models\ChecklistItem;
-use App\Models\IpalBatch;
-use App\Models\IpalDailyLog;
-use App\Models\IpalProcessApproval;
-use App\Models\IpalProcessLog;
-use App\Models\ProcessItem;
+use App\Models\Ipal\IpalBatch;
+use App\Models\Ipal\IpalDailyLog;
+use App\Models\Ipal\IpalProcessApproval;
+use App\Models\Ipal\IpalProcessLog;
+use App\Models\Master\BatchItem;
+use App\Models\Master\ChecklistItem;
+use App\Models\Master\ProcessItem;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
