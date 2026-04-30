@@ -27,7 +27,7 @@ export default function DashboardPage() {
                 userName={auth.user.name}
                 departmentName={auth.user.department?.name}
             >
-                <DashboardFormWorkspace dashboard={dashboard} />
+                <DashboardFormWorkspace dashboard={dashboard} userId={auth.user.external_id} />
             </DashboardShell>
         </>
     );

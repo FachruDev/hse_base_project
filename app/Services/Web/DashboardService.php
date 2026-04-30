@@ -3,14 +3,7 @@
 namespace App\Services\Web;
 
 use App\Models\Ipal\IpalDailyLog;
-use App\Models\Master\BatchItem;
-use App\Models\Master\ChecklistItem;
-use App\Models\Master\ChecklistTemplate;
-use App\Models\Master\ProcessItem;
-use App\Models\Master\ProcessSection;
-use App\Models\Master\ProcessTemplate;
 use App\Models\User;
-use Illuminate\Support\Collection;
 
 class DashboardService
 {
@@ -19,74 +12,38 @@ class DashboardService
      */
     public function build(?User $user): array
     {
-        $today = now()->toDateString();
-
-        $latestLogs = IpalDailyLog::query()
-            ->with([
-                'operator:id,name,external_id',
-                'processLog:id,log_id,status,submitted_at',
-            ])
-            ->latest('tanggal')
-            ->limit(5)
-            ->get();
+        $todayLog = $user instanceof User
+            ? IpalDailyLog::query()
+                ->with('processLog:id,log_id,status,submitted_at')
+                ->whereBelongsTo($user, 'operator')
+                ->whereDate('tanggal', now()->toDateString())
+                ->first()
+            : null;
 
         return [
             'hero' => [
-                'title' => 'Ringkasan Operasional IPAL',
-                'subtitle' => 'Pemantauan cepat untuk operator, supervisor, dan admin dalam satu layar.',
+                'title' => 'Workspace Form Operasional',
+                'subtitle' => 'Pusat akses seluruh form operasional. Untuk saat ini, fokus utama ada di form Catatan Pengolahan Limbah Air.',
                 'today' => now()->translatedFormat('d F Y'),
             ],
-            'stats' => [
+            'summary' => [
+                'total_forms' => 1,
+                'due_today' => $todayLog === null ? 1 : 0,
+                'draft_active' => $todayLog !== null && ($todayLog->processLog?->status ?? 'DRAFT') === 'DRAFT' ? 1 : 0,
+                'latest_status' => $todayLog?->processLog?->status ?? ($todayLog !== null ? 'DRAFT' : null),
+            ],
+            'forms' => [
                 [
-                    'label' => 'Log Hari Ini',
-                    'value' => IpalDailyLog::query()->whereDate('tanggal', $today)->count(),
-                    'description' => 'Jumlah log IPAL yang dibuat hari ini.',
-                ],
-                [
-                    'label' => 'Template Checklist',
-                    'value' => ChecklistTemplate::query()->where('is_active', true)->count(),
-                    'description' => 'Template checklist aktif untuk inspeksi harian.',
-                ],
-                [
-                    'label' => 'Section Proses',
-                    'value' => ProcessSection::query()->count(),
-                    'description' => 'Tahapan proses yang sudah tersedia di master data.',
-                ],
-                [
-                    'label' => 'Item Batch',
-                    'value' => BatchItem::query()->count(),
-                    'description' => 'Parameter batch yang bisa diinput operator.',
+                    'key' => 'catatan-pengolahan-limbah-air',
+                    'title' => 'Catatan Pengolahan Limbah Air',
+                    'description' => 'Riwayat dan pengisian form harian IPAL.',
+                    'frequency' => 'HARIAN',
+                    'filled_today' => $todayLog !== null,
+                    'today_status' => $todayLog?->processLog?->status ?? ($todayLog !== null ? 'DRAFT' : null),
+                    'today_log_id' => $todayLog?->id,
+                    'action_label' => $this->resolveActionLabel($todayLog?->processLog?->status, $todayLog !== null),
                 ],
             ],
-            'moduleSummary' => [
-                [
-                    'title' => 'Checklist',
-                    'count' => ChecklistItem::query()->where('is_active', true)->count(),
-                    'caption' => 'Item checklist aktif',
-                    'permission' => 'master.checklist.view',
-                ],
-                [
-                    'title' => 'Proses',
-                    'count' => ProcessItem::query()->count(),
-                    'caption' => 'Parameter proses',
-                    'permission' => 'master.process.view',
-                ],
-                [
-                    'title' => 'Template Proses',
-                    'count' => ProcessTemplate::query()->where('is_active', true)->count(),
-                    'caption' => 'Template proses aktif',
-                    'permission' => 'master.process.view',
-                ],
-                [
-                    'title' => 'Approval',
-                    'count' => IpalDailyLog::query()
-                        ->whereHas('processLog', fn ($query) => $query->where('status', 'SUBMITTED'))
-                        ->count(),
-                    'caption' => 'Menunggu persetujuan supervisor',
-                    'permission' => 'ipal.logs.approve',
-                ],
-            ],
-            'latestLogs' => $this->mapLatestLogs($latestLogs),
             'viewer' => [
                 'external_id' => $user?->external_id,
                 'name' => $user?->name,
@@ -94,21 +51,16 @@ class DashboardService
         ];
     }
 
-    /**
-     * @param  Collection<int, IpalDailyLog>  $latestLogs
-     * @return array<int, array<string, mixed>>
-     */
-    private function mapLatestLogs(Collection $latestLogs): array
+    private function resolveActionLabel(?string $status, bool $filledToday): string
     {
-        return $latestLogs->map(function (IpalDailyLog $log): array {
-            return [
-                'id' => $log->id,
-                'tanggal' => $log->tanggal?->format('Y-m-d'),
-                'operator' => $log->operator?->name,
-                'operator_external_id' => $log->operator?->external_id,
-                'status' => $log->processLog?->status ?? 'DRAFT',
-                'submitted_at' => $log->processLog?->submitted_at?->format('Y-m-d H:i:s'),
-            ];
-        })->all();
+        if (! $filledToday) {
+            return 'Isi Harian';
+        }
+
+        return match ($status) {
+            'SUBMITTED' => 'Lihat Entri Hari Ini',
+            'APPROVED' => 'Lihat Entri Hari Ini',
+            default => 'Lanjutkan Draft',
+        };
     }
 }

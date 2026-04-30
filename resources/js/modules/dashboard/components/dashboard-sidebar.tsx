@@ -1,6 +1,10 @@
 import { Bell, ChevronDown, ChevronRight, LayoutGrid, Settings2 } from 'lucide-react';
 import * as React from 'react';
 
+import {
+    catatanPengolahanLimbahAirIndex,
+    index as dashboardIndex,
+} from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +35,6 @@ import {
     SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { dashboardNavigation, managementNavigation } from '@/modules/dashboard/config/navigation';
-import { dashboard } from '@/routes/index';
 
 type DashboardSidebarProps = {
     appName: string;
@@ -64,10 +67,6 @@ export function DashboardSidebar({
         .slice(0, 2)
         .toUpperCase();
 
-    const buildHref = (sectionId: string): string => {
-        return `${dashboard.url({ query: { user_id: userId } })}#${sectionId}`;
-    };
-
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
 
     return (
@@ -96,7 +95,7 @@ export function DashboardSidebar({
                                 <SidebarMenuItem key={item.key}>
                                     <SidebarMenuButton
                                         render={
-                                            <a href={buildHref(item.sectionId)}>
+                                            <a href={buildWorkspaceHref(item.target, userId)}>
                                                 <item.icon />
                                                 <span>{item.label}</span>
                                             </a>
@@ -114,16 +113,14 @@ export function DashboardSidebar({
                                     >
                                         <Users2Icon />
                                         <span>Management User</span>
-                                        <ChevronRight
-                                            className={`ml-auto transition-transform ${managementOpen ? 'rotate-90' : ''}`}
-                                        />
+                                        <ChevronRight className={`ml-auto transition-transform ${managementOpen ? 'rotate-90' : ''}`} />
                                     </SidebarMenuButton>
 
                                     {managementOpen ? (
                                         <SidebarMenuSub>
                                             {managementItems.map((item) => (
                                                 <SidebarMenuSubItem key={item.key}>
-                                                    <SidebarMenuSubButton href={buildHref(item.sectionId)}>
+                                                    <SidebarMenuSubButton href={buildDashboardSectionHref(item.sectionId, userId)}>
                                                         <item.icon />
                                                         <span>{item.label}</span>
                                                     </SidebarMenuSubButton>
@@ -205,6 +202,18 @@ export function DashboardSidebar({
             </SidebarFooter>
         </Sidebar>
     );
+}
+
+function buildWorkspaceHref(target: 'dashboard' | 'catatan-pengolahan-limbah-air', userId: string): string {
+    if (target === 'catatan-pengolahan-limbah-air') {
+        return catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } });
+    }
+
+    return dashboardIndex.url({ query: { user_id: userId } });
+}
+
+function buildDashboardSectionHref(sectionId: string, userId: string): string {
+    return `${dashboardIndex.url({ query: { user_id: userId } })}#${sectionId}`;
 }
 
 function Users2Icon() {

@@ -1,11 +1,11 @@
 import type { LucideIcon } from 'lucide-react';
-import { LayoutGrid, LockKeyhole, ShieldCheck, Users2 } from 'lucide-react';
+import { ClipboardPenLine, LayoutGrid, LockKeyhole, ShieldCheck, Users2 } from 'lucide-react';
 
 export type DashboardNavItem = {
     key: string;
     label: string;
     icon: LucideIcon;
-    sectionId: string;
+    target: 'dashboard' | 'catatan-pengolahan-limbah-air';
 };
 
 export type DashboardManagementItem = {
@@ -21,7 +21,13 @@ export const dashboardNavigation: DashboardNavItem[] = [
         key: 'overview',
         label: 'Dashboard',
         icon: LayoutGrid,
-        sectionId: 'dashboard-form',
+        target: 'dashboard',
+    },
+    {
+        key: 'forms',
+        label: 'Form',
+        icon: ClipboardPenLine,
+        target: 'catatan-pengolahan-limbah-air',
     },
 ];
 
