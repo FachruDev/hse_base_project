@@ -1,6 +1,7 @@
 import { createInertiaApp } from '@inertiajs/react';
 import type { ComponentType } from 'react';
 import { hydrateRoot } from 'react-dom/client';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -19,10 +20,19 @@ createInertiaApp({
     },
     setup({ el, App, props }) {
         if (typeof window === 'undefined') {
-            return <App {...props} />;
+            return (
+                <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+                    <App {...props} />
+                </ThemeProvider>
+            );
         }
 
-        return hydrateRoot(el, <App {...props} />);
+        return hydrateRoot(
+            el,
+            <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+                <App {...props} />
+            </ThemeProvider>,
+        );
     },
     title: (title) => (title ? `${title} - ${appName}` : appName),
     progress: {

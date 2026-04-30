@@ -2,7 +2,6 @@ import type { PropsWithChildren } from 'react';
 
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardSidebar } from '@/modules/dashboard/components/dashboard-sidebar';
-import { DashboardTopbar } from '@/modules/dashboard/components/dashboard-topbar';
 
 type DashboardShellProps = PropsWithChildren<{
     appName: string;
@@ -24,9 +23,15 @@ export function DashboardShell({
 }: DashboardShellProps) {
     return (
         <SidebarProvider>
-            <DashboardSidebar appName={appName} permissions={permissions} userId={userId} />
+            <DashboardSidebar
+                appName={appName}
+                permissions={permissions}
+                roles={roles}
+                userId={userId}
+                userName={userName}
+                departmentName={departmentName}
+            />
             <SidebarInset>
-                <DashboardTopbar appName={appName} userName={userName} departmentName={departmentName} roles={roles} />
                 {children}
             </SidebarInset>
         </SidebarProvider>

@@ -1,6 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 
-import { DashboardOverview } from '@/modules/dashboard/components/dashboard-overview';
+import { DashboardFormWorkspace } from '@/modules/dashboard/components/dashboard-form-workspace';
 import { DashboardShell } from '@/modules/dashboard/components/dashboard-shell';
 import type { DashboardPayload } from '@/modules/dashboard/types';
 import type { PageProps } from '@/types';
@@ -27,7 +27,7 @@ export default function DashboardPage() {
                 userName={auth.user.name}
                 departmentName={auth.user.department?.name}
             >
-                <DashboardOverview dashboard={dashboard} permissions={auth.permissions} />
+                <DashboardFormWorkspace dashboard={dashboard} />
             </DashboardShell>
         </>
     );
