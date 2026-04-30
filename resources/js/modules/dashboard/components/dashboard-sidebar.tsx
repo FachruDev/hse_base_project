@@ -5,6 +5,7 @@ import {
     catatanPengolahanLimbahAirIndex,
     index as dashboardIndex,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { index as masterDataIndex } from '@/actions/App/Http/Controllers/Web/MasterDataController';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +35,7 @@ import {
     SidebarSeparator,
     SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { dashboardNavigation, managementNavigation } from '@/modules/dashboard/config/navigation';
+import { dashboardNavigation, managementNavigation, masterDataNavigation } from '@/modules/dashboard/config/navigation';
 
 type DashboardSidebarProps = {
     appName: string;
@@ -54,11 +55,14 @@ export function DashboardSidebar({
     departmentName,
 }: DashboardSidebarProps) {
     const [managementOpen, setManagementOpen] = React.useState(true);
+    const [masterDataOpen, setMasterDataOpen] = React.useState(true);
     const { theme, setTheme } = useTheme();
 
     const managementItems = managementNavigation.filter((item) => {
         return item.permission === undefined || permissions.includes(item.permission);
     });
+
+    const masterDataItems = masterDataNavigation.filter((item) => permissions.includes(item.permission));
 
     const initials = userName
         .split(' ')
@@ -104,6 +108,32 @@ export function DashboardSidebar({
                                     />
                                 </SidebarMenuItem>
                             ))}
+
+                            {masterDataItems.length > 0 ? (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        tooltip="Master Data"
+                                        onClick={() => setMasterDataOpen((current) => !current)}
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                        <span>Master Data</span>
+                                        <ChevronRight className={`ml-auto transition-transform ${masterDataOpen ? 'rotate-90' : ''}`} />
+                                    </SidebarMenuButton>
+
+                                    {masterDataOpen ? (
+                                        <SidebarMenuSub>
+                                            {masterDataItems.map((item) => (
+                                                <SidebarMenuSubItem key={item.key}>
+                                                    <SidebarMenuSubButton href={buildMasterDataHref(item.module, userId)}>
+                                                        <item.icon />
+                                                        <span>{item.label}</span>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            ))}
+                                        </SidebarMenuSub>
+                                    ) : null}
+                                </SidebarMenuItem>
+                            ) : null}
 
                             {managementItems.length > 0 ? (
                                 <SidebarMenuItem>
@@ -210,6 +240,10 @@ function buildWorkspaceHref(target: 'dashboard' | 'catatan-pengolahan-limbah-air
     }
 
     return dashboardIndex.url({ query: { user_id: userId } });
+}
+
+function buildMasterDataHref(module: string, userId: string): string {
+    return masterDataIndex.url(module, { query: { user_id: userId } });
 }
 
 function buildDashboardSectionHref(sectionId: string, userId: string): string {

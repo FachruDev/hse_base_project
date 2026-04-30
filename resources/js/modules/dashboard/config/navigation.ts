@@ -1,11 +1,24 @@
 import type { LucideIcon } from 'lucide-react';
-import { ClipboardPenLine, LayoutGrid, LockKeyhole, ShieldCheck, Users2 } from 'lucide-react';
+import {
+    ClipboardCheck,
+    ClipboardPenLine,
+    Database,
+    Layers3,
+    LayoutGrid,
+    ListTodo,
+    LockKeyhole,
+    ShieldCheck,
+    Users2,
+    Workflow,
+} from 'lucide-react';
+
+export type DashboardNavTarget = 'dashboard' | 'catatan-pengolahan-limbah-air';
 
 export type DashboardNavItem = {
     key: string;
     label: string;
     icon: LucideIcon;
-    target: 'dashboard' | 'catatan-pengolahan-limbah-air';
+    target: DashboardNavTarget;
 };
 
 export type DashboardManagementItem = {
@@ -14,6 +27,14 @@ export type DashboardManagementItem = {
     icon: LucideIcon;
     sectionId: string;
     permission?: string;
+};
+
+export type MasterDataNavItem = {
+    key: string;
+    label: string;
+    icon: LucideIcon;
+    module: string;
+    permission: string;
 };
 
 export const dashboardNavigation: DashboardNavItem[] = [
@@ -28,6 +49,51 @@ export const dashboardNavigation: DashboardNavItem[] = [
         label: 'Form',
         icon: ClipboardPenLine,
         target: 'catatan-pengolahan-limbah-air',
+    },
+];
+
+export const masterDataNavigation: MasterDataNavItem[] = [
+    {
+        key: 'checklist-templates',
+        label: 'Template Checklist',
+        icon: ClipboardCheck,
+        module: 'checklist-templates',
+        permission: 'master.checklist.view',
+    },
+    {
+        key: 'checklist-items',
+        label: 'Item Checklist',
+        icon: ListTodo,
+        module: 'checklist-items',
+        permission: 'master.checklist.view',
+    },
+    {
+        key: 'process-templates',
+        label: 'Template Proses',
+        icon: Workflow,
+        module: 'process-templates',
+        permission: 'master.process.view',
+    },
+    {
+        key: 'process-sections',
+        label: 'Section Proses',
+        icon: Layers3,
+        module: 'process-sections',
+        permission: 'master.process.view',
+    },
+    {
+        key: 'process-items',
+        label: 'Item Proses',
+        icon: Database,
+        module: 'process-items',
+        permission: 'master.process.view',
+    },
+    {
+        key: 'batch-items',
+        label: 'Item Batch',
+        icon: Database,
+        module: 'batch-items',
+        permission: 'master.batch.view',
     },
 ];
 
