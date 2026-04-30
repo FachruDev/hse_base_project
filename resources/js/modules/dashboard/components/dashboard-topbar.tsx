@@ -8,7 +8,6 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -69,8 +68,8 @@ export function DashboardTopbar({ appName, userName, departmentName, roles }: Da
                             <ChevronDown className="hidden sm:block" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>Akun Aktif</DropdownMenuLabel>
                             <DropdownMenuGroup>
+                                <div className="px-2 py-1.5 text-xs text-muted-foreground">Akun Aktif</div>
                                 <DropdownMenuItem>{userName}</DropdownMenuItem>
                                 <DropdownMenuItem>{departmentName ?? 'Tanpa departemen'}</DropdownMenuItem>
                             </DropdownMenuGroup>

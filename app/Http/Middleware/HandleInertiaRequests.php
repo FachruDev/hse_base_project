@@ -38,6 +38,18 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
+        if (! $user instanceof User) {
+            $externalId = $request->query('userid', $request->query('user_id'));
+
+            if (is_string($externalId) && $externalId !== '') {
+                $user = User::query()
+                    ->with('department:id,name')
+                    ->where('external_id', $externalId)
+                    ->where('is_active', true)
+                    ->first();
+            }
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
