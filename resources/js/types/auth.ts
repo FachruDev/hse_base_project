@@ -1,14 +1,18 @@
 export type User = {
     id: number;
+    external_id: string;
     name: string;
-    email: string;
-    avatar?: string;
-    email_verified_at: string | null;
+    department?: {
+        id: number;
+        name: string;
+    } | null;
+    is_active: boolean;
     created_at: string;
-    updated_at: string;
-    [key: string]: unknown; // This allows for additional properties...
+    [key: string]: unknown;
 };
 
 export type Auth = {
-    user: User;
+    user: User | null;
+    roles: string[];
+    permissions: string[];
 };
