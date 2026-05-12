@@ -1,6 +1,16 @@
-import { Bell, ChevronDown, ChevronRight, LayoutGrid, Settings2 } from 'lucide-react';
+import {
+    Bell,
+    ChevronDown,
+    ChevronRight,
+    LayoutGrid,
+    Settings2,
+} from 'lucide-react';
 import * as React from 'react';
 
+import {
+    holidayIndex as configurationHolidayIndex,
+    weekendIndex as configurationWeekendIndex,
+} from '@/actions/App/Http/Controllers/Web/ConfigurationController';
 import {
     catatanPengolahanLimbahAirIndex,
     index as dashboardIndex,
@@ -35,7 +45,12 @@ import {
     SidebarSeparator,
     SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { dashboardNavigation, managementNavigation, masterDataNavigation } from '@/modules/dashboard/config/navigation';
+import {
+    configurationNavigation,
+    dashboardNavigation,
+    managementNavigation,
+    masterDataNavigation,
+} from '@/modules/dashboard/config/navigation';
 
 type DashboardSidebarProps = {
     appName: string;
@@ -56,13 +71,22 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
     const [managementOpen, setManagementOpen] = React.useState(true);
     const [masterDataOpen, setMasterDataOpen] = React.useState(true);
+    const [configurationOpen, setConfigurationOpen] = React.useState(true);
     const { theme, setTheme } = useTheme();
 
     const managementItems = managementNavigation.filter((item) => {
-        return item.permission === undefined || permissions.includes(item.permission);
+        return (
+            item.permission === undefined ||
+            permissions.includes(item.permission)
+        );
     });
 
-    const masterDataItems = masterDataNavigation.filter((item) => permissions.includes(item.permission));
+    const masterDataItems = masterDataNavigation.filter((item) =>
+        permissions.includes(item.permission),
+    );
+    const configurationItems = configurationNavigation.filter((item) =>
+        permissions.includes(item.permission),
+    );
 
     const initials = userName
         .split(' ')
@@ -82,8 +106,12 @@ export function DashboardSidebar({
                             IP
                         </div>
                         <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-sidebar-foreground">{appName}</p>
-                            <p className="truncate text-xs text-sidebar-foreground/70">IPAL Workspace</p>
+                            <p className="truncate text-sm font-semibold text-sidebar-foreground">
+                                {appName}
+                            </p>
+                            <p className="truncate text-xs text-sidebar-foreground/70">
+                                IPAL Workspace
+                            </p>
                         </div>
                     </div>
                     <SidebarTrigger className="shrink-0" />
@@ -99,7 +127,12 @@ export function DashboardSidebar({
                                 <SidebarMenuItem key={item.key}>
                                     <SidebarMenuButton
                                         render={
-                                            <a href={buildWorkspaceHref(item.target, userId)}>
+                                            <a
+                                                href={buildWorkspaceHref(
+                                                    item.target,
+                                                    userId,
+                                                )}
+                                            >
                                                 <item.icon />
                                                 <span>{item.label}</span>
                                             </a>
@@ -113,46 +146,35 @@ export function DashboardSidebar({
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Master Data"
-                                        onClick={() => setMasterDataOpen((current) => !current)}
+                                        onClick={() =>
+                                            setMasterDataOpen(
+                                                (current) => !current,
+                                            )
+                                        }
                                     >
                                         <LayoutGrid className="size-4" />
                                         <span>Master Data</span>
-                                        <ChevronRight className={`ml-auto transition-transform ${masterDataOpen ? 'rotate-90' : ''}`} />
+                                        <ChevronRight
+                                            className={`ml-auto transition-transform ${masterDataOpen ? 'rotate-90' : ''}`}
+                                        />
                                     </SidebarMenuButton>
 
                                     {masterDataOpen ? (
                                         <SidebarMenuSub>
                                             {masterDataItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.key}>
-                                                    <SidebarMenuSubButton href={buildMasterDataHref(item.module, userId)}>
+                                                <SidebarMenuSubItem
+                                                    key={item.key}
+                                                >
+                                                    <SidebarMenuSubButton
+                                                        href={buildMasterDataHref(
+                                                            item.module,
+                                                            userId,
+                                                        )}
+                                                    >
                                                         <item.icon />
-                                                        <span>{item.label}</span>
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                            ))}
-                                        </SidebarMenuSub>
-                                    ) : null}
-                                </SidebarMenuItem>
-                            ) : null}
-
-                            {managementItems.length > 0 ? (
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton
-                                        tooltip="Management User"
-                                        onClick={() => setManagementOpen((current) => !current)}
-                                    >
-                                        <Users2Icon />
-                                        <span>Management User</span>
-                                        <ChevronRight className={`ml-auto transition-transform ${managementOpen ? 'rotate-90' : ''}`} />
-                                    </SidebarMenuButton>
-
-                                    {managementOpen ? (
-                                        <SidebarMenuSub>
-                                            {managementItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.key}>
-                                                    <SidebarMenuSubButton href={buildDashboardSectionHref(item.sectionId, userId)}>
-                                                        <item.icon />
-                                                        <span>{item.label}</span>
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
@@ -163,6 +185,95 @@ export function DashboardSidebar({
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
+
+                    <SidebarGroup className="mt-auto">
+                        <SidebarGroupLabel>Settings</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {managementItems.length > 0 ? (
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton
+                                            tooltip="Management User"
+                                            onClick={() =>
+                                                setManagementOpen(
+                                                    (current) => !current,
+                                                )
+                                            }
+                                        >
+                                            <Users2Icon />
+                                            <span>Management User</span>
+                                            <ChevronRight
+                                                className={`ml-auto transition-transform ${managementOpen ? 'rotate-90' : ''}`}
+                                            />
+                                        </SidebarMenuButton>
+
+                                        {managementOpen ? (
+                                            <SidebarMenuSub>
+                                                {managementItems.map((item) => (
+                                                    <SidebarMenuSubItem
+                                                        key={item.key}
+                                                    >
+                                                        <SidebarMenuSubButton
+                                                            href={buildDashboardSectionHref(
+                                                                item.sectionId,
+                                                                userId,
+                                                            )}
+                                                        >
+                                                            <item.icon />
+                                                            <span>
+                                                                {item.label}
+                                                            </span>
+                                                        </SidebarMenuSubButton>
+                                                    </SidebarMenuSubItem>
+                                                ))}
+                                            </SidebarMenuSub>
+                                        ) : null}
+                                    </SidebarMenuItem>
+                                ) : null}
+
+                                {configurationItems.length > 0 ? (
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton
+                                            tooltip="Konfigurasi"
+                                            onClick={() =>
+                                                setConfigurationOpen(
+                                                    (current) => !current,
+                                                )
+                                            }
+                                        >
+                                            <LayoutGrid className="size-4" />
+                                            <span>Konfigurasi</span>
+                                            <ChevronRight
+                                                className={`ml-auto transition-transform ${configurationOpen ? 'rotate-90' : ''}`}
+                                            />
+                                        </SidebarMenuButton>
+
+                                        {configurationOpen ? (
+                                            <SidebarMenuSub>
+                                                {configurationItems.map((item) => (
+                                                    <SidebarMenuSubItem
+                                                        key={item.key}
+                                                    >
+                                                        <SidebarMenuSubButton
+                                                            href={buildConfigurationHref(
+                                                                item.target,
+                                                                userId,
+                                                            )}
+                                                        >
+                                                            <item.icon />
+                                                            <span>
+                                                                {item.label}
+                                                            </span>
+                                                        </SidebarMenuSubButton>
+                                                    </SidebarMenuSubItem>
+                                                ))}
+                                            </SidebarMenuSub>
+                                        ) : null}
+                                    </SidebarMenuItem>
+                                ) : null}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
             </SidebarContent>
 
             <SidebarSeparator />
@@ -181,8 +292,12 @@ export function DashboardSidebar({
                             <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1 text-left">
-                            <p className="truncate text-xs font-medium text-sidebar-foreground">{userName}</p>
-                            <p className="truncate text-[11px] text-sidebar-foreground/70">{userId}</p>
+                            <p className="truncate text-xs font-medium text-sidebar-foreground">
+                                {userName}
+                            </p>
+                            <p className="truncate text-[11px] text-sidebar-foreground/70">
+                                {userId}
+                            </p>
                         </div>
                         <ChevronDown className="size-4 shrink-0 text-sidebar-foreground/70" />
                     </DropdownMenuTrigger>
@@ -194,8 +309,12 @@ export function DashboardSidebar({
                                     <AvatarFallback>{initials}</AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0">
-                                    <p className="truncate text-sm font-medium">{userName}</p>
-                                    <p className="truncate text-xs text-muted-foreground">{departmentName ?? userId}</p>
+                                    <p className="truncate text-sm font-medium">
+                                        {userName}
+                                    </p>
+                                    <p className="truncate text-xs text-muted-foreground">
+                                        {departmentName ?? userId}
+                                    </p>
                                 </div>
                             </div>
                         </DropdownMenuGroup>
@@ -211,9 +330,15 @@ export function DashboardSidebar({
                                 <Settings2 className="size-4" />
                                 <span>Setting</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme(nextTheme)}>
+                            <DropdownMenuItem
+                                onClick={() => setTheme(nextTheme)}
+                            >
                                 <LayoutGrid className="size-4" />
-                                <span>{nextTheme === 'dark' ? 'Ubah ke mode gelap' : 'Ubah ke mode terang'}</span>
+                                <span>
+                                    {nextTheme === 'dark'
+                                        ? 'Ubah ke mode gelap'
+                                        : 'Ubah ke mode terang'}
+                                </span>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <Bell className="size-4" />
@@ -224,8 +349,12 @@ export function DashboardSidebar({
                         <DropdownMenuSeparator />
 
                         <div className="flex items-center justify-between px-2 py-1.5">
-                            <span className="text-xs text-muted-foreground">Role aktif</span>
-                            <Badge variant="outline">{roles[0] ?? 'user'}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                                Role aktif
+                            </span>
+                            <Badge variant="outline">
+                                {roles[0] ?? 'user'}
+                            </Badge>
                         </div>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -234,9 +363,14 @@ export function DashboardSidebar({
     );
 }
 
-function buildWorkspaceHref(target: 'dashboard' | 'catatan-pengolahan-limbah-air', userId: string): string {
+function buildWorkspaceHref(
+    target: 'dashboard' | 'catatan-pengolahan-limbah-air',
+    userId: string,
+): string {
     if (target === 'catatan-pengolahan-limbah-air') {
-        return catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } });
+        return catatanPengolahanLimbahAirIndex.url({
+            query: { user_id: userId },
+        });
     }
 
     return dashboardIndex.url({ query: { user_id: userId } });
@@ -252,4 +386,15 @@ function buildDashboardSectionHref(sectionId: string, userId: string): string {
 
 function Users2Icon() {
     return <LayoutGrid className="size-4" />;
+}
+
+function buildConfigurationHref(
+    target: 'configuration-weekend' | 'configuration-holiday',
+    userId: string,
+): string {
+    if (target === 'configuration-weekend') {
+        return configurationWeekendIndex.url({ query: { user_id: userId } });
+    }
+
+    return configurationHolidayIndex.url({ query: { user_id: userId } });
 }

@@ -21,11 +21,13 @@ class RolePermissionSeeder extends Seeder
                 'admin.*',
                 'master.*',
                 'ipal.*',
+                'config.*',
             ],
             'admin' => [
                 'admin.*',
                 'master.*',
                 'ipal.logs.view',
+                'config.*',
             ],
             'supervisor' => [
                 'master.checklist.view',
@@ -33,6 +35,8 @@ class RolePermissionSeeder extends Seeder
                 'master.batch.view',
                 'ipal.logs.view',
                 'ipal.logs.approve',
+                'config.weekend.view',
+                'config.holiday.view',
             ],
             'operator' => [
                 'master.checklist.view',
@@ -41,6 +45,8 @@ class RolePermissionSeeder extends Seeder
                 'ipal.logs.create',
                 'ipal.logs.view',
                 'ipal.logs.submit',
+                'config.weekend.view',
+                'config.holiday.view',
             ],
         ];
 
@@ -102,6 +108,10 @@ class RolePermissionSeeder extends Seeder
             'ipal.logs.view',
             'ipal.logs.submit',
             'ipal.logs.approve',
+            'config.weekend.view',
+            'config.weekend.manage',
+            'config.holiday.view',
+            'config.holiday.manage',
         ];
     }
 }

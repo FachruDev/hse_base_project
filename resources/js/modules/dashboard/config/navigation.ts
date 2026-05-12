@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+    CalendarCog,
+    CalendarDays,
     ClipboardCheck,
     ClipboardPenLine,
     Database,
@@ -34,6 +36,14 @@ export type MasterDataNavItem = {
     label: string;
     icon: LucideIcon;
     module: string;
+    permission: string;
+};
+
+export type ConfigurationNavItem = {
+    key: string;
+    label: string;
+    icon: LucideIcon;
+    target: 'configuration-weekend' | 'configuration-holiday';
     permission: string;
 };
 
@@ -125,5 +135,22 @@ export const managementNavigation: DashboardManagementItem[] = [
         icon: LayoutGrid,
         sectionId: 'management-departemen',
         permission: 'admin.users.view',
+    },
+];
+
+export const configurationNavigation: ConfigurationNavItem[] = [
+    {
+        key: 'configuration-weekend',
+        label: 'Edit Weekend',
+        icon: CalendarCog,
+        target: 'configuration-weekend',
+        permission: 'config.weekend.view',
+    },
+    {
+        key: 'configuration-holiday',
+        label: 'Holiday',
+        icon: CalendarDays,
+        target: 'configuration-holiday',
+        permission: 'config.holiday.view',
     },
 ];

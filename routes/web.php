@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\ConfigurationController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\MasterDataController;
 use Illuminate\Support\Facades\Route;
@@ -25,4 +26,18 @@ Route::middleware('external.user')->group(function (): void {
         ->name('dashboard.master-data.update');
     Route::delete('/dashboard/master-data/{module}/{record}', [MasterDataController::class, 'destroy'])
         ->name('dashboard.master-data.destroy');
+
+    Route::get('/dashboard/configuration/weekend', [ConfigurationController::class, 'weekendIndex'])
+        ->name('dashboard.configuration.weekend.index');
+    Route::patch('/dashboard/configuration/weekend/{operationalWeekday}', [ConfigurationController::class, 'weekendUpdate'])
+        ->name('dashboard.configuration.weekend.update');
+
+    Route::get('/dashboard/configuration/holidays', [ConfigurationController::class, 'holidayIndex'])
+        ->name('dashboard.configuration.holidays.index');
+    Route::post('/dashboard/configuration/holidays', [ConfigurationController::class, 'holidayStore'])
+        ->name('dashboard.configuration.holidays.store');
+    Route::patch('/dashboard/configuration/holidays/{holiday}', [ConfigurationController::class, 'holidayUpdate'])
+        ->name('dashboard.configuration.holidays.update');
+    Route::delete('/dashboard/configuration/holidays/{holiday}', [ConfigurationController::class, 'holidayDestroy'])
+        ->name('dashboard.configuration.holidays.destroy');
 });

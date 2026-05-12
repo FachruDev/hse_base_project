@@ -61,6 +61,12 @@ class PermissionSeeder extends Seeder
                 'ipal.logs.submit',
                 'ipal.logs.approve',
             ],
+            'configuration' => [
+                'config.weekend.view',
+                'config.weekend.manage',
+                'config.holiday.view',
+                'config.holiday.manage',
+            ],
         ];
     }
 }
