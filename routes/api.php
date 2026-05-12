@@ -7,7 +7,9 @@ use App\Http\Controllers\Api\Ipal\IpalLogController;
 use App\Http\Controllers\Api\Master\BatchItemController;
 use App\Http\Controllers\Api\Master\ChecklistItemController;
 use App\Http\Controllers\Api\Master\ChecklistTemplateController;
+use App\Http\Controllers\Api\Master\HolidayController;
 use App\Http\Controllers\Api\Master\MasterDataController;
+use App\Http\Controllers\Api\Master\OperationalWeekdayController;
 use App\Http\Controllers\Api\Master\ProcessItemController;
 use App\Http\Controllers\Api\Master\ProcessSectionController;
 use App\Http\Controllers\Api\Master\ProcessTemplateController;
@@ -30,6 +32,9 @@ Route::middleware('external.user')->group(function (): void {
             ->parameters(['process-items' => 'processItem']);
         Route::apiResource('batch-items', BatchItemController::class)
             ->parameters(['batch-items' => 'batchItem']);
+        Route::apiResource('operational-weekdays', OperationalWeekdayController::class)
+            ->parameters(['operational-weekdays' => 'operationalWeekday']);
+        Route::apiResource('holidays', HolidayController::class);
     });
 
     Route::prefix('ipal')->group(function (): void {

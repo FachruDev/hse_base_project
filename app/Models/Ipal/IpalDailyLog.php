@@ -19,12 +19,15 @@ class IpalDailyLog extends Model
     protected $fillable = [
         'tanggal',
         'operator_id',
+        'day_type',
+        'is_operational',
     ];
 
     protected function casts(): array
     {
         return [
             'tanggal' => 'date',
+            'is_operational' => 'boolean',
             'created_at' => 'datetime',
         ];
     }
