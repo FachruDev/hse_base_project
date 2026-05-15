@@ -67,6 +67,16 @@ class PermissionSeeder extends Seeder
                 'config.holiday.view',
                 'config.holiday.manage',
             ],
+            'b3storage' => [
+                'b3storage.master.view',
+                'b3storage.master.manage',
+                'b3storage.logs.create',
+                'b3storage.logs.view',
+                'b3storage.logs.update',
+                'b3storage.logs.delete',
+                'b3storage.monthly-report.view',
+                'b3storage.monthly-approval.approve',
+            ],
         ];
     }
 }

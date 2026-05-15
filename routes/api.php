@@ -3,6 +3,10 @@
 use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\B3Storage\B3StorageInitiatorDepartmentController;
+use App\Http\Controllers\Api\B3Storage\B3StorageLogController;
+use App\Http\Controllers\Api\B3Storage\B3StorageMonthlyReportController;
+use App\Http\Controllers\Api\B3Storage\B3StorageWasteTypeController;
 use App\Http\Controllers\Api\Ipal\IpalLogController;
 use App\Http\Controllers\Api\Master\BatchItemController;
 use App\Http\Controllers\Api\Master\ChecklistItemController;
@@ -42,6 +46,21 @@ Route::middleware('external.user')->group(function (): void {
         Route::get('logs/{log}', [IpalLogController::class, 'show']);
         Route::post('logs/{log}/submit', [IpalLogController::class, 'submit']);
         Route::post('logs/{log}/approve', [IpalLogController::class, 'approve']);
+    });
+
+    Route::prefix('b3-storage')->group(function (): void {
+        Route::prefix('master')->group(function (): void {
+            Route::apiResource('waste-types', B3StorageWasteTypeController::class)
+                ->parameters(['waste-types' => 'wasteType']);
+            Route::apiResource('initiator-departments', B3StorageInitiatorDepartmentController::class)
+                ->parameters(['initiator-departments' => 'initiatorDepartment']);
+        });
+
+        Route::apiResource('logs', B3StorageLogController::class)
+            ->parameters(['logs' => 'log']);
+
+        Route::get('monthly-report', [B3StorageMonthlyReportController::class, 'index']);
+        Route::post('monthly-report/approve', [B3StorageMonthlyReportController::class, 'approve']);
     });
 
     Route::prefix('admin')->group(function (): void {

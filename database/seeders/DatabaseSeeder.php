@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             UserSeeder::class,
             IpalMasterDataSeeder::class,
+            B3StorageMasterSeeder::class,
         ]);
     }
 }

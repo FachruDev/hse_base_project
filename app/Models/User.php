@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\B3Storage\B3StorageLog;
+use App\Models\B3Storage\B3StorageMonthlyApproval;
 use App\Models\Ipal\IpalChecklistApproval;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Ipal\IpalProcessApproval;
@@ -68,5 +70,20 @@ class User extends Authenticatable
     public function checklistApprovalsAsSupervisor(): HasMany
     {
         return $this->hasMany(IpalChecklistApproval::class, 'supervisor_id');
+    }
+
+    public function b3StorageLogs(): HasMany
+    {
+        return $this->hasMany(B3StorageLog::class, 'operator_id');
+    }
+
+    public function b3MonthlyApprovalsAsEnvironmentSupervisor(): HasMany
+    {
+        return $this->hasMany(B3StorageMonthlyApproval::class, 'environment_supervisor_id');
+    }
+
+    public function b3MonthlyApprovalsAsHseDepartmentHead(): HasMany
+    {
+        return $this->hasMany(B3StorageMonthlyApproval::class, 'hse_department_head_id');
     }
 }

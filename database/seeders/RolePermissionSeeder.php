@@ -22,12 +22,14 @@ class RolePermissionSeeder extends Seeder
                 'master.*',
                 'ipal.*',
                 'config.*',
+                'b3storage.*',
             ],
             'admin' => [
                 'admin.*',
                 'master.*',
                 'ipal.logs.view',
                 'config.*',
+                'b3storage.*',
             ],
             'supervisor' => [
                 'master.checklist.view',
@@ -37,6 +39,10 @@ class RolePermissionSeeder extends Seeder
                 'ipal.logs.approve',
                 'config.weekend.view',
                 'config.holiday.view',
+                'b3storage.master.view',
+                'b3storage.logs.view',
+                'b3storage.monthly-report.view',
+                'b3storage.monthly-approval.approve',
             ],
             'operator' => [
                 'master.checklist.view',
@@ -47,6 +53,11 @@ class RolePermissionSeeder extends Seeder
                 'ipal.logs.submit',
                 'config.weekend.view',
                 'config.holiday.view',
+                'b3storage.master.view',
+                'b3storage.logs.create',
+                'b3storage.logs.view',
+                'b3storage.logs.update',
+                'b3storage.monthly-report.view',
             ],
         ];
 
@@ -112,6 +123,14 @@ class RolePermissionSeeder extends Seeder
             'config.weekend.manage',
             'config.holiday.view',
             'config.holiday.manage',
+            'b3storage.master.view',
+            'b3storage.master.manage',
+            'b3storage.logs.create',
+            'b3storage.logs.view',
+            'b3storage.logs.update',
+            'b3storage.logs.delete',
+            'b3storage.monthly-report.view',
+            'b3storage.monthly-approval.approve',
         ];
     }
 }
