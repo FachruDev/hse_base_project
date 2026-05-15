@@ -149,3 +149,59 @@ export type CatatanPengolahanLimbahAirEntryPayload = {
         groups: BatchGroup[];
     };
 };
+
+export type B3StorageListingRow = {
+    id: number;
+    movement_date: string | null;
+    movement_time: string | null;
+    movement_type: 'MASUK' | 'KELUAR' | string;
+    waste_type: string | null;
+    initiator_department: string | null;
+    weight_kg: string;
+    document_number: string;
+    photo_path: string | null;
+};
+
+export type B3StorageLogListingPayload = {
+    module: {
+        title: string;
+        subtitle: string;
+    };
+    filters: {
+        search: string;
+        movement_type: string;
+        month: number;
+        year: number;
+        per_page: number;
+    };
+    table: {
+        data: B3StorageListingRow[];
+        meta: ListingPaginationMeta;
+    };
+};
+
+export type B3StorageOption = {
+    value: string | number;
+    label: string;
+};
+
+export type B3StorageEntryPayload = {
+    module: {
+        title: string;
+        subtitle: string;
+    };
+    entry: {
+        tanggal_default: string;
+        jam_default: string;
+        operator: {
+            name: string;
+            external_id: string;
+            department_name?: string | null;
+        };
+    };
+    options: {
+        movement_types: B3StorageOption[];
+        waste_types: B3StorageOption[];
+        initiator_departments: B3StorageOption[];
+    };
+};

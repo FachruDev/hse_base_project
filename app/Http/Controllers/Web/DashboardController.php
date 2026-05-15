@@ -3,10 +3,17 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\B3Storage\StoreB3StorageLogRequest;
+use App\Http\Requests\Web\B3StorageLogIndexRequest;
 use App\Http\Requests\Web\CatatanPengolahanLimbahAirIndexRequest;
+use App\Models\User;
+use App\Services\B3Storage\B3StorageService;
+use App\Services\Web\B3StoragePageService;
 use App\Services\Web\CatatanPengolahanLimbahAirPageService;
 use App\Services\Web\DashboardService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,5 +42,60 @@ class DashboardController extends Controller
         return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/create', [
             'entryForm' => $pageService->buildForm($request->user()),
         ]);
+    }
+
+    public function b3StorageIndex(
+        B3StorageLogIndexRequest $request,
+        B3StoragePageService $pageService,
+    ): Response {
+        abort_unless($request->user()?->can('b3storage.logs.view'), 403);
+
+        return Inertia::render('dashboard/forms/penyimpanan-limbah-b3/index', [
+            'listing' => $pageService->buildListing($this->authenticatedUser($request), $request->filters()),
+        ]);
+    }
+
+    public function b3StorageCreate(
+        Request $request,
+        B3StoragePageService $pageService,
+    ): Response {
+        abort_unless($request->user()?->can('b3storage.logs.create'), 403);
+
+        return Inertia::render('dashboard/forms/penyimpanan-limbah-b3/create', [
+            'entryForm' => $pageService->buildForm($this->authenticatedUser($request)),
+        ]);
+    }
+
+    public function b3StorageStore(
+        StoreB3StorageLogRequest $request,
+        B3StorageService $b3StorageService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('b3storage.logs.create'), 403);
+        $user = $this->authenticatedUser($request);
+
+        $b3StorageService->createLog(
+            $request->validated(),
+            $user,
+            $request->file('photo'),
+        );
+
+        return redirect()
+            ->route('dashboard.forms.penyimpanan-limbah-b3.index', [
+                'user_id' => $user->external_id,
+                'month' => now()->month,
+                'year' => now()->year,
+            ])
+            ->with('success', 'Log penyimpanan limbah B3 berhasil disimpan.');
+    }
+
+    private function authenticatedUser(Request $request): User
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(HttpResponse::HTTP_UNAUTHORIZED, 'User tidak terautentikasi.');
+        }
+
+        return $user;
     }
 }

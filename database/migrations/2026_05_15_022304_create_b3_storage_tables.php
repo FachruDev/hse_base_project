@@ -29,24 +29,38 @@ return new class extends Migration
 
         Schema::create('b3_storage_logs', function (Blueprint $table) {
             $table->id();
+
             $table->date('movement_date');
             $table->time('movement_time')->nullable();
+
             $table->string('movement_type', 10);
+
             $table->foreignId('waste_type_id')
                 ->nullable()
                 ->constrained('m_b3_storage_waste_types')
                 ->nullOnDelete();
+
             $table->string('waste_type_other')->nullable();
+
             $table->foreignId('initiator_department_id')
                 ->nullable()
                 ->constrained('m_b3_storage_initiator_departments')
                 ->nullOnDelete();
+
             $table->string('initiator_department_other')->nullable();
+
             $table->decimal('weight_kg', 15, 3);
+
             $table->string('document_number');
+
             $table->string('photo_path')->nullable();
+
             $table->text('note')->nullable();
-            $table->foreignId('operator_id')->constrained('users');
+
+            $table->foreignId('operator_id')
+                ->constrained('users')
+                ->noActionOnDelete();
+
             $table->timestamps();
 
             $table->index(['movement_date', 'movement_type']);
@@ -54,13 +68,29 @@ return new class extends Migration
 
         Schema::create('b3_storage_monthly_approvals', function (Blueprint $table) {
             $table->id();
+
             $table->unsignedTinyInteger('month');
+
             $table->unsignedSmallInteger('year');
-            $table->foreignId('environment_supervisor_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('environment_supervisor_signed_at')->nullable();
-            $table->foreignId('hse_department_head_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('hse_department_head_signed_at')->nullable();
+
+            $table->foreignId('environment_supervisor_id')
+                ->nullable()
+                ->constrained('users')
+                ->noActionOnDelete();
+
+            $table->timestamp('environment_supervisor_signed_at')
+                ->nullable();
+
+            $table->foreignId('hse_department_head_id')
+                ->nullable()
+                ->constrained('users')
+                ->noActionOnDelete();
+
+            $table->timestamp('hse_department_head_signed_at')
+                ->nullable();
+
             $table->text('note')->nullable();
+
             $table->timestamps();
 
             $table->unique(['month', 'year']);

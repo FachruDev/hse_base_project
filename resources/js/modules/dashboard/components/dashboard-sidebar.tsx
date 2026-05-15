@@ -12,6 +12,7 @@ import {
     weekendIndex as configurationWeekendIndex,
 } from '@/actions/App/Http/Controllers/Web/ConfigurationController';
 import {
+    b3StorageIndex,
     catatanPengolahanLimbahAirIndex,
     index as dashboardIndex,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
@@ -48,6 +49,7 @@ import {
 import {
     configurationNavigation,
     dashboardNavigation,
+    formNavigation,
     managementNavigation,
     masterDataNavigation,
 } from '@/modules/dashboard/config/navigation';
@@ -70,6 +72,7 @@ export function DashboardSidebar({
     departmentName,
 }: DashboardSidebarProps) {
     const [managementOpen, setManagementOpen] = React.useState(true);
+    const [formsOpen, setFormsOpen] = React.useState(true);
     const [masterDataOpen, setMasterDataOpen] = React.useState(true);
     const [configurationOpen, setConfigurationOpen] = React.useState(true);
     const { theme, setTheme } = useTheme();
@@ -81,6 +84,9 @@ export function DashboardSidebar({
         );
     });
 
+    const formItems = formNavigation.filter((item) =>
+        permissions.includes(item.permission),
+    );
     const masterDataItems = masterDataNavigation.filter((item) =>
         permissions.includes(item.permission),
     );
@@ -142,6 +148,45 @@ export function DashboardSidebar({
                                 </SidebarMenuItem>
                             ))}
 
+                            {formItems.length > 0 ? (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        tooltip="Form Operasional"
+                                        onClick={() =>
+                                            setFormsOpen((current) => !current)
+                                        }
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                        <span>Form Operasional</span>
+                                        <ChevronRight
+                                            className={`ml-auto transition-transform ${formsOpen ? 'rotate-90' : ''}`}
+                                        />
+                                    </SidebarMenuButton>
+
+                                    {formsOpen ? (
+                                        <SidebarMenuSub>
+                                            {formItems.map((item) => (
+                                                <SidebarMenuSubItem
+                                                    key={item.key}
+                                                >
+                                                    <SidebarMenuSubButton
+                                                        href={buildFormHref(
+                                                            item.target,
+                                                            userId,
+                                                        )}
+                                                    >
+                                                        <item.icon />
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            ))}
+                                        </SidebarMenuSub>
+                                    ) : null}
+                                </SidebarMenuItem>
+                            ) : null}
+
                             {masterDataItems.length > 0 ? (
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
@@ -153,7 +198,7 @@ export function DashboardSidebar({
                                         }
                                     >
                                         <LayoutGrid className="size-4" />
-                                        <span>Master Data</span>
+                                        <span>Master Data Form</span>
                                         <ChevronRight
                                             className={`ml-auto transition-transform ${masterDataOpen ? 'rotate-90' : ''}`}
                                         />
@@ -374,6 +419,19 @@ function buildWorkspaceHref(
     }
 
     return dashboardIndex.url({ query: { user_id: userId } });
+}
+
+function buildFormHref(
+    target: 'catatan-pengolahan-limbah-air' | 'penyimpanan-limbah-b3',
+    userId: string,
+): string {
+    if (target === 'catatan-pengolahan-limbah-air') {
+        return catatanPengolahanLimbahAirIndex.url({
+            query: { user_id: userId },
+        });
+    }
+
+    return b3StorageIndex.url({ query: { user_id: userId } });
 }
 
 function buildMasterDataHref(module: string, userId: string): string {

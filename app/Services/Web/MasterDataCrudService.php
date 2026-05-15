@@ -2,6 +2,8 @@
 
 namespace App\Services\Web;
 
+use App\Models\B3Storage\B3StorageInitiatorDepartment;
+use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\Master\BatchItem;
 use App\Models\Master\ChecklistItem;
 use App\Models\Master\ChecklistTemplate;
@@ -712,6 +714,144 @@ class MasterDataCrudService
                         'label' => 'Urutan',
                         'type' => 'number',
                         'required' => true,
+                    ],
+                ],
+            ],
+            'b3-waste-types' => [
+                'title' => 'Jenis Limbah B3',
+                'short_label' => 'Jenis Limbah B3',
+                'singular_label' => 'jenis limbah B3',
+                'description' => 'Master jenis limbah untuk form penyimpanan limbah B3.',
+                'form_description' => 'Kelola daftar jenis limbah yang tampil di form B3.',
+                'search_placeholder' => 'Cari jenis limbah B3',
+                'view_permission' => 'b3storage.master.view',
+                'manage_permission' => 'b3storage.master.manage',
+                'model' => B3StorageWasteType::class,
+                'integer_fields' => ['order_no'],
+                'boolean_fields' => ['is_active'],
+                'defaults' => [
+                    'name' => '',
+                    'order_no' => 1,
+                    'is_active' => true,
+                ],
+                'rules' => [
+                    'name' => ['required', 'string', 'max:255'],
+                    'order_no' => ['required', 'integer', 'min:1'],
+                    'is_active' => ['required', 'boolean'],
+                ],
+                'columns' => [
+                    ['key' => 'name', 'label' => 'Nama'],
+                    ['key' => 'order_no', 'label' => 'Urutan'],
+                    ['key' => 'status', 'label' => 'Status'],
+                ],
+                'query' => fn (): Builder => B3StorageWasteType::query()
+                    ->orderBy('order_no')
+                    ->orderBy('id'),
+                'search' => function (Builder $query, string $search): void {
+                    $query->where('name', 'like', "%{$search}%");
+                },
+                'row' => function (B3StorageWasteType $record): array {
+                    return [
+                        'name' => $record->name,
+                        'order_no' => (string) $record->order_no,
+                        'status' => $record->is_active ? 'Aktif' : 'Nonaktif',
+                    ];
+                },
+                'form_values' => function (B3StorageWasteType $record): array {
+                    return [
+                        'name' => $record->name,
+                        'order_no' => $record->order_no,
+                        'is_active' => $record->is_active,
+                    ];
+                },
+                'fields' => fn (): array => [
+                    [
+                        'name' => 'name',
+                        'label' => 'Nama Jenis Limbah',
+                        'type' => 'text',
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'order_no',
+                        'label' => 'Urutan',
+                        'type' => 'number',
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'is_active',
+                        'label' => 'Status Aktif',
+                        'type' => 'boolean-select',
+                        'required' => true,
+                        'options' => $this->booleanOptions(),
+                    ],
+                ],
+            ],
+            'b3-initiator-departments' => [
+                'title' => 'Dept Inisiator B3',
+                'short_label' => 'Dept Inisiator B3',
+                'singular_label' => 'dept inisiator B3',
+                'description' => 'Master departemen inisiator untuk form penyimpanan limbah B3.',
+                'form_description' => 'Kelola daftar dept inisiator yang tampil di form B3.',
+                'search_placeholder' => 'Cari dept inisiator B3',
+                'view_permission' => 'b3storage.master.view',
+                'manage_permission' => 'b3storage.master.manage',
+                'model' => B3StorageInitiatorDepartment::class,
+                'integer_fields' => ['order_no'],
+                'boolean_fields' => ['is_active'],
+                'defaults' => [
+                    'name' => '',
+                    'order_no' => 1,
+                    'is_active' => true,
+                ],
+                'rules' => [
+                    'name' => ['required', 'string', 'max:255'],
+                    'order_no' => ['required', 'integer', 'min:1'],
+                    'is_active' => ['required', 'boolean'],
+                ],
+                'columns' => [
+                    ['key' => 'name', 'label' => 'Nama'],
+                    ['key' => 'order_no', 'label' => 'Urutan'],
+                    ['key' => 'status', 'label' => 'Status'],
+                ],
+                'query' => fn (): Builder => B3StorageInitiatorDepartment::query()
+                    ->orderBy('order_no')
+                    ->orderBy('id'),
+                'search' => function (Builder $query, string $search): void {
+                    $query->where('name', 'like', "%{$search}%");
+                },
+                'row' => function (B3StorageInitiatorDepartment $record): array {
+                    return [
+                        'name' => $record->name,
+                        'order_no' => (string) $record->order_no,
+                        'status' => $record->is_active ? 'Aktif' : 'Nonaktif',
+                    ];
+                },
+                'form_values' => function (B3StorageInitiatorDepartment $record): array {
+                    return [
+                        'name' => $record->name,
+                        'order_no' => $record->order_no,
+                        'is_active' => $record->is_active,
+                    ];
+                },
+                'fields' => fn (): array => [
+                    [
+                        'name' => 'name',
+                        'label' => 'Nama Dept Inisiator',
+                        'type' => 'text',
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'order_no',
+                        'label' => 'Urutan',
+                        'type' => 'number',
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'is_active',
+                        'label' => 'Status Aktif',
+                        'type' => 'boolean-select',
+                        'required' => true,
+                        'options' => $this->booleanOptions(),
                     ],
                 ],
             ],

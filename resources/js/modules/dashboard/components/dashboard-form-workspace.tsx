@@ -1,6 +1,6 @@
 import { ArrowRight, ClipboardPenLine, FileStack, FileWarning, Sparkles } from 'lucide-react';
 
-import { catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { b3StorageIndex, catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DashboardFormItem, DashboardPayload } from '@/modules/dashboard/types';
@@ -59,13 +59,12 @@ export function DashboardFormWorkspace({ dashboard, userId }: DashboardFormWorks
 }
 
 function FormModuleCard({ form, userId }: { form: DashboardFormItem; userId: string }) {
+    const href = resolveFormHref(form.key, userId);
+
     return (
         <Card className="border-none bg-card/95 shadow-sm ring-1 ring-border/60 transition-all hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-0">
-                <a
-                    href={catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } })}
-                    className="flex h-full flex-col gap-5 p-5"
-                >
+                <a href={href} className="flex h-full flex-col gap-5 p-5">
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                             <ClipboardPenLine className="size-5" />
@@ -84,6 +83,14 @@ function FormModuleCard({ form, userId }: { form: DashboardFormItem; userId: str
             </CardContent>
         </Card>
     );
+}
+
+function resolveFormHref(formKey: string, userId: string): string {
+    if (formKey === 'penyimpanan-limbah-b3') {
+        return b3StorageIndex.url({ query: { user_id: userId } });
+    }
+
+    return catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } });
 }
 
 function SummaryBox({

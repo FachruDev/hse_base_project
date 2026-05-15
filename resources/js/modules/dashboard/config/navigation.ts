@@ -15,12 +15,21 @@ import {
 } from 'lucide-react';
 
 export type DashboardNavTarget = 'dashboard' | 'catatan-pengolahan-limbah-air';
+export type FormNavTarget = 'catatan-pengolahan-limbah-air' | 'penyimpanan-limbah-b3';
 
 export type DashboardNavItem = {
     key: string;
     label: string;
     icon: LucideIcon;
     target: DashboardNavTarget;
+};
+
+export type FormNavItem = {
+    key: string;
+    label: string;
+    icon: LucideIcon;
+    target: FormNavTarget;
+    permission: string;
 };
 
 export type DashboardManagementItem = {
@@ -54,11 +63,22 @@ export const dashboardNavigation: DashboardNavItem[] = [
         icon: LayoutGrid,
         target: 'dashboard',
     },
+];
+
+export const formNavigation: FormNavItem[] = [
     {
-        key: 'forms',
-        label: 'Form',
+        key: 'catatan-pengolahan-limbah-air',
+        label: 'Catatan Proses IPAL',
         icon: ClipboardPenLine,
         target: 'catatan-pengolahan-limbah-air',
+        permission: 'ipal.logs.view',
+    },
+    {
+        key: 'penyimpanan-limbah-b3',
+        label: 'Penyimpanan Limbah B3',
+        icon: ClipboardPenLine,
+        target: 'penyimpanan-limbah-b3',
+        permission: 'b3storage.logs.view',
     },
 ];
 
@@ -104,6 +124,20 @@ export const masterDataNavigation: MasterDataNavItem[] = [
         icon: Database,
         module: 'batch-items',
         permission: 'master.batch.view',
+    },
+    {
+        key: 'b3-waste-types',
+        label: 'Jenis Limbah B3',
+        icon: Database,
+        module: 'b3-waste-types',
+        permission: 'b3storage.master.view',
+    },
+    {
+        key: 'b3-initiator-departments',
+        label: 'Dept Inisiator B3',
+        icon: Database,
+        module: 'b3-initiator-departments',
+        permission: 'b3storage.master.view',
     },
 ];
 
