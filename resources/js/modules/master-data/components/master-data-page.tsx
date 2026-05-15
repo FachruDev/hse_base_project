@@ -162,6 +162,11 @@ export function MasterDataPage({ flash, masterData, userId }: MasterDataPageProp
                                     />
                                 </div>
                                 <Select
+                                    items={[
+                                        { value: '10', label: '10 / halaman' },
+                                        { value: '25', label: '25 / halaman' },
+                                        { value: '50', label: '50 / halaman' },
+                                    ]}
                                     value={perPage}
                                     onValueChange={(value) => {
                                         const nextValue = value ?? '10';
@@ -402,6 +407,10 @@ function MasterDataFieldInput({
     if (field.type === 'select' || field.type === 'boolean-select') {
         return (
             <Select
+                items={(field.options ?? []).map((option) => ({
+                    value: String(option.value),
+                    label: option.label,
+                }))}
                 value={value === null || value === undefined ? undefined : String(value)}
                 onValueChange={(rawValue) => {
                     const resolvedValue = resolveOptionValue(field, rawValue);
@@ -450,4 +459,3 @@ function normalizePaginationLabel(label: string): string {
         .replace(/<[^>]+>/g, '')
         .trim();
 }
-

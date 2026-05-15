@@ -2,7 +2,7 @@ import { router } from '@inertiajs/react';
 import { Filter, Plus, RotateCcw, Search } from 'lucide-react';
 import * as React from 'react';
 
-import { b3StorageCreate, b3StorageIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { b3StorageCreate, b3StorageIndex, b3StoragePhoto } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +30,16 @@ export function PenyimpananLimbahB3Listing({ listing, userId }: PenyimpananLimba
     const [month, setMonth] = React.useState(String(listing.filters.month));
     const [year, setYear] = React.useState(String(listing.filters.year));
     const [perPage, setPerPage] = React.useState(String(listing.filters.per_page));
+    const movementTypeItems = [
+        { value: 'ALL', label: 'Semua tipe' },
+        { value: 'MASUK', label: 'Masuk' },
+        { value: 'KELUAR', label: 'Keluar' },
+    ];
+    const perPageItems = [
+        { value: '10', label: '10 / halaman' },
+        { value: '25', label: '25 / halaman' },
+        { value: '50', label: '50 / halaman' },
+    ];
 
     const submitFilters = (
         nextSearch: string,
@@ -98,6 +108,7 @@ export function PenyimpananLimbahB3Listing({ listing, userId }: PenyimpananLimba
                             </div>
 
                             <Select
+                                items={movementTypeItems}
                                 value={movementType}
                                 onValueChange={(value) => {
                                     const nextValue = value ?? 'ALL';
@@ -133,6 +144,7 @@ export function PenyimpananLimbahB3Listing({ listing, userId }: PenyimpananLimba
                             />
 
                             <Select
+                                items={perPageItems}
                                 value={perPage}
                                 onValueChange={(value) => {
                                     const nextValue = value ?? '10';
@@ -200,7 +212,10 @@ export function PenyimpananLimbahB3Listing({ listing, userId }: PenyimpananLimba
                                             <TableCell className="px-4">
                                                 {row.photo_path ? (
                                                     <a
-                                                        href={`/storage/${row.photo_path}`}
+                                                        href={b3StoragePhoto.url(
+                                                            { log: row.id },
+                                                            { query: { user_id: userId } },
+                                                        )}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="text-sm text-primary underline"

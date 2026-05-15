@@ -65,6 +65,10 @@ export function WeekendConfigurationPage({ weekendConfiguration, userId }: Weeke
                                         <TableCell>
                                             {weekendConfiguration.capabilities.manage ? (
                                                 <Select
+                                                    items={[
+                                                        { value: 'ON', label: 'Operasional' },
+                                                        { value: 'OFF', label: 'Libur' },
+                                                    ]}
                                                     value={draftStates[row.id] ? 'OFF' : 'ON'}
                                                     onValueChange={(value) => {
                                                         setDraftStates((current) => ({

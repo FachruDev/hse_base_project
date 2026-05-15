@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
+import * as React from 'react';
 
 import { b3StorageIndex, b3StorageStore } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -36,6 +37,9 @@ type B3FormState = {
 };
 
 export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: PenyimpananLimbahB3EntryProps) {
+    const [wasteTypeSelection, setWasteTypeSelection] = React.useState<string>('');
+    const [initiatorSelection, setInitiatorSelection] = React.useState<string>('');
+
     const form = useForm<B3FormState>({
         movement_date: entryForm.entry.tanggal_default,
         movement_time: entryForm.entry.jam_default,
@@ -50,15 +54,31 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
         note: '',
     });
 
+    const movementTypeItems = entryForm.options.movement_types.map((item) => ({
+        value: String(item.value),
+        label: item.label,
+    }));
+    const wasteTypeItems = [
+        { value: 'OTHER', label: 'Yang lain' },
+        ...entryForm.options.waste_types.map((item) => ({
+            value: String(item.value),
+            label: item.label,
+        })),
+    ];
+    const initiatorItems = [
+        { value: 'OTHER', label: 'Yang lain' },
+        ...entryForm.options.initiator_departments.map((item) => ({
+            value: String(item.value),
+            label: item.label,
+        })),
+    ];
+
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        form.post(
-            b3StorageStore.url({ query: { user_id: userId } }),
-            {
-                preserveScroll: true,
-            },
-        );
+        form.post(b3StorageStore.url({ query: { user_id: userId } }), {
+            preserveScroll: true,
+        });
     };
 
     return (
@@ -135,7 +155,11 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                         Tipe Pergerakan <span className="text-destructive">*</span>
                                     </FieldLabel>
                                     <FieldContent>
-                                        <Select value={form.data.movement_type} onValueChange={(value) => form.setData('movement_type', value ?? '')}>
+                                        <Select
+                                            items={movementTypeItems}
+                                            value={form.data.movement_type}
+                                            onValueChange={(value) => form.setData('movement_type', value ?? '')}
+                                        >
                                             <SelectTrigger id="movement_type" className="w-full">
                                                 <SelectValue placeholder="Pilih tipe" />
                                             </SelectTrigger>
@@ -159,6 +183,7 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                             id="document_number"
                                             value={form.data.document_number}
                                             onChange={(event) => form.setData('document_number', event.target.value)}
+                                            placeholder="Contoh: 03/HSE/XI/20"
                                         />
                                         <FieldError>{form.errors.document_number}</FieldError>
                                     </FieldContent>
@@ -167,10 +192,15 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                     <FieldLabel htmlFor="waste_type_id">Jenis Limbah</FieldLabel>
                                     <FieldContent>
                                         <Select
-                                            value={form.data.waste_type_id === null ? 'OTHER' : String(form.data.waste_type_id)}
+                                            items={wasteTypeItems}
+                                            value={wasteTypeSelection}
                                             onValueChange={(value) => {
-                                                if (value === null) {
+                                                const nextValue = value ?? '';
+                                                setWasteTypeSelection(nextValue);
+
+                                                if (value === null || value === '') {
                                                     form.setData('waste_type_id', null);
+                                                    form.setData('waste_type_other', '');
                                                     return;
                                                 }
 
@@ -198,26 +228,32 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                         <FieldError>{form.errors.waste_type_id}</FieldError>
                                     </FieldContent>
                                 </Field>
-                                <Field>
-                                    <FieldLabel htmlFor="waste_type_other">Jenis Limbah (Yang Lain)</FieldLabel>
-                                    <FieldContent>
-                                        <Input
-                                            id="waste_type_other"
-                                            value={form.data.waste_type_other}
-                                            onChange={(event) => form.setData('waste_type_other', event.target.value)}
-                                            disabled={form.data.waste_type_id !== null}
-                                        />
-                                        <FieldError>{form.errors.waste_type_other}</FieldError>
-                                    </FieldContent>
-                                </Field>
+                                {wasteTypeSelection === 'OTHER' ? (
+                                    <Field>
+                                        <FieldLabel htmlFor="waste_type_other">Jenis Limbah (Yang Lain)</FieldLabel>
+                                        <FieldContent>
+                                            <Input
+                                                id="waste_type_other"
+                                                value={form.data.waste_type_other}
+                                                onChange={(event) => form.setData('waste_type_other', event.target.value)}
+                                            />
+                                            <FieldError>{form.errors.waste_type_other}</FieldError>
+                                        </FieldContent>
+                                    </Field>
+                                ) : null}
                                 <Field>
                                     <FieldLabel htmlFor="initiator_department_id">Dept Inisiator</FieldLabel>
                                     <FieldContent>
                                         <Select
-                                            value={form.data.initiator_department_id === null ? 'OTHER' : String(form.data.initiator_department_id)}
+                                            items={initiatorItems}
+                                            value={initiatorSelection}
                                             onValueChange={(value) => {
-                                                if (value === null) {
+                                                const nextValue = value ?? '';
+                                                setInitiatorSelection(nextValue);
+
+                                                if (value === null || value === '') {
                                                     form.setData('initiator_department_id', null);
+                                                    form.setData('initiator_department_other', '');
                                                     return;
                                                 }
 
@@ -245,18 +281,19 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                         <FieldError>{form.errors.initiator_department_id}</FieldError>
                                     </FieldContent>
                                 </Field>
-                                <Field>
-                                    <FieldLabel htmlFor="initiator_department_other">Dept Inisiator (Yang Lain)</FieldLabel>
-                                    <FieldContent>
-                                        <Input
-                                            id="initiator_department_other"
-                                            value={form.data.initiator_department_other}
-                                            onChange={(event) => form.setData('initiator_department_other', event.target.value)}
-                                            disabled={form.data.initiator_department_id !== null}
-                                        />
-                                        <FieldError>{form.errors.initiator_department_other}</FieldError>
-                                    </FieldContent>
-                                </Field>
+                                {initiatorSelection === 'OTHER' ? (
+                                    <Field>
+                                        <FieldLabel htmlFor="initiator_department_other">Dept Inisiator (Yang Lain)</FieldLabel>
+                                        <FieldContent>
+                                            <Input
+                                                id="initiator_department_other"
+                                                value={form.data.initiator_department_other}
+                                                onChange={(event) => form.setData('initiator_department_other', event.target.value)}
+                                            />
+                                            <FieldError>{form.errors.initiator_department_other}</FieldError>
+                                        </FieldContent>
+                                    </Field>
+                                ) : null}
                                 <Field>
                                     <FieldLabel htmlFor="weight_kg">
                                         Berat Limbah (Kg) <span className="text-destructive">*</span>

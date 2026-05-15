@@ -29,6 +29,10 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/penyimpanan-limbah-b3',
         [DashboardController::class, 'b3StorageStore'],
     )->name('dashboard.forms.penyimpanan-limbah-b3.store');
+    Route::get(
+        '/dashboard/forms/penyimpanan-limbah-b3/{log}/photo',
+        [DashboardController::class, 'b3StoragePhoto'],
+    )->name('dashboard.forms.penyimpanan-limbah-b3.photo');
 
     Route::get('/dashboard/master-data/{module}', [MasterDataController::class, 'index'])
         ->name('dashboard.master-data.index');

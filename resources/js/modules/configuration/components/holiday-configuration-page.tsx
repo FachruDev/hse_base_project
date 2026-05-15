@@ -142,6 +142,11 @@ export function HolidayConfigurationPage({ flash, holidayConfiguration, userId }
                                     />
                                 </div>
                                 <Select
+                                    items={[
+                                        { value: '10', label: '10 / halaman' },
+                                        { value: '25', label: '25 / halaman' },
+                                        { value: '50', label: '50 / halaman' },
+                                    ]}
                                     value={perPage}
                                     onValueChange={(value) => {
                                         const nextValue = value ?? '10';
@@ -288,6 +293,10 @@ export function HolidayConfigurationPage({ flash, holidayConfiguration, userId }
                                             <FieldLabel>Status</FieldLabel>
                                             <FieldContent>
                                                 <Select
+                                                    items={[
+                                                        { value: 'ACTIVE', label: 'Aktif' },
+                                                        { value: 'INACTIVE', label: 'Nonaktif' },
+                                                    ]}
                                                     value={form.data.is_active ? 'ACTIVE' : 'INACTIVE'}
                                                     onValueChange={(value) => form.setData('is_active', value === 'ACTIVE')}
                                                 >

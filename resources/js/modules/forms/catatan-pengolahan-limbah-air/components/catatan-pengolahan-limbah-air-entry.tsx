@@ -144,7 +144,14 @@ export function CatatanPengolahanLimbahAirEntry({ entryForm, userId }: CatatanPe
                                                             {resolveStatusLabel(item.status)}
                                                         </Badge>
                                                     ) : (
-                                                        <Select defaultValue={item.status ?? undefined}>
+                                                        <Select
+                                                            items={[
+                                                                { value: 'OK', label: 'Sesuai Kondisi Standar' },
+                                                                { value: 'NOT_OK', label: 'Perlu Tindak Lanjut' },
+                                                                { value: 'NA', label: 'Tidak Berlaku (N/A)' },
+                                                            ]}
+                                                            defaultValue={item.status ?? undefined}
+                                                        >
                                                             <SelectTrigger className="w-full min-w-[180px]">
                                                                 <SelectValue placeholder="Pilih kondisi" />
                                                             </SelectTrigger>

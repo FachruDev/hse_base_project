@@ -95,6 +95,12 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                             </div>
 
                             <Select
+                                items={[
+                                    { value: 'ALL', label: 'Semua status' },
+                                    { value: 'DRAFT', label: 'Draft' },
+                                    { value: 'SUBMITTED', label: 'Submitted' },
+                                    { value: 'APPROVED', label: 'Approved' },
+                                ]}
                                 value={status}
                                 onValueChange={(value) => {
                                     const nextValue = value ?? 'ALL';
@@ -114,6 +120,11 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                             </Select>
 
                             <Select
+                                items={[
+                                    { value: '10', label: '10 / halaman' },
+                                    { value: '25', label: '25 / halaman' },
+                                    { value: '50', label: '50 / halaman' },
+                                ]}
                                 value={perPage}
                                 onValueChange={(value) => {
                                     const nextValue = value ?? '10';

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\B3Storage\StoreB3StorageLogRequest;
 use App\Http\Requests\Web\B3StorageLogIndexRequest;
 use App\Http\Requests\Web\CatatanPengolahanLimbahAirIndexRequest;
+use App\Models\B3Storage\B3StorageLog;
 use App\Models\User;
 use App\Services\B3Storage\B3StorageService;
 use App\Services\Web\B3StoragePageService;
@@ -14,6 +15,7 @@ use App\Services\Web\DashboardService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -86,6 +88,26 @@ class DashboardController extends Controller
                 'year' => now()->year,
             ])
             ->with('success', 'Log penyimpanan limbah B3 berhasil disimpan.');
+    }
+
+    public function b3StoragePhoto(Request $request, B3StorageLog $log): HttpResponse
+    {
+        abort_unless($request->user()?->can('b3storage.logs.view'), 403);
+
+        $user = $this->authenticatedUser($request);
+        if (! $user->can('b3storage.logs.delete') && $log->operator_id !== $user->id) {
+            abort(403);
+        }
+
+        if (! is_string($log->photo_path) || $log->photo_path === '') {
+            abort(404);
+        }
+
+        if (! Storage::disk('public')->exists($log->photo_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($log->photo_path);
     }
 
     private function authenticatedUser(Request $request): User
