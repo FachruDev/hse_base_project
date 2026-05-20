@@ -82,7 +82,7 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
     };
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_46%)] px-4 py-6 lg:px-6 lg:py-8">
+        <div className="min-h-screen bg-muted dark:bg-background px-4 py-6 lg:px-6 lg:py-8">
             <div className="mx-auto flex max-w-5xl flex-col gap-6">
                 <Card className="border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60">
                     <CardHeader className="gap-4">
@@ -241,6 +241,7 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                         </FieldContent>
                                     </Field>
                                 ) : null}
+
                                 <Field>
                                     <FieldLabel htmlFor="initiator_department_id">Dept Inisiator</FieldLabel>
                                     <FieldContent>
@@ -294,6 +295,7 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                         </FieldContent>
                                     </Field>
                                 ) : null}
+
                                 <Field>
                                     <FieldLabel htmlFor="weight_kg">
                                         Berat Limbah (Kg) <span className="text-destructive">*</span>

@@ -1,87 +1,199 @@
-import { ArrowLeft, ChevronDown, CircleAlert, ClipboardCheck, Droplets, FlaskConical, Save } from 'lucide-react';
+import { useForm } from '@inertiajs/react';
+import { ArrowLeft, CheckCheck, ClipboardCheck, Droplets, FlaskConical, Plus, Save, Send, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
-import { catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import {
+    catatanPengolahanLimbahAirIndex,
+    catatanPengolahanLimbahAirSaveChecklist,
+    catatanPengolahanLimbahAirSaveProcess,
+} from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import type { BatchField, CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard/types';
 
 type CatatanPengolahanLimbahAirEntryProps = {
+    flash: {
+        success?: string | null;
+        error?: string | null;
+    };
     entryForm: CatatanPengolahanLimbahAirEntryPayload;
     userId: string;
 };
 
-export function CatatanPengolahanLimbahAirEntry({ entryForm, userId }: CatatanPengolahanLimbahAirEntryProps) {
+type EntryView = 'CHECKLIST' | 'PROCESS';
+
+type ChecklistValuePayload = {
+    item_id: number;
+    status: 'OK' | 'NOT_OK' | '';
+    note: string;
+};
+
+type ProcessValuePayload = {
+    item_id: number;
+    value_text: string;
+    value_number: string;
+    note: string;
+};
+
+type BatchValuePayload = {
+    item_id: number;
+    value_text: string;
+    value_number: string;
+};
+
+type BatchGroupPayload = {
+    batch_no: number;
+    values: BatchValuePayload[];
+};
+
+type ChecklistFormState = {
+    tanggal: string;
+    checklist: {
+        template_id: number | null;
+        values: ChecklistValuePayload[];
+    };
+};
+
+type ProcessFormState = {
+    tanggal: string;
+    action: 'DRAFT' | 'SUBMIT';
+    has_mixing: boolean;
+    process: {
+        template_id: number | null;
+        values: ProcessValuePayload[];
+    };
+    batch: BatchGroupPayload[];
+};
+
+export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: CatatanPengolahanLimbahAirEntryProps) {
+    const [activeView, setActiveView] = React.useState<EntryView>('CHECKLIST');
     const [processQuery, setProcessQuery] = React.useState('');
-    const [collapsedSections, setCollapsedSections] = React.useState<Record<number, boolean>>({});
-    const [checklistPanelCollapsed, setChecklistPanelCollapsed] = React.useState(false);
-    const [processPanelCollapsed, setProcessPanelCollapsed] = React.useState(false);
-    const [hasMixingProcess, setHasMixingProcess] = React.useState<boolean>(() => hasAnyBatchValue(entryForm));
-    const [activeBatchNo, setActiveBatchNo] = React.useState<number>(entryForm.batch.groups[0]?.batch_no ?? 1);
+    const [selectedBatchNo, setSelectedBatchNo] = React.useState<string>('1');
+
+    const checklistForm = useForm<ChecklistFormState>({
+        tanggal: entryForm.entry.tanggal,
+        checklist: {
+            template_id: entryForm.checklist.template_id,
+            values: entryForm.checklist.items.map((item) => ({
+                item_id: item.id,
+                status: normalizeChecklistStatus(item.status),
+                note: item.note ?? '',
+            })),
+        },
+    });
+
+    const processForm = useForm<ProcessFormState>({
+        tanggal: entryForm.entry.tanggal,
+        action: 'DRAFT',
+        has_mixing: entryForm.batch.groups.length > 0,
+        process: {
+            template_id: entryForm.process.template_id,
+            values: entryForm.process.sections.flatMap((section) =>
+                section.items.map((item) => ({
+                    item_id: item.id,
+                    value_text: item.value_text ?? '',
+                    value_number: item.value_number !== null ? String(item.value_number) : '',
+                    note: item.note ?? '',
+                })),
+            ),
+        },
+        batch: entryForm.batch.groups.map((group) => ({
+            batch_no: group.batch_no,
+            values: entryForm.batch.items.map((batchItem) => {
+                const existingValue = group.values.find((value) => value.item_id === batchItem.id);
+
+                return {
+                    item_id: batchItem.id,
+                    value_text: existingValue?.value_text ?? '',
+                    value_number: existingValue?.value_number !== null ? String(existingValue?.value_number) : '',
+                };
+            }),
+        })),
+    });
+
+    const availableBatchNumbers = buildAvailableBatchNumbers(entryForm.batch.max_batch_no, processForm.data.batch);
 
     React.useEffect(() => {
-        setCollapsedSections((current) => {
-            const next: Record<number, boolean> = {};
+        if (availableBatchNumbers.length === 0) {
+            return;
+        }
 
-            for (const section of entryForm.process.sections) {
-                next[section.id] = current[section.id] ?? false;
+        const nextValue = String(availableBatchNumbers[0]);
+        if (!availableBatchNumbers.map(String).includes(selectedBatchNo)) {
+            setSelectedBatchNo(nextValue);
+        }
+    }, [availableBatchNumbers, selectedBatchNo]);
+
+    const filteredSections = entryForm.process.sections
+        .map((section) => {
+            const keyword = processQuery.trim().toLowerCase();
+
+            if (keyword === '') {
+                return section;
             }
 
-            return next;
-        });
-
-        setHasMixingProcess(hasAnyBatchValue(entryForm));
-        setActiveBatchNo(entryForm.batch.groups[0]?.batch_no ?? 1);
-    }, [entryForm.process.sections, entryForm.batch.groups]);
-
-    const selectedBatch = entryForm.batch.groups.find((group) => group.batch_no === activeBatchNo) ?? null;
-    const normalizedProcessQuery = processQuery.trim().toLowerCase();
-    const checklistProgress = buildChecklistProgress(entryForm);
-    const processProgress = buildProcessProgress(entryForm);
-    const batchProgress = buildBatchProgress(entryForm);
-
-    const processRows = entryForm.process.sections
-        .map((section) => {
-            const items = section.items.filter((item) => {
-                if (normalizedProcessQuery === '') {
-                    return true;
-                }
-
+            const filteredItems = section.items.filter((item) => {
                 return (
-                    section.name.toLowerCase().includes(normalizedProcessQuery) ||
-                    item.name.toLowerCase().includes(normalizedProcessQuery) ||
-                    (item.standard_condition ?? '').toLowerCase().includes(normalizedProcessQuery)
+                    section.name.toLowerCase().includes(keyword) ||
+                    item.name.toLowerCase().includes(keyword) ||
+                    (item.standard_condition ?? '').toLowerCase().includes(keyword)
                 );
             });
 
             return {
                 ...section,
-                items,
+                items: filteredItems,
             };
         })
         .filter((section) => section.items.length > 0);
 
+    const checklistProgress = `${checklistForm.data.checklist.values.filter((value) => value.status !== '').length}/${checklistForm.data.checklist.values.length}`;
+    const processTotalItems = processForm.data.process.values.length;
+    const processFilledItems = processForm.data.process.values.filter((value) =>
+        value.value_number !== '' || value.value_text.trim() !== '',
+    ).length;
+
+    const saveChecklist = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        checklistForm.post(catatanPengolahanLimbahAirSaveChecklist.url({ query: { user_id: userId } }), {
+            preserveScroll: true,
+        });
+    };
+
+    const saveProcess = (action: 'DRAFT' | 'SUBMIT') => {
+        processForm.transform((data) => ({
+            ...data,
+            action,
+        }));
+        processForm.post(catatanPengolahanLimbahAirSaveProcess.url({ query: { user_id: userId } }), {
+            preserveScroll: true,
+            onFinish: () => {
+                processForm.transform((data) => data);
+            },
+        });
+    };
+
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_48%)] px-4 py-6 lg:px-6 lg:py-8">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_50%)] px-4 py-6 lg:px-6 lg:py-8">
             <div className="mx-auto flex max-w-7xl flex-col gap-6">
                 <Card className="border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60">
                     <CardHeader className="gap-4">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                             <div className="space-y-2">
-                                <Badge variant="outline">Workspace Pengisian</Badge>
+                                <Badge variant="outline">Workspace Harian IPAL</Badge>
                                 <CardTitle className="text-2xl">{entryForm.module.title}</CardTitle>
                                 <CardDescription>{entryForm.module.subtitle}</CardDescription>
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
                                 <Badge variant="outline">Tanggal {entryForm.entry.tanggal}</Badge>
                                 <Badge variant={entryForm.entry.read_only ? 'secondary' : 'default'}>
-                                    {entryForm.entry.read_only ? 'Mode Lihat' : entryForm.entry.action_label}
+                                    {entryForm.entry.read_only ? 'Mode Lihat' : 'Mode Input'}
                                 </Badge>
                                 <Button variant="outline" render={<a href={catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } })} />}>
                                     <ArrowLeft className="size-4" />
@@ -92,38 +204,101 @@ export function CatatanPengolahanLimbahAirEntry({ entryForm, userId }: CatatanPe
                     </CardHeader>
                 </Card>
 
-                {!entryForm.checklist.template_id || !entryForm.process.template_id ? (
-                    <Card className="border-none shadow-sm ring-1 ring-destructive/20">
-                        <CardContent className="flex items-start gap-3 p-5 text-sm text-muted-foreground">
-                            <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
-                            <p>Master form aktif belum lengkap. Halaman pengisian sudah siap, tapi template checklist atau process belum tersedia.</p>
-                        </CardContent>
-                    </Card>
+                {flash.success ? (
+                    <Alert>
+                        <AlertTitle>Berhasil</AlertTitle>
+                        <AlertDescription>{flash.success}</AlertDescription>
+                    </Alert>
                 ) : null}
 
-                <section className="grid gap-6 xl:grid-cols-2">
-                    <Card className="border-none shadow-sm ring-1 ring-border/60">
-                        <CardHeader className="border-b border-border/60">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="space-y-1">
+                {flash.error ? (
+                    <Alert variant="destructive">
+                        <AlertTitle>Gagal</AlertTitle>
+                        <AlertDescription>{flash.error}</AlertDescription>
+                    </Alert>
+                ) : null}
+
+                <Card className="border-none shadow-sm ring-1 ring-border/60">
+                    <CardHeader>
+                        <CardTitle className="text-base">Pilih Form yang Ingin Diisi</CardTitle>
+                        <CardDescription>Checklist dan catatan process dipisah agar operator fokus, tapi tetap dalam satu workspace.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-3 md:grid-cols-2">
+                            <button
+                                type="button"
+                                onClick={() => setActiveView('CHECKLIST')}
+                                className={`rounded-xl border p-4 text-left transition ${
+                                    activeView === 'CHECKLIST' ? 'border-primary bg-primary/5' : 'border-border/70 hover:border-border'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                         <ClipboardCheck className="size-4 text-primary" />
-                                        <CardTitle className="text-base">Checklist Harian</CardTitle>
+                                        <p className="font-semibold">Form Checklist Harian</p>
                                     </div>
-                                    <CardDescription>
-                                        {entryForm.checklist.template_name ?? 'Template checklist belum tersedia'}
-                                    </CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2">
                                     <Badge variant="outline">{checklistProgress}</Badge>
-                                    <Button variant="ghost" size="icon-sm" onClick={() => setChecklistPanelCollapsed((current) => !current)}>
-                                        <ChevronDown className={`size-4 transition-transform ${checklistPanelCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+                                </div>
+                                <p className="mt-2 text-sm text-muted-foreground">Fokus status perlengkapan harian + catatan singkat.</p>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveView('PROCESS')}
+                                className={`rounded-xl border p-4 text-left transition ${
+                                    activeView === 'PROCESS' ? 'border-primary bg-primary/5' : 'border-border/70 hover:border-border'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <Droplets className="size-4 text-primary" />
+                                        <p className="font-semibold">Form Catatan Process</p>
+                                    </div>
+                                    <Badge variant="outline">
+                                        {processFilledItems}/{processTotalItems}
+                                    </Badge>
+                                </div>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Menampilkan unit, uraian, kondisi standar, kondisi aktual, plus batch mixing bila ada.
+                                </p>
+                            </button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {activeView === 'CHECKLIST' ? (
+                    <Card className="border-none shadow-sm ring-1 ring-border/60">
+                        <CardHeader className="border-b border-border/60">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <CardTitle className="text-base">Checklist Harian</CardTitle>
+                                    <CardDescription>{entryForm.checklist.template_name ?? 'Template checklist belum tersedia.'}</CardDescription>
+                                </div>
+                                <Badge variant="outline">Tanggal Pengisian: {entryForm.entry.tanggal}</Badge>
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setChecklistAllStatus(checklistForm, 'OK')}
+                                        disabled={entryForm.entry.read_only || checklistForm.data.checklist.values.length === 0}
+                                    >
+                                        <CheckCheck className="size-4" />
+                                        Checklist Semua Standar
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => clearChecklistAll(checklistForm)}
+                                        disabled={entryForm.entry.read_only || checklistForm.data.checklist.values.length === 0}
+                                    >
+                                        Kosongkan Semua
                                     </Button>
                                 </div>
                             </div>
                         </CardHeader>
-                        {!checklistPanelCollapsed ? (
-                            <CardContent className="p-0">
+                        <CardContent className="p-0">
+                            <form onSubmit={saveChecklist}>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -134,81 +309,108 @@ export function CatatanPengolahanLimbahAirEntry({ entryForm, userId }: CatatanPe
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {entryForm.checklist.items.map((item) => (
+                                        {entryForm.checklist.items.map((item, index) => (
                                             <TableRow key={item.id}>
                                                 <TableCell className="px-4 font-medium">{item.name}</TableCell>
                                                 <TableCell>{item.standard_condition ?? '-'}</TableCell>
                                                 <TableCell className="min-w-[220px]">
-                                                    {entryForm.entry.read_only ? (
-                                                        <Badge variant={resolveStatusVariant(item.status)}>
-                                                            {resolveStatusLabel(item.status)}
-                                                        </Badge>
-                                                    ) : (
-                                                        <Select
-                                                            items={[
-                                                                { value: 'OK', label: 'Sesuai Kondisi Standar' },
-                                                                { value: 'NOT_OK', label: 'Perlu Tindak Lanjut' },
-                                                                { value: 'NA', label: 'Tidak Berlaku (N/A)' },
-                                                            ]}
-                                                            defaultValue={item.status ?? undefined}
-                                                        >
-                                                            <SelectTrigger className="w-full min-w-[180px]">
-                                                                <SelectValue placeholder="Pilih kondisi" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="OK">Sesuai Kondisi Standar</SelectItem>
-                                                                <SelectItem value="NOT_OK">Perlu Tindak Lanjut</SelectItem>
-                                                                <SelectItem value="NA">Tidak Berlaku (N/A)</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
+                                                    <Select
+                                                        items={[
+                                                            { value: 'OK', label: 'Sesuai' },
+                                                            { value: 'NOT_OK', label: 'Tidak Sesuai' },
+                                                        ]}
+                                                        value={checklistForm.data.checklist.values[index]?.status ?? ''}
+                                                        onValueChange={(value) => {
+                                                            const nextStatus = (value ?? '') as 'OK' | 'NOT_OK' | '';
+                                                            checklistForm.setData('checklist', {
+                                                                ...checklistForm.data.checklist,
+                                                                values: checklistForm.data.checklist.values.map((valueItem, valueIndex) =>
+                                                                    valueIndex === index ? { ...valueItem, status: nextStatus } : valueItem,
+                                                                ),
+                                                            });
+                                                        }}
+                                                        disabled={entryForm.entry.read_only}
+                                                    >
+                                                        <SelectTrigger className="w-full min-w-[200px]">
+                                                            <SelectValue placeholder="Pilih kondisi" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="OK">Sesuai</SelectItem>
+                                                            <SelectItem value="NOT_OK">Tidak Sesuai</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                 </TableCell>
                                                 <TableCell className="px-4">
                                                     <Textarea
-                                                        defaultValue={item.note ?? ''}
+                                                        value={checklistForm.data.checklist.values[index]?.note ?? ''}
                                                         readOnly={entryForm.entry.read_only}
+                                                        onChange={(event) => {
+                                                            checklistForm.setData('checklist', {
+                                                                ...checklistForm.data.checklist,
+                                                                values: checklistForm.data.checklist.values.map((valueItem, valueIndex) =>
+                                                                    valueIndex === index ? { ...valueItem, note: event.target.value } : valueItem,
+                                                                ),
+                                                            });
+                                                        }}
                                                         className="min-h-14"
-                                                        placeholder="Contoh: butuh pengecekan lanjutan"
+                                                        placeholder="Contoh: perlu pembersihan ulang"
                                                     />
                                                 </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
-                            </CardContent>
-                        ) : null}
-                    </Card>
 
-                    <Card className="border-none shadow-sm ring-1 ring-border/60">
-                        <CardHeader className="border-b border-border/60">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <Droplets className="size-4 text-primary" />
-                                        <CardTitle className="text-base">Catatan Proses</CardTitle>
-                                    </div>
-                                    <CardDescription>
-                                        Tampilkan lengkap unit, uraian, kondisi standar, kondisi, dan keterangan.
-                                    </CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="outline">{processProgress}</Badge>
-                                    <Button variant="ghost" size="icon-sm" onClick={() => setProcessPanelCollapsed((current) => !current)}>
-                                        <ChevronDown className={`size-4 transition-transform ${processPanelCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+                                <div className="flex justify-end p-4">
+                                    <Button
+                                        type="submit"
+                                        disabled={
+                                            entryForm.entry.read_only ||
+                                            checklistForm.processing ||
+                                            checklistForm.data.checklist.template_id === null ||
+                                            checklistForm.data.checklist.values.length === 0 ||
+                                            checklistForm.data.checklist.values.some((value) => value.status === '')
+                                        }
+                                    >
+                                        <Save className="size-4" />
+                                        Simpan Checklist
                                     </Button>
                                 </div>
-                            </div>
-                        </CardHeader>
+                            </form>
+                        </CardContent>
+                    </Card>
+                ) : null}
 
-                        {!processPanelCollapsed ? (
-                            <CardContent className="space-y-5 p-5">
+                {activeView === 'PROCESS' ? (
+                    <Card className="border-none shadow-sm ring-1 ring-border/60">
+                        <CardHeader className="border-b border-border/60">
+                            <div className="flex flex-col gap-3">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <CardTitle className="text-base">Catatan Process Pengolahan</CardTitle>
+                                        <CardDescription>
+                                            Isi kondisi aktual dan keterangan untuk setiap uraian process. Tidak perlu pindah tab unit.
+                                        </CardDescription>
+                                    </div>
+                                    <Badge variant="outline">
+                                        {processFilledItems}/{processTotalItems} terisi
+                                    </Badge>
+                                </div>
                                 <Input
                                     value={processQuery}
                                     onChange={(event) => setProcessQuery(event.target.value)}
                                     placeholder="Cari unit, uraian, atau kondisi standar"
-                                    className="w-full"
                                 />
-
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6 p-5">
+                            <form
+                                className="space-y-6"
+                                onSubmit={(event) => {
+                                    event.preventDefault();
+                                    saveProcess('DRAFT');
+                                }}
+                            >
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -220,35 +422,24 @@ export function CatatanPengolahanLimbahAirEntry({ entryForm, userId }: CatatanPe
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {processRows.length > 0 ? (
-                                            processRows.flatMap((section) => {
-                                                const headerRow = (
-                                                    <TableRow key={`header-${section.id}`} className="bg-muted/30">
-                                                        <TableCell className="px-4" colSpan={5}>
-                                                            <button
-                                                                type="button"
-                                                                className="flex w-full items-center justify-between gap-2 text-left"
-                                                                onClick={() => {
-                                                                    setCollapsedSections((current) => ({
-                                                                        ...current,
-                                                                        [section.id]: !(current[section.id] ?? false),
-                                                                    }));
-                                                                }}
-                                                            >
-                                                                <span className="font-semibold">{section.name}</span>
-                                                                <Badge variant="outline">
-                                                                    {collapsedSections[section.id] ? 'Tertutup' : `${section.items.length} uraian`}
-                                                                </Badge>
-                                                            </button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
+                                        {filteredSections.flatMap((section) => {
+                                            const sectionHeader = (
+                                                <TableRow key={`section-${section.id}`} className="bg-muted/20">
+                                                    <TableCell className="px-4 font-semibold" colSpan={5}>
+                                                        {section.name}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
 
-                                                if (collapsedSections[section.id]) {
-                                                    return [headerRow];
+                                            const rows = section.items.map((item) => {
+                                                const valueIndex = processForm.data.process.values.findIndex((value) => value.item_id === item.id);
+                                                const currentValue = processForm.data.process.values[valueIndex];
+
+                                                if (!currentValue) {
+                                                    return null;
                                                 }
 
-                                                const detailRows = section.items.map((item) => (
+                                                return (
                                                     <TableRow key={`${section.id}-${item.id}`}>
                                                         <TableCell className="px-4 font-medium">{section.name}</TableCell>
                                                         <TableCell>{item.name}</TableCell>
@@ -257,144 +448,287 @@ export function CatatanPengolahanLimbahAirEntry({ entryForm, userId }: CatatanPe
                                                             {item.input_type === 'number' ? (
                                                                 <Input
                                                                     type="number"
-                                                                    defaultValue={item.value_number ?? ''}
+                                                                    value={currentValue.value_number}
                                                                     readOnly={entryForm.entry.read_only}
+                                                                    onChange={(event) => {
+                                                                        processForm.setData('process', {
+                                                                            ...processForm.data.process,
+                                                                            values: processForm.data.process.values.map((value, index) =>
+                                                                                index === valueIndex ? { ...value, value_number: event.target.value } : value,
+                                                                            ),
+                                                                        });
+                                                                    }}
                                                                 />
                                                             ) : (
                                                                 <Input
-                                                                    defaultValue={item.value_text ?? ''}
+                                                                    value={currentValue.value_text}
                                                                     readOnly={entryForm.entry.read_only}
+                                                                    onChange={(event) => {
+                                                                        processForm.setData('process', {
+                                                                            ...processForm.data.process,
+                                                                            values: processForm.data.process.values.map((value, index) =>
+                                                                                index === valueIndex ? { ...value, value_text: event.target.value } : value,
+                                                                            ),
+                                                                        });
+                                                                    }}
                                                                 />
                                                             )}
                                                         </TableCell>
                                                         <TableCell className="px-4">
                                                             <Textarea
-                                                                defaultValue={item.note ?? ''}
+                                                                value={currentValue.note}
                                                                 readOnly={entryForm.entry.read_only}
-                                                                placeholder="Keterangan tambahan"
                                                                 className="min-h-14"
+                                                                onChange={(event) => {
+                                                                    processForm.setData('process', {
+                                                                        ...processForm.data.process,
+                                                                        values: processForm.data.process.values.map((value, index) =>
+                                                                            index === valueIndex ? { ...value, note: event.target.value } : value,
+                                                                        ),
+                                                                    });
+                                                                }}
+                                                                placeholder="Keterangan tambahan"
                                                             />
                                                         </TableCell>
                                                     </TableRow>
-                                                ));
+                                                );
+                                            });
 
-                                                return [headerRow, ...detailRows];
-                                            })
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                                    Data process tidak ditemukan untuk kata kunci yang dicari.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
+                                            return [sectionHeader, ...rows.filter((row) => row !== null)];
+                                        })}
                                     </TableBody>
                                 </Table>
 
-                                <div className="space-y-4 rounded-2xl border border-border/60 p-4">
-                                    <div className="flex items-center justify-between gap-3">
+                                <div className="rounded-xl border border-border/60 p-4">
+                                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <FlaskConical className="size-4 text-primary" />
                                                 <p className="text-sm font-semibold">Batch Mixing</p>
                                             </div>
                                             <p className="text-xs text-muted-foreground">
-                                                Diisi hanya jika ada proses mixing pada hari ini.
+                                                Diisi saat ada proses mixing. Batch yang sudah diisi tidak bisa dipilih lagi.
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline">{batchProgress}</Badge>
-                                            <Switch
-                                                checked={hasMixingProcess}
-                                                onCheckedChange={(checked) => setHasMixingProcess(Boolean(checked))}
-                                                disabled={entryForm.entry.read_only}
-                                            />
-                                        </div>
+                                        <Select
+                                            value={processForm.data.has_mixing ? 'YES' : 'NO'}
+                                            onValueChange={(value) => {
+                                                const hasMixing = value === 'YES';
+                                                processForm.setData('has_mixing', hasMixing);
+
+                                                if (!hasMixing) {
+                                                    processForm.setData('batch', []);
+                                                }
+                                            }}
+                                            disabled={entryForm.entry.read_only}
+                                        >
+                                            <SelectTrigger className="w-full lg:w-[220px]">
+                                                <SelectValue placeholder="Pilih proses mixing" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="NO">Tidak ada mixing hari ini</SelectItem>
+                                                <SelectItem value="YES">Ada proses mixing</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
-                                    {hasMixingProcess ? (
-                                        <>
-                                            <div className="mb-2 flex flex-wrap gap-2">
-                                                {entryForm.batch.groups.map((group) => (
-                                                    <Button
-                                                        key={group.batch_no}
-                                                        variant={activeBatchNo === group.batch_no ? 'default' : 'outline'}
-                                                        size="sm"
-                                                        onClick={() => setActiveBatchNo(group.batch_no)}
-                                                    >
-                                                        Batch {group.batch_no}
-                                                    </Button>
-                                                ))}
+                                    {processForm.data.has_mixing ? (
+                                        <div className="mt-4 space-y-4">
+                                            <div className="flex flex-wrap items-end gap-2">
+                                                <Select
+                                                    value={selectedBatchNo}
+                                                    onValueChange={(value) => setSelectedBatchNo(value ?? '1')}
+                                                    disabled={entryForm.entry.read_only || availableBatchNumbers.length === 0}
+                                                >
+                                                    <SelectTrigger className="w-[180px]">
+                                                        <SelectValue placeholder="Pilih batch" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {availableBatchNumbers.map((batchNo) => (
+                                                            <SelectItem key={batchNo} value={String(batchNo)}>
+                                                                Batch {batchNo}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                        const batchNo = Number(selectedBatchNo);
+
+                                                        if (!Number.isInteger(batchNo) || batchNo < 1 || batchNo > entryForm.batch.max_batch_no) {
+                                                            return;
+                                                        }
+
+                                                        if (processForm.data.batch.some((batch) => batch.batch_no === batchNo)) {
+                                                            return;
+                                                        }
+
+                                                        processForm.setData('batch', [
+                                                            ...processForm.data.batch,
+                                                            {
+                                                                batch_no: batchNo,
+                                                                values: entryForm.batch.items.map((item) => ({
+                                                                    item_id: item.id,
+                                                                    value_text: '',
+                                                                    value_number: '',
+                                                                })),
+                                                            },
+                                                        ]);
+                                                    }}
+                                                    disabled={entryForm.entry.read_only || availableBatchNumbers.length === 0}
+                                                >
+                                                    <Plus className="size-4" />
+                                                    Tambah Batch
+                                                </Button>
                                             </div>
 
-                                            {selectedBatch ? (
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead className="px-4">Uraian</TableHead>
-                                                            <TableHead>Tipe Input</TableHead>
-                                                            <TableHead>Nilai</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {selectedBatch.values.map((value) => {
-                                                            const item = findBatchItem(entryForm.batch.items, value.item_id);
-
-                                                            return (
-                                                                <TableRow key={`${selectedBatch.batch_no}-${value.item_id}`}>
-                                                                    <TableCell className="px-4 font-medium">{item?.name ?? `Item ${value.item_id}`}</TableCell>
-                                                                    <TableCell className="uppercase">{item?.input_type ?? 'text'}</TableCell>
-                                                                    <TableCell className="min-w-[220px]">
-                                                                        {item?.input_type === 'number' ? (
-                                                                            <Input
-                                                                                type="number"
-                                                                                defaultValue={value.value_number ?? ''}
-                                                                                readOnly={entryForm.entry.read_only}
-                                                                            />
-                                                                        ) : (
-                                                                            <Input
-                                                                                defaultValue={value.value_text ?? ''}
-                                                                                readOnly={entryForm.entry.read_only}
-                                                                            />
-                                                                        )}
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        })}
-                                                    </TableBody>
-                                                </Table>
-                                            ) : (
+                                            {processForm.data.batch.length === 0 ? (
                                                 <div className="rounded-xl border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
-                                                    Tidak ada data batch.
+                                                    Belum ada batch dipilih. Tambahkan batch 1-7 sesuai proses mixing.
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {processForm.data.batch
+                                                        .slice()
+                                                        .sort((a, b) => a.batch_no - b.batch_no)
+                                                        .map((batch, batchIndex) => (
+                                                            <div key={batch.batch_no} className="rounded-xl border border-border/60">
+                                                                <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                                                                    <p className="font-semibold">Batch {batch.batch_no}</p>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon-sm"
+                                                                        onClick={() => {
+                                                                            processForm.setData(
+                                                                                'batch',
+                                                                                processForm.data.batch.filter((currentBatch) => currentBatch.batch_no !== batch.batch_no),
+                                                                            );
+                                                                        }}
+                                                                        disabled={entryForm.entry.read_only}
+                                                                    >
+                                                                        <Trash2 className="size-4 text-destructive" />
+                                                                    </Button>
+                                                                </div>
+                                                                <div className="p-4">
+                                                                    <Table>
+                                                                        <TableHeader>
+                                                                            <TableRow>
+                                                                                <TableHead className="px-4">Uraian</TableHead>
+                                                                                <TableHead>Tipe</TableHead>
+                                                                                <TableHead>Nilai</TableHead>
+                                                                            </TableRow>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                            {batch.values.map((value, valueIndex) => {
+                                                                                const batchItem = findBatchItem(entryForm.batch.items, value.item_id);
+
+                                                                                return (
+                                                                                    <TableRow key={`${batch.batch_no}-${value.item_id}`}>
+                                                                                        <TableCell className="px-4 font-medium">
+                                                                                            {batchItem?.name ?? `Item ${value.item_id}`}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="uppercase">{batchItem?.input_type ?? 'text'}</TableCell>
+                                                                                        <TableCell className="min-w-[220px]">
+                                                                                            {batchItem?.input_type === 'number' ? (
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    value={value.value_number}
+                                                                                                    readOnly={entryForm.entry.read_only}
+                                                                                                    onChange={(event) => {
+                                                                                                        processForm.setData('batch', [
+                                                                                                            ...processForm.data.batch.map((existingBatch, existingBatchIndex) => {
+                                                                                                                if (existingBatchIndex !== batchIndex) {
+                                                                                                                    return existingBatch;
+                                                                                                                }
+
+                                                                                                                return {
+                                                                                                                    ...existingBatch,
+                                                                                                                    values: existingBatch.values.map((existingValue, existingValueIndex) =>
+                                                                                                                        existingValueIndex === valueIndex
+                                                                                                                            ? {
+                                                                                                                                  ...existingValue,
+                                                                                                                                  value_number: event.target.value,
+                                                                                                                              }
+                                                                                                                            : existingValue,
+                                                                                                                    ),
+                                                                                                                };
+                                                                                                            }),
+                                                                                                        ]);
+                                                                                                    }}
+                                                                                                />
+                                                                                            ) : (
+                                                                                                <Input
+                                                                                                    value={value.value_text}
+                                                                                                    readOnly={entryForm.entry.read_only}
+                                                                                                    onChange={(event) => {
+                                                                                                        processForm.setData('batch', [
+                                                                                                            ...processForm.data.batch.map((existingBatch, existingBatchIndex) => {
+                                                                                                                if (existingBatchIndex !== batchIndex) {
+                                                                                                                    return existingBatch;
+                                                                                                                }
+
+                                                                                                                return {
+                                                                                                                    ...existingBatch,
+                                                                                                                    values: existingBatch.values.map((existingValue, existingValueIndex) =>
+                                                                                                                        existingValueIndex === valueIndex
+                                                                                                                            ? {
+                                                                                                                                  ...existingValue,
+                                                                                                                                  value_text: event.target.value,
+                                                                                                                              }
+                                                                                                                            : existingValue,
+                                                                                                                    ),
+                                                                                                                };
+                                                                                                            }),
+                                                                                                        ]);
+                                                                                                    }}
+                                                                                                />
+                                                                                            )}
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                );
+                                                                            })}
+                                                                        </TableBody>
+                                                                    </Table>
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                 </div>
                                             )}
-                                        </>
+                                        </div>
                                     ) : (
-                                        <div className="rounded-xl border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
-                                            Hari ini tidak ada proses mixing. Bagian batch dilewati.
+                                        <div className="mt-4 rounded-xl border border-dashed border-border/60 px-4 py-6 text-center text-sm text-muted-foreground">
+                                            Tidak ada proses mixing hari ini.
                                         </div>
                                     )}
                                 </div>
-                            </CardContent>
-                        ) : null}
-                    </Card>
-                </section>
 
-                <div className="sticky bottom-4 z-20 rounded-2xl border border-border/70 bg-background/95 p-4 shadow-lg backdrop-blur">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm text-muted-foreground">
-                            Aksi utama selalu terlihat agar user tidak perlu scroll panjang.
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            <Button disabled={entryForm.entry.read_only || !entryForm.checklist.template_id}>
-                                <Save className="size-4" />
-                                Simpan Draft
-                            </Button>
-                            <Button variant="secondary" disabled={entryForm.entry.read_only || !entryForm.process.template_id}>
-                                Submit
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+                                <div className="flex flex-wrap justify-end gap-2">
+                                    <Button
+                                        type="submit"
+                                        disabled={entryForm.entry.read_only || processForm.processing || processForm.data.process.template_id === null}
+                                    >
+                                        <Save className="size-4" />
+                                        Simpan Draft Process
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        disabled={entryForm.entry.read_only || processForm.processing || processForm.data.process.template_id === null}
+                                        onClick={() => {
+                                            saveProcess('SUBMIT');
+                                        }}
+                                    >
+                                        <Send className="size-4" />
+                                        Submit Harian
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                ) : null}
             </div>
         </div>
     );
@@ -404,100 +738,47 @@ function findBatchItem(items: BatchField[], itemId: number): BatchField | undefi
     return items.find((item) => item.id === itemId);
 }
 
-function resolveStatusLabel(status: string | null): string {
-    if (status === 'OK') {
-        return 'Sesuai Kondisi Standar';
+function normalizeChecklistStatus(status: string | null): 'OK' | 'NOT_OK' | '' {
+    if (status === 'OK' || status === 'NOT_OK') {
+        return status;
     }
 
-    if (status === 'NOT_OK') {
-        return 'Perlu Tindak Lanjut';
-    }
-
-    if (status === 'NA') {
-        return 'Tidak Berlaku (N/A)';
-    }
-
-    return status ?? '-';
+    return '';
 }
 
-function resolveStatusVariant(status: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
-    if (status === 'OK') {
-        return 'secondary';
-    }
-
-    if (status === 'NOT_OK') {
-        return 'destructive';
-    }
-
-    if (status === 'NA') {
-        return 'outline';
-    }
-
-    return 'outline';
+function setChecklistAllStatus(
+    form: ReturnType<typeof useForm<ChecklistFormState>>,
+    status: 'OK' | 'NOT_OK',
+): void {
+    form.setData('checklist', {
+        ...form.data.checklist,
+        values: form.data.checklist.values.map((value) => ({
+            ...value,
+            status,
+        })),
+    });
 }
 
-function hasAnyBatchValue(entryForm: CatatanPengolahanLimbahAirEntryPayload): boolean {
-    for (const group of entryForm.batch.groups) {
-        for (const value of group.values) {
-            if (value.value_number !== null) {
-                return true;
-            }
+function clearChecklistAll(form: ReturnType<typeof useForm<ChecklistFormState>>): void {
+    form.setData('checklist', {
+        ...form.data.checklist,
+        values: form.data.checklist.values.map((value) => ({
+            ...value,
+            status: '',
+            note: '',
+        })),
+    });
+}
 
-            if (typeof value.value_text === 'string' && value.value_text.trim() !== '') {
-                return true;
-            }
+function buildAvailableBatchNumbers(maxBatchNo: number, batchGroups: BatchGroupPayload[]): number[] {
+    const occupied = new Set(batchGroups.map((batch) => batch.batch_no));
+    const numbers: number[] = [];
+
+    for (let batchNo = 1; batchNo <= maxBatchNo; batchNo += 1) {
+        if (!occupied.has(batchNo)) {
+            numbers.push(batchNo);
         }
     }
 
-    return false;
-}
-
-function buildChecklistProgress(entryForm: CatatanPengolahanLimbahAirEntryPayload): string {
-    const total = entryForm.checklist.items.length;
-
-    if (total === 0) {
-        return '0/0';
-    }
-
-    const filled = entryForm.checklist.items.filter((item) => item.status !== null).length;
-
-    return `${filled}/${total}`;
-}
-
-function buildProcessProgress(entryForm: CatatanPengolahanLimbahAirEntryPayload): string {
-    const items = entryForm.process.sections.flatMap((section) => section.items);
-    const total = items.length;
-
-    if (total === 0) {
-        return '0/0';
-    }
-
-    const filled = items.filter((item) => {
-        if (item.input_type === 'number') {
-            return item.value_number !== null;
-        }
-
-        return typeof item.value_text === 'string' && item.value_text.trim() !== '';
-    }).length;
-
-    return `${filled}/${total}`;
-}
-
-function buildBatchProgress(entryForm: CatatanPengolahanLimbahAirEntryPayload): string {
-    const values = entryForm.batch.groups.flatMap((group) => group.values);
-    const total = values.length;
-
-    if (total === 0) {
-        return '0/0';
-    }
-
-    const filled = values.filter((value) => {
-        if (value.value_number !== null) {
-            return true;
-        }
-
-        return typeof value.value_text === 'string' && value.value_text.trim() !== '';
-    }).length;
-
-    return `${filled}/${total}`;
+    return numbers;
 }

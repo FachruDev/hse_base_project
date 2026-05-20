@@ -189,6 +189,7 @@ class CatatanPengolahanLimbahAirPageService
                 'sections' => $processSections,
             ],
             'batch' => [
+                'max_batch_no' => 7,
                 'items' => $batchItems->map(function (BatchItem $item): array {
                     return [
                         'id' => $item->id,
@@ -275,18 +276,7 @@ class CatatanPengolahanLimbahAirPageService
     private function mapBatchGroups(Collection $batches, Collection $batchItems): array
     {
         if ($batches->isEmpty()) {
-            return [
-                [
-                    'batch_no' => 1,
-                    'values' => $batchItems->map(function (BatchItem $item): array {
-                        return [
-                            'item_id' => $item->id,
-                            'value_text' => null,
-                            'value_number' => null,
-                        ];
-                    })->all(),
-                ],
-            ];
+            return [];
         }
 
         return $batches->map(function ($batch) use ($batchItems): array {

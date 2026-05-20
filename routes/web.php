@@ -17,6 +17,14 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/catatan-pengolahan-limbah-air/create',
         [DashboardController::class, 'catatanPengolahanLimbahAirCreate'],
     )->name('dashboard.forms.catatan-pengolahan-limbah-air.create');
+    Route::post(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/checklist',
+        [DashboardController::class, 'catatanPengolahanLimbahAirSaveChecklist'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.checklist.store');
+    Route::post(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/process',
+        [DashboardController::class, 'catatanPengolahanLimbahAirSaveProcess'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.process.store');
     Route::get(
         '/dashboard/forms/penyimpanan-limbah-b3',
         [DashboardController::class, 'b3StorageIndex'],

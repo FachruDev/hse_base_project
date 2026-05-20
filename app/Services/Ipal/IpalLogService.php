@@ -162,6 +162,155 @@ class IpalLogService
         });
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function upsertChecklist(array $payload, User $operator): IpalDailyLog
+    {
+        return DB::transaction(function () use ($payload, $operator): IpalDailyLog {
+            $logDate = Carbon::parse($payload['tanggal']);
+            $dayContext = $this->operationalCalendarService->resolveContext($logDate);
+            $dailyLog = $this->firstOrCreateDailyLog($operator, $payload['tanggal'], $dayContext);
+
+            $processLog = $dailyLog->processLog()->first();
+            if ($processLog !== null && in_array($processLog->status, ['SUBMITTED', 'APPROVED'], true)) {
+                throw ValidationException::withMessages([
+                    'tanggal' => ['Checklist tidak dapat diubah karena catatan proses sudah di-submit/approve.'],
+                ]);
+            }
+
+            $checklistPayload = $payload['checklist'];
+            $checklist = $dailyLog->checklist()->first();
+
+            if ($checklist === null) {
+                $checklist = $dailyLog->checklist()->create([
+                    'template_id' => $checklistPayload['template_id'],
+                ]);
+            } else {
+                $checklist->update([
+                    'template_id' => $checklistPayload['template_id'],
+                ]);
+            }
+
+            $checklistItems = ChecklistItem::query()
+                ->where('template_id', $checklistPayload['template_id'])
+                ->where('is_active', true)
+                ->get(['id']);
+
+            if ($checklistItems->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'checklist.template_id' => ['Template checklist belum memiliki item aktif.'],
+                ]);
+            }
+
+            $checklistItemIds = $checklistItems->pluck('id')->all();
+            $submittedValues = $checklistPayload['values'] ?? [];
+            $valuesToCreate = [];
+
+            foreach ($submittedValues as $value) {
+                if (! in_array($value['item_id'], $checklistItemIds, true)) {
+                    throw ValidationException::withMessages([
+                        'checklist.values' => ['Checklist item tidak sesuai template checklist.'],
+                    ]);
+                }
+
+                $valuesToCreate[] = [
+                    'item_id' => $value['item_id'],
+                    'status' => $value['status'],
+                    'note' => $value['note'] ?? null,
+                ];
+            }
+
+            $checklist->values()->delete();
+            $checklist->values()->createMany($valuesToCreate);
+
+            if ($processLog === null) {
+                $processLog = $this->createDraftProcessLog($dailyLog, null);
+            }
+
+            $this->ensureProcessApproval($processLog, $operator);
+
+            return $dailyLog->fresh();
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function upsertProcess(array $payload, User $operator): IpalDailyLog
+    {
+        return DB::transaction(function () use ($payload, $operator): IpalDailyLog {
+            $logDate = Carbon::parse($payload['tanggal']);
+            $dayContext = $this->operationalCalendarService->resolveContext($logDate);
+            $dailyLog = $this->firstOrCreateDailyLog($operator, $payload['tanggal'], $dayContext);
+
+            $processLog = $dailyLog->processLog()->first();
+            if ($processLog !== null && in_array($processLog->status, ['SUBMITTED', 'APPROVED'], true)) {
+                throw ValidationException::withMessages([
+                    'tanggal' => ['Catatan proses tidak dapat diubah karena sudah di-submit/approve.'],
+                ]);
+            }
+
+            $processPayload = $payload['process'];
+            $processTemplateId = $this->resolveProcessTemplateIdFromPayload($processPayload, $dailyLog->is_operational);
+
+            if ($processLog === null) {
+                $processLog = $this->createDraftProcessLog($dailyLog, $processTemplateId);
+            } elseif ((int) $processLog->template_id !== $processTemplateId) {
+                $processLog->update([
+                    'template_id' => $processTemplateId,
+                    'status' => 'DRAFT',
+                    'submitted_at' => null,
+                ]);
+                $processLog->values()->delete();
+                $processLog->batches()->each(function (IpalBatch $batch): void {
+                    $batch->values()->delete();
+                    $batch->delete();
+                });
+            }
+
+            $this->replaceProcessValues($processLog, $processPayload['values'] ?? [], false);
+
+            $hasMixing = (bool) ($payload['has_mixing'] ?? false);
+            $this->replaceBatchValues($processLog, $hasMixing ? ($payload['batch'] ?? []) : [], false);
+
+            $approval = $this->ensureProcessApproval($processLog, $operator);
+            $action = $payload['action'] ?? 'DRAFT';
+
+            if ($action === 'SUBMIT') {
+                if (! $dailyLog->is_operational) {
+                    throw ValidationException::withMessages([
+                        'action' => ['Hari non-operasional tidak dapat di-submit harian.'],
+                    ]);
+                }
+
+                $this->assertProcessValuesComplete($processLog);
+                if ($hasMixing) {
+                    $this->assertBatchValuesComplete($processLog);
+                }
+
+                $now = now();
+                $processLog->update([
+                    'status' => 'SUBMITTED',
+                    'submitted_at' => $now,
+                ]);
+
+                $approval->update([
+                    'operator_signed_at' => $now,
+                ]);
+            } else {
+                $processLog->update([
+                    'status' => 'DRAFT',
+                    'submitted_at' => null,
+                ]);
+            }
+
+            $this->ensureChecklistExists($dailyLog);
+
+            return $dailyLog->fresh();
+        });
+    }
+
     public function submit(IpalDailyLog $dailyLog, User $operator): IpalProcessLog
     {
         return DB::transaction(function () use ($dailyLog, $operator): IpalProcessLog {
@@ -243,13 +392,21 @@ class IpalLogService
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function validateAndCreateProcessValue(IpalProcessLog $processLog, string $inputType, array $payload): void
-    {
+    private function validateAndCreateProcessValue(
+        IpalProcessLog $processLog,
+        string $inputType,
+        array $payload,
+        bool $strict = true,
+    ): void {
         $numberValue = $payload['value_number'] ?? null;
         $textValue = $payload['value_text'] ?? null;
 
         if ($inputType === 'number') {
             if ($numberValue === null) {
+                if (! $strict) {
+                    return;
+                }
+
                 throw ValidationException::withMessages([
                     'process.values' => ['Process item tipe number wajib mengisi value_number.'],
                 ]);
@@ -266,6 +423,10 @@ class IpalLogService
         }
 
         if (! is_string($textValue) || trim($textValue) === '') {
+            if (! $strict) {
+                return;
+            }
+
             throw ValidationException::withMessages([
                 'process.values' => ['Process item non-number wajib mengisi value_text.'],
             ]);
@@ -282,13 +443,21 @@ class IpalLogService
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function validateAndCreateBatchValue(IpalBatch $batch, string $inputType, array $payload): void
-    {
+    private function validateAndCreateBatchValue(
+        IpalBatch $batch,
+        string $inputType,
+        array $payload,
+        bool $strict = true,
+    ): void {
         $numberValue = $payload['value_number'] ?? null;
         $textValue = $payload['value_text'] ?? null;
 
         if ($inputType === 'number') {
             if ($numberValue === null) {
+                if (! $strict) {
+                    return;
+                }
+
                 throw ValidationException::withMessages([
                     'batch.values' => ['Batch item tipe number wajib mengisi value_number.'],
                 ]);
@@ -304,6 +473,10 @@ class IpalLogService
         }
 
         if (! is_string($textValue) || trim($textValue) === '') {
+            if (! $strict) {
+                return;
+            }
+
             throw ValidationException::withMessages([
                 'batch.values' => ['Batch item non-number wajib mengisi value_text.'],
             ]);
@@ -314,6 +487,230 @@ class IpalLogService
             'value_text' => $textValue,
             'value_number' => null,
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $dayContext
+     */
+    private function firstOrCreateDailyLog(User $operator, string $date, array $dayContext): IpalDailyLog
+    {
+        $dailyLog = IpalDailyLog::query()
+            ->whereDate('tanggal', $date)
+            ->where('operator_id', $operator->id)
+            ->first();
+
+        if ($dailyLog instanceof IpalDailyLog) {
+            return $dailyLog;
+        }
+
+        return IpalDailyLog::query()->create([
+            'tanggal' => $date,
+            'operator_id' => $operator->id,
+            'day_type' => $dayContext['day_type'],
+            'is_operational' => $dayContext['is_operational'],
+        ]);
+    }
+
+    private function createDraftProcessLog(IpalDailyLog $dailyLog, ?int $templateId): IpalProcessLog
+    {
+        $resolvedTemplateId = $templateId;
+
+        if (! is_int($resolvedTemplateId)) {
+            $resolvedTemplateId = $this->resolveActiveProcessTemplateId();
+        }
+
+        return $dailyLog->processLog()->create([
+            'template_id' => $resolvedTemplateId,
+            'status' => 'DRAFT',
+        ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $valuesPayload
+     */
+    private function replaceProcessValues(IpalProcessLog $processLog, array $valuesPayload, bool $strict): void
+    {
+        $processItems = ProcessItem::query()
+            ->select(['m_process_items.id', 'm_process_items.input_type'])
+            ->join('m_process_sections', 'm_process_sections.id', '=', 'm_process_items.section_id')
+            ->where('m_process_sections.template_id', $processLog->template_id)
+            ->get()
+            ->keyBy('id');
+
+        $processLog->values()->delete();
+
+        foreach ($valuesPayload as $value) {
+            $item = $processItems->get($value['item_id'] ?? null);
+
+            if ($item === null) {
+                throw ValidationException::withMessages([
+                    'process.values' => ['Process item tidak sesuai template proses.'],
+                ]);
+            }
+
+            $this->validateAndCreateProcessValue($processLog, $item->input_type, $value, $strict);
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $batchesPayload
+     */
+    private function replaceBatchValues(IpalProcessLog $processLog, array $batchesPayload, bool $strict): void
+    {
+        $processLog->batches()->each(function (IpalBatch $batch): void {
+            $batch->values()->delete();
+            $batch->delete();
+        });
+
+        if ($batchesPayload === []) {
+            return;
+        }
+
+        $batchItems = BatchItem::query()
+            ->select(['id', 'input_type'])
+            ->get()
+            ->keyBy('id');
+
+        foreach ($batchesPayload as $batchPayload) {
+            $batch = $processLog->batches()->create([
+                'batch_no' => $batchPayload['batch_no'],
+            ]);
+
+            foreach (($batchPayload['values'] ?? []) as $value) {
+                $item = $batchItems->get($value['item_id'] ?? null);
+
+                if ($item === null) {
+                    throw ValidationException::withMessages([
+                        'batch.values' => ['Batch item tidak ditemukan.'],
+                    ]);
+                }
+
+                $this->validateAndCreateBatchValue($batch, $item->input_type, $value, $strict);
+            }
+        }
+    }
+
+    private function ensureChecklistExists(IpalDailyLog $dailyLog): void
+    {
+        if ($dailyLog->checklist()->exists()) {
+            return;
+        }
+
+        $templateId = $this->resolveActiveChecklistTemplateId();
+        $dailyLog->checklist()->create([
+            'template_id' => $templateId,
+        ]);
+    }
+
+    private function ensureProcessApproval(IpalProcessLog $processLog, User $operator): IpalProcessApproval
+    {
+        return $processLog->approval()->updateOrCreate(
+            ['process_log_id' => $processLog->id],
+            ['operator_id' => $operator->id],
+        );
+    }
+
+    private function resolveActiveChecklistTemplateId(): int
+    {
+        $templateId = ChecklistItem::query()
+            ->select('m_checklist_templates.id')
+            ->join('m_checklist_templates', 'm_checklist_templates.id', '=', 'm_checklist_items.template_id')
+            ->where('m_checklist_templates.is_active', true)
+            ->where('m_checklist_items.is_active', true)
+            ->orderBy('m_checklist_templates.id')
+            ->value('m_checklist_templates.id');
+
+        if (! is_int($templateId)) {
+            throw ValidationException::withMessages([
+                'checklist.template_id' => ['Template checklist aktif tidak ditemukan.'],
+            ]);
+        }
+
+        return $templateId;
+    }
+
+    private function resolveActiveProcessTemplateId(): int
+    {
+        $activeTemplate = ProcessTemplate::query()
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->first();
+
+        if (! $activeTemplate instanceof ProcessTemplate) {
+            throw ValidationException::withMessages([
+                'process.template_id' => ['Template proses aktif tidak ditemukan.'],
+            ]);
+        }
+
+        return $activeTemplate->id;
+    }
+
+    /**
+     * @param  array<string, mixed>  $processPayload
+     */
+    private function resolveProcessTemplateIdFromPayload(array $processPayload, bool $isOperational): int
+    {
+        $templateId = $processPayload['template_id'] ?? null;
+
+        if (is_int($templateId)) {
+            return $templateId;
+        }
+
+        if ($isOperational) {
+            throw ValidationException::withMessages([
+                'process.template_id' => ['Template proses wajib diisi untuk hari operasional.'],
+            ]);
+        }
+
+        return $this->resolveActiveProcessTemplateId();
+    }
+
+    private function assertProcessValuesComplete(IpalProcessLog $processLog): void
+    {
+        $processItemsCount = ProcessItem::query()
+            ->join('m_process_sections', 'm_process_sections.id', '=', 'm_process_items.section_id')
+            ->where('m_process_sections.template_id', $processLog->template_id)
+            ->count();
+
+        $filledCount = $processLog->values()
+            ->where(function ($query): void {
+                $query
+                    ->whereNotNull('value_number')
+                    ->orWhereRaw("TRIM(COALESCE(value_text, '')) <> ''");
+            })
+            ->count();
+
+        if ($processItemsCount === 0 || $filledCount < $processItemsCount) {
+            throw ValidationException::withMessages([
+                'process.values' => ['Seluruh item catatan proses wajib terisi sebelum submit.'],
+            ]);
+        }
+    }
+
+    private function assertBatchValuesComplete(IpalProcessLog $processLog): void
+    {
+        $batchItemIds = BatchItem::query()
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        foreach ($processLog->batches as $batch) {
+            $valueItemIds = $batch->values()
+                ->where(function ($query): void {
+                    $query
+                        ->whereNotNull('value_number')
+                        ->orWhereRaw("TRIM(COALESCE(value_text, '')) <> ''");
+                })
+                ->pluck('item_id')
+                ->all();
+
+            $missing = array_diff($batchItemIds, $valueItemIds);
+            if ($missing !== []) {
+                throw ValidationException::withMessages([
+                    'batch' => ["Batch {$batch->batch_no} belum lengkap. Isi semua item batch atau kosongkan batch tersebut."],
+                ]);
+            }
+        }
     }
 
     /**
@@ -333,18 +730,7 @@ class IpalLogService
             ]);
         }
 
-        $activeTemplate = ProcessTemplate::query()
-            ->where('is_active', true)
-            ->orderBy('id')
-            ->first();
-
-        if (! $activeTemplate instanceof ProcessTemplate) {
-            throw ValidationException::withMessages([
-                'process.template_id' => ['Template proses aktif tidak ditemukan.'],
-            ]);
-        }
-
-        return $activeTemplate->id;
+        return $this->resolveActiveProcessTemplateId();
     }
 
     /**

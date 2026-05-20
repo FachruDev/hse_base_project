@@ -145,6 +145,7 @@ export type CatatanPengolahanLimbahAirEntryPayload = {
         sections: ProcessSectionField[];
     };
     batch: {
+        max_batch_no: number;
         items: BatchField[];
         groups: BatchGroup[];
     };

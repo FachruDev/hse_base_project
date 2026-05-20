@@ -6,11 +6,15 @@ import { CatatanPengolahanLimbahAirEntry } from '@/modules/forms/catatan-pengola
 import type { PageProps } from '@/types';
 
 type EntryPageProps = PageProps<{
+    flash: {
+        success?: string | null;
+        error?: string | null;
+    };
     entryForm: CatatanPengolahanLimbahAirEntryPayload;
 }>;
 
 export default function CatatanPengolahanLimbahAirCreatePage() {
-    const { auth, entryForm, name } = usePage<EntryPageProps>().props;
+    const { auth, entryForm, flash, name } = usePage<EntryPageProps>().props;
 
     if (auth.user === null) {
         return null;
@@ -27,7 +31,7 @@ export default function CatatanPengolahanLimbahAirCreatePage() {
                 userName={auth.user.name}
                 departmentName={auth.user.department?.name}
             >
-                <CatatanPengolahanLimbahAirEntry entryForm={entryForm} userId={auth.user.external_id} />
+                <CatatanPengolahanLimbahAirEntry flash={flash} entryForm={entryForm} userId={auth.user.external_id} />
             </DashboardShell>
         </>
     );

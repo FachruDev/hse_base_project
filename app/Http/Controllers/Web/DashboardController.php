@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\B3Storage\StoreB3StorageLogRequest;
 use App\Http\Requests\Web\B3StorageLogIndexRequest;
 use App\Http\Requests\Web\CatatanPengolahanLimbahAirIndexRequest;
+use App\Http\Requests\Web\SaveIpalChecklistRequest;
+use App\Http\Requests\Web\SaveIpalProcessRequest;
 use App\Models\B3Storage\B3StorageLog;
 use App\Models\User;
 use App\Services\B3Storage\B3StorageService;
+use App\Services\Ipal\IpalLogService;
 use App\Services\Web\B3StoragePageService;
 use App\Services\Web\CatatanPengolahanLimbahAirPageService;
 use App\Services\Web\DashboardService;
@@ -44,6 +47,36 @@ class DashboardController extends Controller
         return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/create', [
             'entryForm' => $pageService->buildForm($request->user()),
         ]);
+    }
+
+    public function catatanPengolahanLimbahAirSaveChecklist(
+        SaveIpalChecklistRequest $request,
+        IpalLogService $ipalLogService,
+    ): RedirectResponse {
+        $user = $this->authenticatedUser($request);
+        $ipalLogService->upsertChecklist($request->validated(), $user);
+
+        return redirect()
+            ->route('dashboard.forms.catatan-pengolahan-limbah-air.create', [
+                'user_id' => $user->external_id,
+            ])
+            ->with('success', 'Checklist harian berhasil disimpan.');
+    }
+
+    public function catatanPengolahanLimbahAirSaveProcess(
+        SaveIpalProcessRequest $request,
+        IpalLogService $ipalLogService,
+    ): RedirectResponse {
+        $user = $this->authenticatedUser($request);
+        $isSubmit = ($request->validated()['action'] ?? 'DRAFT') === 'SUBMIT';
+
+        $ipalLogService->upsertProcess($request->validated(), $user);
+
+        return redirect()
+            ->route('dashboard.forms.catatan-pengolahan-limbah-air.create', [
+                'user_id' => $user->external_id,
+            ])
+            ->with('success', $isSubmit ? 'Catatan proses berhasil di-submit.' : 'Catatan proses berhasil disimpan sebagai draft.');
     }
 
     public function b3StorageIndex(
