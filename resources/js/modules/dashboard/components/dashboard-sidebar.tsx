@@ -54,6 +54,34 @@ import {
     masterDataNavigation,
 } from '@/modules/dashboard/config/navigation';
 
+function useSidebarState(key: string, defaultValue: boolean) {
+    const [state, setState] = React.useState<boolean>(() => {
+        if (typeof window === 'undefined') {
+            return defaultValue;
+        }
+
+        const stored = localStorage.getItem(key);
+
+        return stored !== null ? stored === 'true' : defaultValue;
+    });
+
+    const updateState = React.useCallback(
+        (newState: boolean | ((prevState: boolean) => boolean)) => {
+            setState((prev) => {
+                const resolvedState =
+                    typeof newState === 'function' ? newState(prev) : newState;
+                localStorage.setItem(key, String(resolvedState));
+
+                return resolvedState;
+            });
+        },
+        [key]
+    );
+
+    return [state, updateState] as const;
+
+}
+
 type DashboardSidebarProps = {
     appName: string;
     permissions: string[];
@@ -71,35 +99,39 @@ export function DashboardSidebar({
     userName,
     departmentName,
 }: DashboardSidebarProps) {
-    const [managementOpen, setManagementOpen] = React.useState(true);
-    const [formsOpen, setFormsOpen] = React.useState(true);
-    const [masterDataOpen, setMasterDataOpen] = React.useState(true);
-    const [configurationOpen, setConfigurationOpen] = React.useState(true);
+    // Menggunakan custom hook. Nilai false menjadi default agar sidebar tidak terlalu penuh saat pertama kali dibuka.
+    const [managementOpen, setManagementOpen] = useSidebarState('sidebar-management-open', false);
+    const [formsOpen, setFormsOpen] = useSidebarState('sidebar-forms-open', false);
+    const [masterDataOpen, setMasterDataOpen] = useSidebarState('sidebar-master-open', false);
+    const [configurationOpen, setConfigurationOpen] = useSidebarState('sidebar-config-open', false);
+
     const { theme, setTheme } = useTheme();
 
-    const managementItems = managementNavigation.filter((item) => {
+    const managementItems = React.useMemo(() => managementNavigation.filter((item) => {
         return (
             item.permission === undefined ||
             permissions.includes(item.permission)
         );
-    });
+    }), [permissions]);
 
-    const formItems = formNavigation.filter((item) =>
-        permissions.includes(item.permission),
-    );
-    const masterDataItems = masterDataNavigation.filter((item) =>
-        permissions.includes(item.permission),
-    );
-    const configurationItems = configurationNavigation.filter((item) =>
-        permissions.includes(item.permission),
-    );
+    const formItems = React.useMemo(() => formNavigation.filter((item) =>
+        permissions.includes(item.permission)
+    ), [permissions]);
 
-    const initials = userName
+    const masterDataItems = React.useMemo(() => masterDataNavigation.filter((item) =>
+        permissions.includes(item.permission)
+    ), [permissions]);
+
+    const configurationItems = React.useMemo(() => configurationNavigation.filter((item) =>
+        permissions.includes(item.permission)
+    ), [permissions]);
+
+    const initials = React.useMemo(() => userName
         .split(' ')
         .map((part) => part[0])
         .join('')
         .slice(0, 2)
-        .toUpperCase();
+        .toUpperCase(), [userName]);
 
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
 
@@ -135,7 +167,7 @@ export function DashboardSidebar({
                                         render={
                                             <a
                                                 href={buildWorkspaceHref(
-                                                    item.target,
+                                                    item.target as any,
                                                     userId,
                                                 )}
                                             >
@@ -148,13 +180,11 @@ export function DashboardSidebar({
                                 </SidebarMenuItem>
                             ))}
 
-                            {formItems.length > 0 ? (
+                            {formItems.length > 0 && (
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Form Operasional"
-                                        onClick={() =>
-                                            setFormsOpen((current) => !current)
-                                        }
+                                        onClick={() => setFormsOpen((current) => !current)}
                                     >
                                         <LayoutGrid className="size-4" />
                                         <span>Form Operasional</span>
@@ -163,39 +193,31 @@ export function DashboardSidebar({
                                         />
                                     </SidebarMenuButton>
 
-                                    {formsOpen ? (
+                                    {formsOpen && (
                                         <SidebarMenuSub>
                                             {formItems.map((item) => (
-                                                <SidebarMenuSubItem
-                                                    key={item.key}
-                                                >
+                                                <SidebarMenuSubItem key={item.key}>
                                                     <SidebarMenuSubButton
                                                         href={buildFormHref(
-                                                            item.target,
+                                                            item.target as any,
                                                             userId,
                                                         )}
                                                     >
                                                         <item.icon />
-                                                        <span>
-                                                            {item.label}
-                                                        </span>
+                                                        <span>{item.label}</span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
                                         </SidebarMenuSub>
-                                    ) : null}
+                                    )}
                                 </SidebarMenuItem>
-                            ) : null}
+                            )}
 
-                            {masterDataItems.length > 0 ? (
+                            {masterDataItems.length > 0 && (
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Master Data"
-                                        onClick={() =>
-                                            setMasterDataOpen(
-                                                (current) => !current,
-                                            )
-                                        }
+                                        onClick={() => setMasterDataOpen((current) => !current)}
                                     >
                                         <LayoutGrid className="size-4" />
                                         <span>Master Data Form</span>
@@ -204,12 +226,10 @@ export function DashboardSidebar({
                                         />
                                     </SidebarMenuButton>
 
-                                    {masterDataOpen ? (
+                                    {masterDataOpen && (
                                         <SidebarMenuSub>
                                             {masterDataItems.map((item) => (
-                                                <SidebarMenuSubItem
-                                                    key={item.key}
-                                                >
+                                                <SidebarMenuSubItem key={item.key}>
                                                     <SidebarMenuSubButton
                                                         href={buildMasterDataHref(
                                                             item.module,
@@ -217,108 +237,90 @@ export function DashboardSidebar({
                                                         )}
                                                     >
                                                         <item.icon />
-                                                        <span>
-                                                            {item.label}
-                                                        </span>
+                                                        <span>{item.label}</span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
                                         </SidebarMenuSub>
-                                    ) : null}
+                                    )}
                                 </SidebarMenuItem>
-                            ) : null}
+                            )}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
 
-                    <SidebarGroup className="mt-auto">
-                        <SidebarGroupLabel>Settings</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {managementItems.length > 0 ? (
-                                    <SidebarMenuItem>
-                                        <SidebarMenuButton
-                                            tooltip="Management User"
-                                            onClick={() =>
-                                                setManagementOpen(
-                                                    (current) => !current,
-                                                )
-                                            }
-                                        >
-                                            <Users2Icon />
-                                            <span>Management User</span>
-                                            <ChevronRight
-                                                className={`ml-auto transition-transform ${managementOpen ? 'rotate-90' : ''}`}
-                                            />
-                                        </SidebarMenuButton>
+                <SidebarGroup className="mt-auto">
+                    <SidebarGroupLabel>Settings</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {managementItems.length > 0 && (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        tooltip="Management User"
+                                        onClick={() => setManagementOpen((current) => !current)}
+                                    >
+                                        <Users2Icon />
+                                        <span>Management User</span>
+                                        <ChevronRight
+                                            className={`ml-auto transition-transform ${managementOpen ? 'rotate-90' : ''}`}
+                                        />
+                                    </SidebarMenuButton>
 
-                                        {managementOpen ? (
-                                            <SidebarMenuSub>
-                                                {managementItems.map((item) => (
-                                                    <SidebarMenuSubItem
-                                                        key={item.key}
+                                    {managementOpen && (
+                                        <SidebarMenuSub>
+                                            {managementItems.map((item) => (
+                                                <SidebarMenuSubItem key={item.key}>
+                                                    <SidebarMenuSubButton
+                                                        href={buildDashboardSectionHref(
+                                                            item.sectionId,
+                                                            userId,
+                                                        )}
                                                     >
-                                                        <SidebarMenuSubButton
-                                                            href={buildDashboardSectionHref(
-                                                                item.sectionId,
-                                                                userId,
-                                                            )}
-                                                        >
-                                                            <item.icon />
-                                                            <span>
-                                                                {item.label}
-                                                            </span>
-                                                        </SidebarMenuSubButton>
-                                                    </SidebarMenuSubItem>
-                                                ))}
-                                            </SidebarMenuSub>
-                                        ) : null}
-                                    </SidebarMenuItem>
-                                ) : null}
+                                                        <item.icon />
+                                                        <span>{item.label}</span>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            ))}
+                                        </SidebarMenuSub>
+                                    )}
+                                </SidebarMenuItem>
+                            )}
 
-                                {configurationItems.length > 0 ? (
-                                    <SidebarMenuItem>
-                                        <SidebarMenuButton
-                                            tooltip="Konfigurasi"
-                                            onClick={() =>
-                                                setConfigurationOpen(
-                                                    (current) => !current,
-                                                )
-                                            }
-                                        >
-                                            <LayoutGrid className="size-4" />
-                                            <span>Konfigurasi</span>
-                                            <ChevronRight
-                                                className={`ml-auto transition-transform ${configurationOpen ? 'rotate-90' : ''}`}
-                                            />
-                                        </SidebarMenuButton>
+                            {configurationItems.length > 0 && (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        tooltip="Konfigurasi"
+                                        onClick={() => setConfigurationOpen((current) => !current)}
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                        <span>Konfigurasi</span>
+                                        <ChevronRight
+                                            className={`ml-auto transition-transform ${configurationOpen ? 'rotate-90' : ''}`}
+                                        />
+                                    </SidebarMenuButton>
 
-                                        {configurationOpen ? (
-                                            <SidebarMenuSub>
-                                                {configurationItems.map((item) => (
-                                                    <SidebarMenuSubItem
-                                                        key={item.key}
+                                    {configurationOpen && (
+                                        <SidebarMenuSub>
+                                            {configurationItems.map((item) => (
+                                                <SidebarMenuSubItem key={item.key}>
+                                                    <SidebarMenuSubButton
+                                                        href={buildConfigurationHref(
+                                                            item.target as any,
+                                                            userId,
+                                                        )}
                                                     >
-                                                        <SidebarMenuSubButton
-                                                            href={buildConfigurationHref(
-                                                                item.target,
-                                                                userId,
-                                                            )}
-                                                        >
-                                                            <item.icon />
-                                                            <span>
-                                                                {item.label}
-                                                            </span>
-                                                        </SidebarMenuSubButton>
-                                                    </SidebarMenuSubItem>
-                                                ))}
-                                            </SidebarMenuSub>
-                                        ) : null}
-                                    </SidebarMenuItem>
-                                ) : null}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
+                                                        <item.icon />
+                                                        <span>{item.label}</span>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            ))}
+                                        </SidebarMenuSub>
+                                    )}
+                                </SidebarMenuItem>
+                            )}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
             </SidebarContent>
 
             <SidebarSeparator />
