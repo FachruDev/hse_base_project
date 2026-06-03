@@ -131,6 +131,7 @@ class IpalWorkflowTest extends TestCase
         $createResponse = $this->postJson('/api/ipal/logs?userid=operator.01', $payload);
         $createResponse
             ->assertCreated()
+            ->assertJsonPath('data.checklist.values.0.status_label', 'Berfungsi')
             ->assertJsonPath('data.process_log.status', 'DRAFT');
 
         $logId = $createResponse->json('data.id');

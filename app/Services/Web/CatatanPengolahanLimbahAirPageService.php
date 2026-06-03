@@ -263,9 +263,20 @@ class CatatanPengolahanLimbahAirPageService
                 'category' => $item->category,
                 'standard_condition' => $item->standard_condition,
                 'status' => $value?->status,
+                'status_label' => $this->resolveChecklistStatusLabel($value?->status),
                 'note' => $value?->note,
             ];
         })->all();
+    }
+
+    private function resolveChecklistStatusLabel(?string $status): ?string
+    {
+        return match ($status) {
+            'OK' => 'Berfungsi',
+            'NOT_OK' => 'Tidak Berfungsi',
+            'NA' => 'Tidak Berlaku',
+            default => $status,
+        };
     }
 
     /**

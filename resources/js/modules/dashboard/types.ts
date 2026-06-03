@@ -80,6 +80,7 @@ export type ChecklistField = {
     category: string | null;
     standard_condition: string | null;
     status: string | null;
+    status_label: string | null;
     note: string | null;
 };
 

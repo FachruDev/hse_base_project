@@ -283,7 +283,7 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
                                         disabled={entryForm.entry.read_only || checklistForm.data.checklist.values.length === 0}
                                     >
                                         <CheckCheck className="size-4" />
-                                        Checklist Semua Standar
+                                        Checklist Semua Berfungsi
                                     </Button>
                                     <Button
                                         type="button"
@@ -292,7 +292,7 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
                                         onClick={() => clearChecklistAll(checklistForm)}
                                         disabled={entryForm.entry.read_only || checklistForm.data.checklist.values.length === 0}
                                     >
-                                        Kosongkan Semua
+                                        Unchecklist Semua
                                     </Button>
                                 </div>
                             </div>
@@ -316,8 +316,8 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
                                                 <TableCell className="min-w-[220px]">
                                                     <Select
                                                         items={[
-                                                            { value: 'OK', label: 'Sesuai' },
-                                                            { value: 'NOT_OK', label: 'Tidak Sesuai' },
+                                                            { value: 'OK', label: 'Berfungsi' },
+                                                            { value: 'NOT_OK', label: 'Tidak Berfungsi' },
                                                         ]}
                                                         value={checklistForm.data.checklist.values[index]?.status ?? ''}
                                                         onValueChange={(value) => {
@@ -335,8 +335,8 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
                                                             <SelectValue placeholder="Pilih kondisi" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="OK">Sesuai</SelectItem>
-                                                            <SelectItem value="NOT_OK">Tidak Sesuai</SelectItem>
+                                                            <SelectItem value="OK">Berfungsi</SelectItem>
+                                                            <SelectItem value="NOT_OK">Tidak Berfungsi</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </TableCell>

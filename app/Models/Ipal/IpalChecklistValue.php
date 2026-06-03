@@ -3,6 +3,7 @@
 namespace App\Models\Ipal;
 
 use App\Models\Master\ChecklistItem;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,23 @@ class IpalChecklistValue extends Model
         'status',
         'note',
     ];
+
+    protected $appends = [
+        'status_label',
+    ];
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function statusLabel(): Attribute
+    {
+        return Attribute::get(fn (): string => match ($this->status) {
+            'OK' => 'Berfungsi',
+            'NOT_OK' => 'Tidak Berfungsi',
+            'NA' => 'Tidak Berlaku',
+            default => (string) $this->status,
+        });
+    }
 
     public function checklist(): BelongsTo
     {
