@@ -1,20 +1,16 @@
 import { router } from '@inertiajs/react';
-import { Filter, Plus, RotateCcw, Search } from 'lucide-react';
+import { CalendarDays, Filter, Plus, RotateCcw, Search } from 'lucide-react';
 import * as React from 'react';
 
-import { catatanPengolahanLimbahAirCreate, catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import {
+    catatanPengolahanLimbahAirCreate,
+    catatanPengolahanLimbahAirIndex,
+    catatanPengolahanLimbahAirMonthlyShow,
+} from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { CatatanPengolahanLimbahAirListingPayload } from '@/modules/dashboard/types';
@@ -27,15 +23,15 @@ type CatatanPengolahanLimbahAirListingProps = {
 export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPengolahanLimbahAirListingProps) {
     const [search, setSearch] = React.useState(listing.filters.search);
     const [status, setStatus] = React.useState(listing.filters.status || 'ALL');
-    const [perPage, setPerPage] = React.useState(String(listing.filters.per_page));
+    const [year, setYear] = React.useState(String(listing.filters.year));
 
-    const submitFilters = (nextSearch: string, nextStatus: string, nextPerPage: string) => {
+    const submitFilters = (nextSearch: string, nextStatus: string, nextYear: string) => {
         router.get(
             catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } }),
             {
                 search: nextSearch || undefined,
                 status: nextStatus === 'ALL' ? undefined : nextStatus,
-                per_page: Number(nextPerPage),
+                year: Number(nextYear),
             },
             {
                 preserveScroll: true,
@@ -52,7 +48,7 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                     <CardHeader className="gap-4">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                             <div className="space-y-2">
-                                <Badge variant="outline">Form Harian</Badge>
+                                <Badge variant="outline">Laporan Bulanan</Badge>
                                 <CardTitle className="text-2xl">{listing.module.title}</CardTitle>
                                 <CardDescription>{listing.module.subtitle}</CardDescription>
                             </div>
@@ -75,13 +71,13 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                     <CardHeader className="gap-4 border-b border-border/60 bg-muted/20">
                         <div className="flex items-center gap-2">
                             <Filter className="size-4 text-muted-foreground" />
-                            <CardTitle className="text-base">Filter Listing</CardTitle>
+                            <CardTitle className="text-base">Filter Periode</CardTitle>
                         </div>
                         <form
-                            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_120px_auto_auto]"
+                            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_130px_auto_auto]"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                submitFilters(search, status, perPage);
+                                submitFilters(search, status, year);
                             }}
                         >
                             <div className="relative">
@@ -89,58 +85,44 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                                 <Input
                                     value={search}
                                     onChange={(event) => setSearch(event.target.value)}
-                                    placeholder="Cari tanggal atau status"
+                                    placeholder="Cari bulan atau nomor bulan"
                                     className="pl-8"
                                 />
                             </div>
 
                             <Select
                                 items={[
-                                    { value: 'ALL', label: 'Semua status' },
-                                    { value: 'DRAFT', label: 'Draft' },
-                                    { value: 'SUBMITTED', label: 'Submitted' },
-                                    { value: 'APPROVED', label: 'Approved' },
+                                    { value: 'ALL', label: 'Semua status proses' },
+                                    { value: 'DRAFT', label: 'Ada draft' },
+                                    { value: 'SUBMITTED', label: 'Ada pending' },
+                                    { value: 'APPROVED', label: 'Ada approved' },
                                 ]}
                                 value={status}
                                 onValueChange={(value) => {
                                     const nextValue = value ?? 'ALL';
                                     setStatus(nextValue);
-                                    submitFilters(search, nextValue, perPage);
+                                    submitFilters(search, nextValue, year);
                                 }}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Semua status" />
+                                    <SelectValue placeholder="Semua status proses" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="ALL">Semua status</SelectItem>
-                                    <SelectItem value="DRAFT">Draft</SelectItem>
-                                    <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                                    <SelectItem value="APPROVED">Approved</SelectItem>
+                                    <SelectItem value="ALL">Semua status proses</SelectItem>
+                                    <SelectItem value="DRAFT">Ada draft</SelectItem>
+                                    <SelectItem value="SUBMITTED">Ada pending</SelectItem>
+                                    <SelectItem value="APPROVED">Ada approved</SelectItem>
                                 </SelectContent>
                             </Select>
 
-                            <Select
-                                items={[
-                                    { value: '10', label: '10 / halaman' },
-                                    { value: '25', label: '25 / halaman' },
-                                    { value: '50', label: '50 / halaman' },
-                                ]}
-                                value={perPage}
-                                onValueChange={(value) => {
-                                    const nextValue = value ?? '10';
-                                    setPerPage(nextValue);
-                                    submitFilters(search, status, nextValue);
-                                }}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="10 / halaman" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="10">10 / halaman</SelectItem>
-                                    <SelectItem value="25">25 / halaman</SelectItem>
-                                    <SelectItem value="50">50 / halaman</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Input
+                                value={year}
+                                onChange={(event) => setYear(event.target.value)}
+                                type="number"
+                                min={2000}
+                                max={2100}
+                                placeholder="Tahun"
+                            />
 
                             <Button type="submit">Cari</Button>
 
@@ -150,7 +132,7 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                                 onClick={() => {
                                     setSearch('');
                                     setStatus('ALL');
-                                    setPerPage('10');
+                                    setYear(String(new Date().getFullYear()));
                                     router.get(catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } }));
                                 }}
                             >
@@ -164,30 +146,66 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="px-4">Tanggal</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Dibuat</TableHead>
-                                    <TableHead>Disubmit</TableHead>
-                                    <TableHead className="px-4 text-right">Log ID</TableHead>
+                                    <TableHead className="px-4">Periode</TableHead>
+                                    <TableHead>Checklist</TableHead>
+                                    <TableHead>Catatan Proses</TableHead>
+                                    <TableHead>Batch Mixing</TableHead>
+                                    <TableHead>Approval Checklist</TableHead>
+                                    <TableHead className="px-4 text-right">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {listing.table.data.length > 0 ? (
                                     listing.table.data.map((row) => (
-                                        <TableRow key={row.id}>
-                                            <TableCell className="px-4 font-medium">{row.tanggal ?? '-'}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={resolveStatusVariant(row.status)}>{row.status}</Badge>
+                                        <TableRow key={`${row.year}-${row.month}`}>
+                                            <TableCell className="px-4 font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    <CalendarDays className="size-4 text-muted-foreground" />
+                                                    {row.period_label}
+                                                </div>
                                             </TableCell>
-                                            <TableCell>{row.created_at ?? '-'}</TableCell>
-                                            <TableCell>{row.submitted_at ?? '-'}</TableCell>
-                                            <TableCell className="px-4 text-right text-muted-foreground">#{row.id}</TableCell>
+                                            <TableCell>{row.checklist_days_count} hari</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    <Badge variant="outline">{row.process_logs_count} log</Badge>
+                                                    <Badge variant="outline">{row.process_draft_count} draft</Badge>
+                                                    <Badge variant="secondary">{row.process_pending_count} pending</Badge>
+                                                    <Badge>{row.process_approved_count} approved</Badge>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{row.batch_mixing_days_count} hari</TableCell>
+                                            <TableCell>
+                                                <Badge variant={row.checklist_approval_status === 'APPROVED' ? 'default' : 'outline'}>
+                                                    {row.checklist_approval_status === 'APPROVED' ? 'Approved' : 'Belum Approved'}
+                                                </Badge>
+                                                {row.checklist_approved_by ? (
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        {row.checklist_approved_by} - {row.checklist_approved_at}
+                                                    </p>
+                                                ) : null}
+                                            </TableCell>
+                                            <TableCell className="px-4 text-right">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    render={
+                                                        <a
+                                                            href={catatanPengolahanLimbahAirMonthlyShow.url(
+                                                                { year: row.year, month: row.month },
+                                                                { query: { user_id: userId } },
+                                                            )}
+                                                        />
+                                                    }
+                                                >
+                                                    Detail Bulan
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                                            Belum ada data untuk filter yang dipilih.
+                                        <TableCell colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                                            Belum ada periode untuk filter yang dipilih.
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -195,66 +213,7 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                         </Table>
                     </CardContent>
                 </Card>
-
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <p className="text-sm text-muted-foreground">
-                        Menampilkan {listing.table.meta.from ?? 0} - {listing.table.meta.to ?? 0} dari {listing.table.meta.total} entri.
-                    </p>
-
-                    <Pagination className="justify-end">
-                        <PaginationContent>
-                            {listing.table.meta.links.map((link, index) => {
-                                const label = normalizePaginationLabel(link.label);
-
-                                if (label === 'Sebelumnya') {
-                                    return (
-                                        <PaginationItem key={`${label}-${index}`}>
-                                            <PaginationPrevious href={link.url ?? '#'} text={label} aria-disabled={link.url === null} />
-                                        </PaginationItem>
-                                    );
-                                }
-
-                                if (label === 'Berikutnya') {
-                                    return (
-                                        <PaginationItem key={`${label}-${index}`}>
-                                            <PaginationNext href={link.url ?? '#'} text={label} aria-disabled={link.url === null} />
-                                        </PaginationItem>
-                                    );
-                                }
-
-                                return (
-                                    <PaginationItem key={`${label}-${index}`}>
-                                        <PaginationLink href={link.url ?? '#'} isActive={link.active}>
-                                            {label}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                );
-                            })}
-                        </PaginationContent>
-                    </Pagination>
-                </div>
             </div>
         </div>
     );
-}
-
-function resolveStatusVariant(status: string): 'default' | 'secondary' | 'outline' {
-    if (status === 'APPROVED') {
-        return 'default';
-    }
-
-    if (status === 'SUBMITTED') {
-        return 'secondary';
-    }
-
-    return 'outline';
-}
-
-function normalizePaginationLabel(label: string): string {
-    return label
-        .replace(/&laquo;\s*Previous/gi, 'Sebelumnya')
-        .replace(/Next\s*&raquo;/gi, 'Berikutnya')
-        .replace(/&amp;/g, '&')
-        .replace(/<[^>]+>/g, '')
-        .trim();
 }

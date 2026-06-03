@@ -44,12 +44,19 @@ export type ListingPaginationMeta = {
     links: ListingPaginationLink[];
 };
 
-export type CatatanPengolahanLimbahAirListingRow = {
-    id: number;
-    tanggal: string | null;
-    status: string;
-    created_at: string | null;
-    submitted_at: string | null;
+export type CatatanPengolahanLimbahAirMonthlyRow = {
+    month: number;
+    year: number;
+    period_label: string;
+    checklist_days_count: number;
+    process_logs_count: number;
+    process_draft_count: number;
+    process_pending_count: number;
+    process_approved_count: number;
+    batch_mixing_days_count: number;
+    checklist_approval_status: 'APPROVED' | 'NOT_APPROVED' | string;
+    checklist_approved_at: string | null;
+    checklist_approved_by: string | null;
 };
 
 export type CatatanPengolahanLimbahAirListingPayload = {
@@ -66,11 +73,11 @@ export type CatatanPengolahanLimbahAirListingPayload = {
     filters: {
         search: string;
         status: string;
+        year: number;
         per_page: number;
     };
     table: {
-        data: CatatanPengolahanLimbahAirListingRow[];
-        meta: ListingPaginationMeta;
+        data: CatatanPengolahanLimbahAirMonthlyRow[];
     };
 };
 
@@ -138,17 +145,88 @@ export type CatatanPengolahanLimbahAirEntryPayload = {
     checklist: {
         template_id: number | null;
         template_name: string | null;
+        read_only: boolean;
         items: ChecklistField[];
     };
     process: {
         template_id: number | null;
         template_name: string | null;
+        read_only: boolean;
         sections: ProcessSectionField[];
     };
     batch: {
         max_batch_no: number;
         items: BatchField[];
         groups: BatchGroup[];
+    };
+};
+
+export type IpalMonthlyChecklistCell = {
+    date: string;
+    day: number;
+    status: string | null;
+    status_label: string | null;
+    operators: string[];
+    notes: string[];
+};
+
+export type IpalMonthlyChecklistRow = {
+    item_id: number;
+    name: string;
+    standard_condition: string | null;
+    cells: IpalMonthlyChecklistCell[];
+};
+
+export type IpalMonthlyProcessRow = {
+    id: number;
+    tanggal: string | null;
+    operator: {
+        name: string | null;
+        external_id: string | null;
+        department_name: string | null;
+    };
+    status: string;
+    submitted_at: string | null;
+    checked_by: string | null;
+    checked_at: string | null;
+    has_batch_mixing: boolean;
+    batch_count: number;
+};
+
+export type IpalMonthlyDetailPayload = {
+    module: {
+        title: string;
+        subtitle: string;
+    };
+    period: {
+        month: number;
+        year: number;
+        label: string;
+        days: Array<{
+            date: string;
+            day: number;
+        }>;
+    };
+    summary: {
+        checklist_days_count: number;
+        process_logs_count: number;
+        batch_mixing_logs_count: number;
+        checklist_approval_status: string;
+    };
+    checklist_matrix: IpalMonthlyChecklistRow[];
+    process_rows: IpalMonthlyProcessRow[];
+    approval: {
+        status: string;
+        approved_at: string | null;
+        approved_by: {
+            id: number | null;
+            name: string | null;
+            external_id: string | null;
+            role_label: string;
+        };
+    };
+    capabilities: {
+        approve_checklist: boolean;
     };
 };
 

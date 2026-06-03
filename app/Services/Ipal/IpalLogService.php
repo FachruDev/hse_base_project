@@ -3,6 +3,7 @@
 namespace App\Services\Ipal;
 
 use App\Models\Ipal\IpalBatch;
+use App\Models\Ipal\IpalChecklistApproval;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Ipal\IpalProcessApproval;
 use App\Models\Ipal\IpalProcessLog;
@@ -172,6 +173,12 @@ class IpalLogService
             $dayContext = $this->operationalCalendarService->resolveContext($logDate);
             $dailyLog = $this->firstOrCreateDailyLog($operator, $payload['tanggal'], $dayContext);
 
+            if ($this->isChecklistPeriodApproved($logDate)) {
+                throw ValidationException::withMessages([
+                    'tanggal' => ['Checklist periode ini sudah di-approve HSE Dept Head dan tidak dapat diubah.'],
+                ]);
+            }
+
             $processLog = $dailyLog->processLog()->first();
             if ($processLog !== null && in_array($processLog->status, ['SUBMITTED', 'APPROVED'], true)) {
                 throw ValidationException::withMessages([
@@ -232,6 +239,22 @@ class IpalLogService
 
             return $dailyLog->fresh();
         });
+    }
+
+    public function approveMonthlyChecklist(int $month, int $year, User $supervisor): IpalChecklistApproval
+    {
+        $approval = IpalChecklistApproval::query()->updateOrCreate(
+            [
+                'month' => $month,
+                'year' => $year,
+            ],
+            [
+                'supervisor_id' => $supervisor->id,
+                'approved_at' => now(),
+            ],
+        );
+
+        return $approval->fresh(['supervisor']) ?? $approval->load('supervisor');
     }
 
     /**
@@ -608,6 +631,15 @@ class IpalLogService
             ['process_log_id' => $processLog->id],
             ['operator_id' => $operator->id],
         );
+    }
+
+    private function isChecklistPeriodApproved(Carbon $date): bool
+    {
+        return IpalChecklistApproval::query()
+            ->where('month', $date->month)
+            ->where('year', $date->year)
+            ->whereNotNull('approved_at')
+            ->exists();
     }
 
     private function resolveActiveChecklistTemplateId(): int

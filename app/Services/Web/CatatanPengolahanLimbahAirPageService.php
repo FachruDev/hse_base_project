@@ -2,57 +2,52 @@
 
 namespace App\Services\Web;
 
+use App\Models\Ipal\IpalChecklistApproval;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Master\BatchItem;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class CatatanPengolahanLimbahAirPageService
 {
     /**
-     * @param  array{search: string, status: string, per_page: int}  $filters
+     * @param  array{search: string, status: string, year: int, per_page: int}  $filters
      * @return array<string, mixed>
      */
     public function buildListing(User $user, array $filters): array
     {
-        $todayLog = $this->findTodayLog($user);
+        $todayLog = $this->findDailyLog($user, now()->toDateString());
+        $year = $filters['year'];
 
-        $listingQuery = IpalDailyLog::query()
+        $logs = IpalDailyLog::query()
             ->with([
-                'operator:id,name,external_id',
+                'checklist:id,log_id,template_id',
                 'processLog:id,log_id,status,submitted_at',
+                'processLog.batches:id,process_log_id,batch_no',
             ])
-            ->whereBelongsTo($user, 'operator')
-            ->orderByDesc('tanggal')
-            ->orderByDesc('id');
+            ->whereYear('tanggal', $year)
+            ->get();
 
-        if ($filters['search'] !== '') {
-            $search = $filters['search'];
+        $approvals = IpalChecklistApproval::query()
+            ->with('supervisor:id,name,external_id')
+            ->where('year', $year)
+            ->get()
+            ->keyBy('month');
 
-            $listingQuery->where(function (Builder $query) use ($search): void {
-                $query
-                    ->where('tanggal', 'like', "%{$search}%")
-                    ->orWhereHas('processLog', function (Builder $processQuery) use ($search): void {
-                        $processQuery->where('status', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        if ($filters['status'] !== '') {
-            $this->applyStatusFilter($listingQuery, $filters['status']);
-        }
-
-        $paginator = $listingQuery
-            ->paginate($filters['per_page'])
-            ->withQueryString();
+        $rows = collect(range(1, 12))
+            ->reverse()
+            ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month)))
+            ->filter(fn (array $row): bool => $this->matchesMonthlyFilters($row, $filters))
+            ->values()
+            ->all();
 
         return [
             'module' => [
                 'title' => 'Catatan Pengolahan Limbah Air',
-                'subtitle' => 'Riwayat entri operator untuk checklist, proses, dan batch IPAL.',
+                'subtitle' => 'Laporan bulanan gabungan checklist, catatan proses, dan batch mixing IPAL.',
             ],
             'today_entry' => [
                 'filled_today' => $todayLog !== null,
@@ -62,16 +57,7 @@ class CatatanPengolahanLimbahAirPageService
             ],
             'filters' => $filters,
             'table' => [
-                'data' => $this->mapListingRows($paginator->getCollection()),
-                'meta' => [
-                    'current_page' => $paginator->currentPage(),
-                    'last_page' => $paginator->lastPage(),
-                    'per_page' => $paginator->perPage(),
-                    'total' => $paginator->total(),
-                    'from' => $paginator->firstItem(),
-                    'to' => $paginator->lastItem(),
-                    'links' => $paginator->linkCollection()->toArray(),
-                ],
+                'data' => $rows,
             ],
         ];
     }
@@ -79,17 +65,103 @@ class CatatanPengolahanLimbahAirPageService
     /**
      * @return array<string, mixed>
      */
-    public function buildForm(User $user): array
+    public function buildMonthlyDetail(User $user, int $year, int $month): array
     {
-        $todayLog = IpalDailyLog::query()
+        $period = Carbon::create($year, $month, 1)->startOfMonth();
+        $logs = IpalDailyLog::query()
+            ->with([
+                'operator:id,name,external_id,department_id',
+                'operator.department:id,name',
+                'checklist.values.item:id,name,category,standard_condition,order_no',
+                'processLog.approval.operator:id,name,external_id',
+                'processLog.approval.supervisor:id,name,external_id',
+                'processLog.batches:id,process_log_id,batch_no',
+            ])
+            ->whereYear('tanggal', $year)
+            ->whereMonth('tanggal', $month)
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
+            ->get();
+
+        $approval = IpalChecklistApproval::query()
+            ->with('supervisor:id,name,external_id')
+            ->where('month', $month)
+            ->where('year', $year)
+            ->first();
+
+        return [
+            'module' => [
+                'title' => 'Detail Bulanan IPAL',
+                'subtitle' => 'Rekap checklist pemeriksaan unit dan daftar catatan proses harian.',
+            ],
+            'period' => [
+                'month' => $month,
+                'year' => $year,
+                'label' => $period->translatedFormat('F Y'),
+                'days' => $this->mapPeriodDays($period),
+            ],
+            'summary' => $this->mapMonthlySummary($logs, $approval),
+            'checklist_matrix' => $this->buildChecklistMatrix($period, $logs),
+            'process_rows' => $this->mapMonthlyProcessRows($logs),
+            'approval' => $this->mapChecklistApproval($approval),
+            'capabilities' => [
+                'approve_checklist' => ($user->can('ipal.logs.approve') && ! $this->isChecklistApprovalComplete($approval)),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildForm(User $user, string $date): array
+    {
+        return $this->buildEntryPayload(
+            $user,
+            $date,
+            $this->findDailyLog($user, $date),
+            false,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildDailyDetail(IpalDailyLog $log): array
+    {
+        $log->loadMissing([
+            'operator.department',
+            'checklist.values:id,checklist_id,item_id,status,note',
+            'processLog.values:id,process_log_id,item_id,value_text,value_number,note',
+            'processLog.batches.values:id,batch_id,item_id,value_text,value_number',
+        ]);
+
+        return $this->buildEntryPayload(
+            $log->operator,
+            $log->tanggal?->format('Y-m-d') ?? now()->toDateString(),
+            $log,
+            true,
+        );
+    }
+
+    private function findDailyLog(User $user, string $date): ?IpalDailyLog
+    {
+        return IpalDailyLog::query()
             ->with([
                 'checklist.values:id,checklist_id,item_id,status,note',
                 'processLog.values:id,process_log_id,item_id,value_text,value_number,note',
                 'processLog.batches.values:id,batch_id,item_id,value_text,value_number',
             ])
             ->whereBelongsTo($user, 'operator')
-            ->whereDate('tanggal', now()->toDateString())
+            ->whereDate('tanggal', $date)
             ->first();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildEntryPayload(User $user, string $date, ?IpalDailyLog $log, bool $forceReadOnly): array
+    {
+        $user->loadMissing('department');
 
         $checklistTemplate = ChecklistTemplate::query()
             ->where('is_active', true)
@@ -122,129 +194,261 @@ class CatatanPengolahanLimbahAirPageService
             ->orderBy('id')
             ->get();
 
-        $checklistValueMap = $todayLog?->checklist?->values
-            ? $todayLog->checklist->values->keyBy('item_id')
-            : collect();
-
-        $processValueMap = $todayLog?->processLog?->values
-            ? $todayLog->processLog->values->keyBy('item_id')
-            : collect();
-
-        $batchGroups = $todayLog?->processLog?->batches
-            ? $todayLog->processLog->batches
-            : collect();
-
-        $checklistItems = $checklistTemplate?->items
-            ? $this->mapChecklistItems($checklistTemplate->items, $checklistValueMap)
-            : [];
-
-        $processSections = $processTemplate?->sections
-            ? $processTemplate->sections->map(function ($section) use ($processValueMap): array {
-                return [
-                    'id' => $section->id,
-                    'name' => $section->name,
-                    'items' => $section->items->map(function ($item) use ($processValueMap): array {
-                        $value = $processValueMap->get($item->id);
-
-                        return [
-                            'id' => $item->id,
-                            'name' => $item->name,
-                            'standard_condition' => $item->standard_condition,
-                            'input_type' => $item->input_type,
-                            'value_text' => $value?->value_text,
-                            'value_number' => $value?->value_number,
-                            'note' => $value?->note,
-                        ];
-                    })->all(),
-                ];
-            })->all()
-            : [];
+        $processStatus = $log?->processLog?->status;
+        $processReadOnly = $forceReadOnly || in_array($processStatus, ['SUBMITTED', 'APPROVED'], true);
+        $checklistReadOnly = $processReadOnly || $this->isChecklistPeriodApproved($date);
 
         return [
             'module' => [
                 'title' => 'Catatan Pengolahan Limbah Air',
-                'subtitle' => 'Workspace pengisian form harian operator IPAL.',
+                'subtitle' => $forceReadOnly
+                    ? 'Detail read-only catatan proses dan batch mixing harian.'
+                    : 'Workspace pengisian form harian operator IPAL.',
             ],
             'entry' => [
-                'tanggal' => now()->toDateString(),
+                'tanggal' => $date,
                 'operator' => [
                     'name' => $user->name,
                     'external_id' => $user->external_id,
                     'department_name' => $user->department?->name,
                 ],
-                'mode' => $this->resolveEntryMode($todayLog?->processLog?->status, $todayLog !== null),
-                'status' => $todayLog?->processLog?->status ?? ($todayLog !== null ? 'DRAFT' : null),
-                'log_id' => $todayLog?->id,
-                'action_label' => $this->resolveActionLabel($todayLog?->processLog?->status, $todayLog !== null),
-                'read_only' => in_array($todayLog?->processLog?->status, ['SUBMITTED', 'APPROVED'], true),
+                'mode' => $this->resolveEntryMode($processStatus, $log !== null, $forceReadOnly),
+                'status' => $processStatus ?? ($log !== null ? 'DRAFT' : null),
+                'log_id' => $log?->id,
+                'action_label' => $this->resolveActionLabel($processStatus, $log !== null),
+                'read_only' => $forceReadOnly || $processReadOnly,
             ],
             'checklist' => [
                 'template_id' => $checklistTemplate?->id,
                 'template_name' => $checklistTemplate?->name,
-                'items' => $checklistItems,
+                'read_only' => $checklistReadOnly,
+                'items' => $checklistTemplate?->items
+                    ? $this->mapChecklistItems(
+                        $checklistTemplate->items,
+                        $log?->checklist?->values ? $log->checklist->values->keyBy('item_id') : collect(),
+                    )
+                    : [],
             ],
             'process' => [
                 'template_id' => $processTemplate?->id,
                 'template_name' => $processTemplate?->name,
-                'sections' => $processSections,
+                'read_only' => $processReadOnly,
+                'sections' => $processTemplate?->sections
+                    ? $this->mapProcessSections(
+                        $processTemplate->sections,
+                        $log?->processLog?->values ? $log->processLog->values->keyBy('item_id') : collect(),
+                    )
+                    : [],
             ],
             'batch' => [
                 'max_batch_no' => 7,
-                'items' => $batchItems->map(function (BatchItem $item): array {
-                    return [
-                        'id' => $item->id,
-                        'name' => $item->name,
-                        'input_type' => $item->input_type,
-                    ];
-                })->all(),
-                'groups' => $this->mapBatchGroups($batchGroups, $batchItems),
+                'items' => $batchItems->map(fn (BatchItem $item): array => [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'input_type' => $item->input_type,
+                ])->all(),
+                'groups' => $this->mapBatchGroups(
+                    $log?->processLog?->batches ? $log->processLog->batches : collect(),
+                    $batchItems,
+                ),
             ],
         ];
     }
 
-    private function findTodayLog(User $user): ?IpalDailyLog
+    /**
+     * @param  Collection<int, IpalDailyLog>  $logs
+     * @return array<string, mixed>
+     */
+    private function mapMonthlyListingRow(int $year, int $month, Collection $logs, ?IpalChecklistApproval $approval): array
     {
-        return IpalDailyLog::query()
-            ->with('processLog:id,log_id,status,submitted_at')
-            ->whereBelongsTo($user, 'operator')
-            ->whereDate('tanggal', now()->toDateString())
-            ->first();
+        $monthLogs = $logs->filter(fn (IpalDailyLog $log): bool => (int) $log->tanggal?->month === $month);
+        $period = Carbon::create($year, $month, 1);
+
+        return [
+            'month' => $month,
+            'year' => $year,
+            'period_label' => $period->translatedFormat('F Y'),
+            'checklist_days_count' => $monthLogs
+                ->filter(fn (IpalDailyLog $log): bool => $log->checklist !== null)
+                ->pluck('tanggal')
+                ->map(fn ($date) => $date?->format('Y-m-d'))
+                ->unique()
+                ->count(),
+            'process_logs_count' => $monthLogs->filter(fn (IpalDailyLog $log): bool => $log->processLog !== null)->count(),
+            'process_draft_count' => $monthLogs->filter(fn (IpalDailyLog $log): bool => ($log->processLog?->status ?? 'DRAFT') === 'DRAFT')->count(),
+            'process_pending_count' => $monthLogs->filter(fn (IpalDailyLog $log): bool => $log->processLog?->status === 'SUBMITTED')->count(),
+            'process_approved_count' => $monthLogs->filter(fn (IpalDailyLog $log): bool => $log->processLog?->status === 'APPROVED')->count(),
+            'batch_mixing_days_count' => $monthLogs
+                ->filter(fn (IpalDailyLog $log): bool => ($log->processLog?->batches->count() ?? 0) > 0)
+                ->pluck('tanggal')
+                ->map(fn ($date) => $date?->format('Y-m-d'))
+                ->unique()
+                ->count(),
+            'checklist_approval_status' => $this->isChecklistApprovalComplete($approval) ? 'APPROVED' : 'NOT_APPROVED',
+            'checklist_approved_at' => $approval?->approved_at?->format('Y-m-d H:i:s'),
+            'checklist_approved_by' => $approval?->supervisor?->name,
+        ];
     }
 
-    private function applyStatusFilter(Builder $query, string $status): void
+    /**
+     * @param  array{search: string, status: string, year: int, per_page: int}  $filters
+     */
+    private function matchesMonthlyFilters(array $row, array $filters): bool
     {
-        if ($status === 'DRAFT') {
-            $query->where(function (Builder $draftQuery): void {
-                $draftQuery
-                    ->whereDoesntHave('processLog')
-                    ->orWhereHas('processLog', function (Builder $processQuery): void {
-                        $processQuery->where('status', 'DRAFT');
-                    });
-            });
+        if ($filters['search'] !== '') {
+            $keyword = mb_strtolower($filters['search']);
+            $matchesPeriod = str_contains(mb_strtolower((string) $row['period_label']), $keyword);
+            $matchesMonth = str_contains((string) $row['month'], $keyword);
 
-            return;
+            if (! $matchesPeriod && ! $matchesMonth) {
+                return false;
+            }
         }
 
-        $query->whereHas('processLog', function (Builder $processQuery) use ($status): void {
-            $processQuery->where('status', $status);
-        });
+        return match ($filters['status']) {
+            'DRAFT' => $row['process_draft_count'] > 0,
+            'SUBMITTED' => $row['process_pending_count'] > 0,
+            'APPROVED' => $row['process_approved_count'] > 0,
+            default => true,
+        };
+    }
+
+    /**
+     * @return array<int, array{date: string, day: int}>
+     */
+    private function mapPeriodDays(Carbon $period): array
+    {
+        return collect(range(1, $period->daysInMonth))
+            ->map(fn (int $day): array => [
+                'date' => $period->copy()->day($day)->format('Y-m-d'),
+                'day' => $day,
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, IpalDailyLog>  $logs
+     * @return array<string, mixed>
+     */
+    private function mapMonthlySummary(Collection $logs, ?IpalChecklistApproval $approval): array
+    {
+        return [
+            'checklist_days_count' => $logs
+                ->filter(fn (IpalDailyLog $log): bool => $log->checklist !== null)
+                ->pluck('tanggal')
+                ->map(fn ($date) => $date?->format('Y-m-d'))
+                ->unique()
+                ->count(),
+            'process_logs_count' => $logs->filter(fn (IpalDailyLog $log): bool => $log->processLog !== null)->count(),
+            'batch_mixing_logs_count' => $logs->filter(fn (IpalDailyLog $log): bool => ($log->processLog?->batches->count() ?? 0) > 0)->count(),
+            'checklist_approval_status' => $this->isChecklistApprovalComplete($approval) ? 'APPROVED' : 'NOT_APPROVED',
+        ];
     }
 
     /**
      * @param  Collection<int, IpalDailyLog>  $logs
      * @return array<int, array<string, mixed>>
      */
-    private function mapListingRows(Collection $logs): array
+    private function buildChecklistMatrix(Carbon $period, Collection $logs): array
     {
-        return $logs->map(function (IpalDailyLog $log): array {
+        $template = ChecklistTemplate::query()
+            ->where('is_active', true)
+            ->with([
+                'items' => fn ($query) => $query
+                    ->where('is_active', true)
+                    ->orderBy('order_no')
+                    ->orderBy('id'),
+            ])
+            ->orderBy('id')
+            ->first();
+
+        if (! $template?->items) {
+            return [];
+        }
+
+        $values = $logs->flatMap(function (IpalDailyLog $log): array {
+            if ($log->checklist === null) {
+                return [];
+            }
+
+            return $log->checklist->values->map(fn ($value): array => [
+                'date' => $log->tanggal?->format('Y-m-d'),
+                'operator' => $log->operator?->name,
+                'item_id' => $value->item_id,
+                'status' => $value->status,
+                'note' => $value->note,
+            ])->all();
+        });
+
+        return $template->items->map(function ($item) use ($period, $values): array {
             return [
-                'id' => $log->id,
-                'tanggal' => $log->tanggal?->format('Y-m-d'),
-                'status' => $log->processLog?->status ?? 'DRAFT',
-                'created_at' => $log->created_at?->format('Y-m-d H:i:s'),
-                'submitted_at' => $log->processLog?->submitted_at?->format('Y-m-d H:i:s'),
+                'item_id' => $item->id,
+                'name' => $item->name,
+                'standard_condition' => $item->standard_condition,
+                'cells' => collect(range(1, $period->daysInMonth))
+                    ->map(function (int $day) use ($item, $period, $values): array {
+                        $date = $period->copy()->day($day)->format('Y-m-d');
+                        $cellValues = $values
+                            ->filter(fn (array $value): bool => $value['date'] === $date && (int) $value['item_id'] === (int) $item->id)
+                            ->values();
+                        $status = $this->resolveWorstChecklistStatus($cellValues->pluck('status')->filter()->all());
+
+                        return [
+                            'date' => $date,
+                            'day' => $day,
+                            'status' => $status,
+                            'status_label' => $this->resolveChecklistStatusLabel($status),
+                            'operators' => $cellValues->pluck('operator')->filter()->unique()->values()->all(),
+                            'notes' => $cellValues
+                                ->filter(fn (array $value): bool => is_string($value['note']) && trim($value['note']) !== '')
+                                ->map(fn (array $value): string => trim(($value['operator'] ? $value['operator'].': ' : '').$value['note']))
+                                ->values()
+                                ->all(),
+                        ];
+                    })
+                    ->all(),
             ];
         })->all();
+    }
+
+    /**
+     * @param  Collection<int, IpalDailyLog>  $logs
+     * @return array<int, array<string, mixed>>
+     */
+    private function mapMonthlyProcessRows(Collection $logs): array
+    {
+        return $logs->map(fn (IpalDailyLog $log): array => [
+            'id' => $log->id,
+            'tanggal' => $log->tanggal?->format('Y-m-d'),
+            'operator' => [
+                'name' => $log->operator?->name,
+                'external_id' => $log->operator?->external_id,
+                'department_name' => $log->operator?->department?->name,
+            ],
+            'status' => $log->processLog?->status ?? 'DRAFT',
+            'submitted_at' => $log->processLog?->submitted_at?->format('Y-m-d H:i:s'),
+            'checked_by' => $log->processLog?->approval?->supervisor?->name,
+            'checked_at' => $log->processLog?->approval?->supervisor_signed_at?->format('Y-m-d H:i:s'),
+            'has_batch_mixing' => ($log->processLog?->batches->count() ?? 0) > 0,
+            'batch_count' => $log->processLog?->batches->count() ?? 0,
+        ])->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapChecklistApproval(?IpalChecklistApproval $approval): array
+    {
+        return [
+            'status' => $this->isChecklistApprovalComplete($approval) ? 'APPROVED' : 'NOT_APPROVED',
+            'approved_at' => $approval?->approved_at?->format('Y-m-d H:i:s'),
+            'approved_by' => [
+                'id' => $approval?->supervisor_id,
+                'name' => $approval?->supervisor?->name,
+                'external_id' => $approval?->supervisor?->external_id,
+                'role_label' => 'HSE Dept Head',
+            ],
+        ];
     }
 
     /**
@@ -269,14 +473,30 @@ class CatatanPengolahanLimbahAirPageService
         })->all();
     }
 
-    private function resolveChecklistStatusLabel(?string $status): ?string
+    /**
+     * @param  Collection<int, mixed>  $sections
+     * @param  Collection<int|string, mixed>  $valueMap
+     * @return array<int, array<string, mixed>>
+     */
+    private function mapProcessSections(Collection $sections, Collection $valueMap): array
     {
-        return match ($status) {
-            'OK' => 'Berfungsi',
-            'NOT_OK' => 'Tidak Berfungsi',
-            'NA' => 'Tidak Berlaku',
-            default => $status,
-        };
+        return $sections->map(fn ($section): array => [
+            'id' => $section->id,
+            'name' => $section->name,
+            'items' => $section->items->map(function ($item) use ($valueMap): array {
+                $value = $valueMap->get($item->id);
+
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'standard_condition' => $item->standard_condition,
+                    'input_type' => $item->input_type,
+                    'value_text' => $value?->value_text,
+                    'value_number' => $value?->value_number,
+                    'note' => $value?->note,
+                ];
+            })->all(),
+        ])->all();
     }
 
     /**
@@ -308,6 +528,52 @@ class CatatanPengolahanLimbahAirPageService
         })->all();
     }
 
+    /**
+     * @param  array<int, string>  $statuses
+     */
+    private function resolveWorstChecklistStatus(array $statuses): ?string
+    {
+        if (in_array('NOT_OK', $statuses, true)) {
+            return 'NOT_OK';
+        }
+
+        if (in_array('OK', $statuses, true)) {
+            return 'OK';
+        }
+
+        if (in_array('NA', $statuses, true)) {
+            return 'NA';
+        }
+
+        return null;
+    }
+
+    private function resolveChecklistStatusLabel(?string $status): ?string
+    {
+        return match ($status) {
+            'OK' => 'Berfungsi',
+            'NOT_OK' => 'Tidak Berfungsi',
+            'NA' => 'Tidak Berlaku',
+            default => $status,
+        };
+    }
+
+    private function isChecklistApprovalComplete(?IpalChecklistApproval $approval): bool
+    {
+        return $approval instanceof IpalChecklistApproval && $approval->approved_at !== null;
+    }
+
+    private function isChecklistPeriodApproved(string $date): bool
+    {
+        $period = Carbon::parse($date);
+
+        return IpalChecklistApproval::query()
+            ->where('month', $period->month)
+            ->where('year', $period->year)
+            ->whereNotNull('approved_at')
+            ->exists();
+    }
+
     private function resolveActionLabel(?string $status, bool $filledToday): string
     {
         if (! $filledToday) {
@@ -321,8 +587,12 @@ class CatatanPengolahanLimbahAirPageService
         };
     }
 
-    private function resolveEntryMode(?string $status, bool $filledToday): string
+    private function resolveEntryMode(?string $status, bool $filledToday, bool $forceReadOnly): string
     {
+        if ($forceReadOnly) {
+            return 'lihat';
+        }
+
         if (! $filledToday) {
             return 'baru';
         }

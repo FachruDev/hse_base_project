@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\B3Storage\StoreB3StorageLogRequest;
 use App\Http\Requests\Web\B3StorageLogIndexRequest;
 use App\Http\Requests\Web\CatatanPengolahanLimbahAirIndexRequest;
+use App\Http\Requests\Web\IpalEntryDateRequest;
+use App\Http\Requests\Web\IpalMonthlyPeriodRequest;
 use App\Http\Requests\Web\SaveIpalChecklistRequest;
 use App\Http\Requests\Web\SaveIpalProcessRequest;
 use App\Models\B3Storage\B3StorageLog;
+use App\Models\Ipal\IpalDailyLog;
 use App\Models\User;
 use App\Services\B3Storage\B3StorageService;
 use App\Services\Ipal\IpalLogService;
@@ -41,11 +44,57 @@ class DashboardController extends Controller
     }
 
     public function catatanPengolahanLimbahAirCreate(
-        Request $request,
+        IpalEntryDateRequest $request,
         CatatanPengolahanLimbahAirPageService $pageService,
     ): Response {
         return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/create', [
-            'entryForm' => $pageService->buildForm($request->user()),
+            'entryForm' => $pageService->buildForm($this->authenticatedUser($request), $request->entryDate()),
+        ]);
+    }
+
+    public function catatanPengolahanLimbahAirMonthlyShow(
+        IpalMonthlyPeriodRequest $request,
+        CatatanPengolahanLimbahAirPageService $pageService,
+    ): Response {
+        return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/monthly', [
+            'monthlyDetail' => $pageService->buildMonthlyDetail(
+                $this->authenticatedUser($request),
+                $request->year(),
+                $request->month(),
+            ),
+        ]);
+    }
+
+    public function catatanPengolahanLimbahAirApproveMonthlyChecklist(
+        IpalMonthlyPeriodRequest $request,
+        IpalLogService $ipalLogService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('ipal.logs.approve'), 403);
+
+        $ipalLogService->approveMonthlyChecklist(
+            $request->month(),
+            $request->year(),
+            $this->authenticatedUser($request),
+        );
+
+        return redirect()
+            ->route('dashboard.forms.catatan-pengolahan-limbah-air.monthly.show', [
+                'year' => $request->year(),
+                'month' => $request->month(),
+                'user_id' => $this->authenticatedUser($request)->external_id,
+            ])
+            ->with('success', 'Checklist bulanan berhasil di-approve oleh HSE Dept Head.');
+    }
+
+    public function catatanPengolahanLimbahAirLogShow(
+        Request $request,
+        IpalDailyLog $log,
+        CatatanPengolahanLimbahAirPageService $pageService,
+    ): Response {
+        $this->authenticatedUser($request);
+
+        return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/show', [
+            'entryForm' => $pageService->buildDailyDetail($log),
         ]);
     }
 
@@ -59,6 +108,7 @@ class DashboardController extends Controller
         return redirect()
             ->route('dashboard.forms.catatan-pengolahan-limbah-air.create', [
                 'user_id' => $user->external_id,
+                'tanggal' => $request->validated()['tanggal'],
             ])
             ->with('success', 'Checklist harian berhasil disimpan.');
     }
@@ -75,6 +125,7 @@ class DashboardController extends Controller
         return redirect()
             ->route('dashboard.forms.catatan-pengolahan-limbah-air.create', [
                 'user_id' => $user->external_id,
+                'tanggal' => $request->validated()['tanggal'],
             ])
             ->with('success', $isSubmit ? 'Catatan proses berhasil di-submit.' : 'Catatan proses berhasil disimpan sebagai draft.');
     }

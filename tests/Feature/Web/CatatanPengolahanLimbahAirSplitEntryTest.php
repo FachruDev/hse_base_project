@@ -93,7 +93,7 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
                 ],
             ],
         ])
-            ->assertRedirect('/dashboard/forms/catatan-pengolahan-limbah-air/create?user_id=operator.split.01')
+            ->assertRedirect('/dashboard/forms/catatan-pengolahan-limbah-air/create?user_id=operator.split.01&tanggal=2026-04-29')
             ->assertSessionHasNoErrors();
 
         $logId = IpalDailyLog::query()
