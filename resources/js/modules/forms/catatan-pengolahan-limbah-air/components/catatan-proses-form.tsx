@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { FlaskConical, Save, Send } from 'lucide-react';
+import { ChevronDown, ChevronUp, FlaskConical, Save, Send } from 'lucide-react';
 import * as React from 'react';
 
 import { catatanPengolahanLimbahAirSaveProcess } from '@/actions/App/Http/Controllers/Web/DashboardController';
@@ -23,6 +23,27 @@ type CatatanProsesFormProps = {
 export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps) {
     const [processQuery, setProcessQuery] = React.useState('');
     const [selectedBatchNo, setSelectedBatchNo] = React.useState<string>('1');
+    const [collapsedSections, setCollapsedSections] = React.useState<Record<string | number, boolean>>({});
+
+    const toggleSection = (sectionId: string | number) => {
+        setCollapsedSections((prev) => ({
+            ...prev,
+            [sectionId]: !prev[sectionId],
+        }));
+    };
+
+    const openAllSections = () => {
+        setCollapsedSections({});
+    };
+
+    const closeAllSections = () => {
+        const closed: Record<string | number, boolean> = {};
+        entryForm.process.sections.forEach((section) => {
+            closed[section.id] = true;
+        });
+        setCollapsedSections(closed);
+    };
+
     const form = useForm<ProcessFormState>({
         tanggal: entryForm.entry.tanggal,
         action: 'DRAFT',
@@ -98,129 +119,188 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
     };
 
     return (
-        <Card className="border-none shadow-sm ring-1 ring-border/60">
-            <CardHeader className="border-b border-border/60">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="space-y-2">
-                        <CardTitle className="text-base">Catatan Process</CardTitle>
-                        <CardDescription>{entryForm.process.template_name ?? 'Template proses belum tersedia.'}</CardDescription>
+        <Card className="overflow-hidden border-border/50 shadow-md">
+            <CardHeader className="border-b border-border/50 bg-slate-50/50 pb-5 pt-6 dark:bg-transparent">
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="space-y-1.5">
+                        <CardTitle className="text-xl font-bold tracking-tight text-foreground">Catatan Process</CardTitle>
+                        <CardDescription className="text-base">
+                            {entryForm.process.template_name ?? 'Template proses belum tersedia.'}
+                        </CardDescription>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline">Tanggal Pengisian: {entryForm.entry.tanggal}</Badge>
-                        <Input
-                            value={processQuery}
-                            onChange={(event) => setProcessQuery(event.target.value)}
-                            className="w-full min-w-[240px] md:w-[300px]"
-                            placeholder="Cari unit, uraian, atau standar"
-                        />
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Badge variant="outline" className="px-3 py-1.5 shadow-sm bg-background">
+                            Tanggal Pengisian: {entryForm.entry.tanggal}
+                        </Badge>
+                        <div className="relative">
+                            <Input
+                                value={processQuery}
+                                onChange={(event) => setProcessQuery(event.target.value)}
+                                className="w-full min-w-[240px] shadow-sm md:w-[300px] bg-background"
+                                placeholder="Cari unit, uraian, atau standar..."
+                            />
+                        </div>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-6 p-4">
+            <CardContent className="space-y-8 p-5 sm:p-6">
                 <form
-                    className="space-y-6"
+                    className="space-y-8"
                     onSubmit={(event) => {
                         event.preventDefault();
                         saveProcess('DRAFT');
                     }}
                 >
-                    {filteredSections.map((section) => (
-                        <div key={section.id} className="overflow-hidden rounded-xl border border-border/60">
-                            <div className="border-b border-border/60 bg-muted/30 px-4 py-3">
-                                <p className="font-semibold">{section.name}</p>
-                            </div>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="px-4">Uraian Process</TableHead>
-                                        <TableHead>Kondisi Standar</TableHead>
-                                        <TableHead>Kondisi Aktual</TableHead>
-                                        <TableHead className="px-4">Keterangan</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {section.items.map((item) => {
-                                        const valueIndex = form.data.process.values.findIndex((value) => value.item_id === item.id);
-                                        const value = form.data.process.values[valueIndex];
-
-                                        return (
-                                            <TableRow key={item.id}>
-                                                <TableCell className="px-4 font-medium">{item.name}</TableCell>
-                                                <TableCell>{item.standard_condition ?? '-'}</TableCell>
-                                                <TableCell className="min-w-[220px]">
-                                                    {item.input_type === 'number' ? (
-                                                        <Input
-                                                            type="number"
-                                                            value={value?.value_number ?? ''}
-                                                            readOnly={readOnly}
-                                                            onChange={(event) => {
-                                                                form.setData('process', {
-                                                                    ...form.data.process,
-                                                                    values: form.data.process.values.map((currentValue, currentIndex) =>
-                                                                        currentIndex === valueIndex
-                                                                            ? {
-                                                                                  ...currentValue,
-                                                                                  value_number: event.target.value,
-                                                                                  value_text: '',
-                                                                              }
-                                                                            : currentValue,
-                                                                    ),
-                                                                });
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <Input
-                                                            value={value?.value_text ?? ''}
-                                                            readOnly={readOnly}
-                                                            onChange={(event) => {
-                                                                form.setData('process', {
-                                                                    ...form.data.process,
-                                                                    values: form.data.process.values.map((currentValue, currentIndex) =>
-                                                                        currentIndex === valueIndex
-                                                                            ? {
-                                                                                  ...currentValue,
-                                                                                  value_text: event.target.value,
-                                                                                  value_number: '',
-                                                                              }
-                                                                            : currentValue,
-                                                                    ),
-                                                                });
-                                                            }}
-                                                        />
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="px-4">
-                                                    <Textarea
-                                                        value={value?.note ?? ''}
-                                                        readOnly={readOnly}
-                                                        onChange={(event) => {
-                                                            form.setData('process', {
-                                                                ...form.data.process,
-                                                                values: form.data.process.values.map((currentValue, currentIndex) =>
-                                                                    currentIndex === valueIndex ? { ...currentValue, note: event.target.value } : currentValue,
-                                                                ),
-                                                            });
-                                                        }}
-                                                        className="min-h-14"
-                                                        placeholder="Catatan tambahan"
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3">
+                        <p className="text-sm font-semibold text-foreground">Daftar Unit & Uraian Proses</p>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={openAllSections}
+                                className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
+                            >
+                                Buka Semua
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={closeAllSections}
+                                className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
+                            >
+                                Tutup Semua
+                            </Button>
                         </div>
-                    ))}
+                    </div>
 
-                    <div className="rounded-xl border border-border/60 p-4">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-6">
+                        {filteredSections.map((section) => {
+                            const isCollapsed = processQuery.trim() !== '' ? false : !!collapsedSections[section.id];
+
+                            return (
+                                <div key={section.id} className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
+                                    <div 
+                                        className="flex cursor-pointer select-none items-center justify-between border-b border-border/50 bg-primary px-5 py-3.5 transition-colors hover:bg-primary/95 dark:bg-muted/20 dark:hover:bg-muted/30"
+                                        onClick={() => toggleSection(section.id)}
+                                    >
+                                        <p className="font-semibold text-white">{section.name}</p>
+                                        <div className="text-white/80 dark:text-muted-foreground">
+                                            {isCollapsed ? (
+                                                <ChevronDown className="size-5" />
+                                            ) : (
+                                                <ChevronUp className="size-5" />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className={isCollapsed ? 'hidden' : 'overflow-x-auto'}>
+                                        <Table>
+                                            <TableHeader className="bg-transparent">
+                                                <TableRow className="hover:bg-transparent">
+                                                    <TableHead className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Uraian Process</TableHead>
+                                                    <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kondisi Standar</TableHead>
+                                                    <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kondisi Aktual</TableHead>
+                                                    <TableHead className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keterangan</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {section.items.map((item) => {
+                                                    const valueIndex = form.data.process.values.findIndex((value) => value.item_id === item.id);
+                                                    const value = form.data.process.values[valueIndex];
+
+                                                    return (
+                                                        <TableRow key={item.id} className="transition-colors hover:bg-primary/15">
+                                                            <TableCell className="px-5 align-top pt-5 font-medium text-foreground/80">
+                                                                {item.name}
+                                                            </TableCell>
+                                                            <TableCell className="align-top pt-5 text-muted-foreground">
+                                                                {item.standard_condition ?? '-'}
+                                                            </TableCell>
+                                                            <TableCell className="min-w-[240px] align-top pt-4">
+                                                                {item.input_type === 'number' ? (
+                                                                    <Input
+                                                                        type="number"
+                                                                        className="bg-background shadow-sm transition-all"
+                                                                        placeholder="Masukkan data..."
+                                                                        value={value?.value_number ?? ''}
+                                                                        readOnly={readOnly}
+                                                                        onChange={(event) => {
+                                                                            form.setData('process', {
+                                                                                ...form.data.process,
+                                                                                values: form.data.process.values.map((currentValue, currentIndex) =>
+                                                                                    currentIndex === valueIndex
+                                                                                        ? {
+                                                                                              ...currentValue,
+                                                                                              value_number: event.target.value,
+                                                                                              value_text: '',
+                                                                                          }
+                                                                                        : currentValue,
+                                                                                ),
+                                                                            });
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <Input
+                                                                        className="bg-background shadow-sm transition-all"
+                                                                        placeholder="Masukkan data..."
+                                                                        value={value?.value_text ?? ''}
+                                                                        readOnly={readOnly}
+                                                                        onChange={(event) => {
+                                                                            form.setData('process', {
+                                                                                ...form.data.process,
+                                                                                values: form.data.process.values.map((currentValue, currentIndex) =>
+                                                                                    currentIndex === valueIndex
+                                                                                        ? {
+                                                                                              ...currentValue,
+                                                                                              value_text: event.target.value,
+                                                                                              value_number: '',
+                                                                                          }
+                                                                                        : currentValue,
+                                                                                ),
+                                                                            });
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="px-5 align-top pt-4">
+                                                                <Textarea
+                                                                    value={value?.note ?? ''}
+                                                                    readOnly={readOnly}
+                                                                    onChange={(event) => {
+                                                                        form.setData('process', {
+                                                                            ...form.data.process,
+                                                                            values: form.data.process.values.map((currentValue, currentIndex) =>
+                                                                                currentIndex === valueIndex ? { ...currentValue, note: event.target.value } : currentValue,
+                                                                            ),
+                                                                        });
+                                                                    }}
+                                                                    className="min-h-[44px] resize-y bg-background shadow-sm transition-all"
+                                                                    placeholder="Catatan tambahan..."
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* SECTION MIXING (HIGHLIGHTED) */}
+                    <div className="relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-slate-50 to-transparent p-5 shadow-sm dark:from-muted/10 dark:to-transparent">
+                        <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <p className="flex items-center gap-2 font-semibold">
-                                    <FlaskConical className="size-4 text-primary" />
+                                <h3 className="flex items-center gap-2.5 text-lg font-semibold text-foreground">
+                                    <div className="rounded-md bg-primary/10 p-1.5 text-primary">
+                                        <FlaskConical className="size-4" />
+                                    </div>
                                     Catatan Proses Mixing
-                                </p>
-                                <p className="text-sm text-muted-foreground">Diisi jika ada proses mixing pada hari ini.</p>
+                                </h3>
+                                <p className="mt-1 text-sm text-muted-foreground">Pilih status untuk mencatat aktivitas mixing hari ini.</p>
                             </div>
                             <Select
                                 items={[
@@ -230,7 +310,6 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                 value={form.data.has_mixing ? 'YES' : 'NO'}
                                 onValueChange={(value) => {
                                     const hasMixing = value === 'YES';
-
                                     form.setData('has_mixing', hasMixing);
 
                                     if (!hasMixing) {
@@ -239,7 +318,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                 }}
                                 disabled={readOnly}
                             >
-                                <SelectTrigger className="w-full md:w-[260px]">
+                                <SelectTrigger className="h-10 w-full bg-background shadow-sm md:w-[280px]">
                                     <SelectValue placeholder="Status mixing" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -258,21 +337,27 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                         />
                     </div>
 
+                    {/* SUBMIT FOOTER */}
                     {!readOnly ? (
-                        <div className="flex flex-wrap justify-end gap-2">
-                            <Button type="submit" disabled={form.processing || form.data.process.template_id === null}>
-                                <Save className="size-4" />
+                        <div className="mt-8 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border/50 bg-slate-50/80 p-4 shadow-sm dark:bg-muted/20">
+                            <Button 
+                                type="submit" 
+                                variant="outline"
+                                className="bg-background shadow-sm hover:bg-muted"
+                                disabled={form.processing || form.data.process.template_id === null}
+                            >
+                                <Save className="mr-2 size-4" />
                                 Simpan Draft Process
                             </Button>
                             <Button
                                 type="button"
-                                variant="secondary"
+                                className="shadow-sm"
                                 disabled={form.processing || form.data.process.template_id === null}
                                 onClick={() => {
                                     saveProcess('SUBMIT');
                                 }}
                             >
-                                <Send className="size-4" />
+                                <Send className="mr-2 size-4" />
                                 Submit Harian
                             </Button>
                         </div>

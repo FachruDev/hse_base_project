@@ -1,218 +1,197 @@
-import { router } from '@inertiajs/react';
-import { CalendarDays, Filter, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, Droplets } from 'lucide-react';
 import * as React from 'react';
 
-import {
-    catatanPengolahanLimbahAirCreate,
-    catatanPengolahanLimbahAirIndex,
-    catatanPengolahanLimbahAirMonthlyShow,
-} from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { CatatanPengolahanLimbahAirListingPayload } from '@/modules/dashboard/types';
+import type { CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard/types';
+import { CatatanProsesForm } from './catatan-proses-form';
+import { ChecklistHarianForm } from './checklist-harian-form';
+import type { EntryView } from './entry-form-types';
 
-type CatatanPengolahanLimbahAirListingProps = {
-    listing: CatatanPengolahanLimbahAirListingPayload;
+type CatatanPengolahanLimbahAirEntryProps = {
+    flash: {
+        success?: string | null;
+        error?: string | null;
+    };
+    entryForm: CatatanPengolahanLimbahAirEntryPayload;
     userId: string;
 };
 
-export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPengolahanLimbahAirListingProps) {
-    const [search, setSearch] = React.useState(listing.filters.search);
-    const [status, setStatus] = React.useState(listing.filters.status || 'ALL');
-    const [year, setYear] = React.useState(String(listing.filters.year));
-
-    const submitFilters = (nextSearch: string, nextStatus: string, nextYear: string) => {
-        router.get(
-            catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } }),
-            {
-                search: nextSearch || undefined,
-                status: nextStatus === 'ALL' ? undefined : nextStatus,
-                year: Number(nextYear),
-            },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                replace: true,
-            },
-        );
-    };
+export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: CatatanPengolahanLimbahAirEntryProps) {
+    const [activeView, setActiveView] = React.useState<EntryView>('CHECKLIST');
+    const checklistProgress = `${entryForm.checklist.items.filter((item) => item.status !== null && item.status !== '').length}/${entryForm.checklist.items.length}`;
+    const processTotalItems = entryForm.process.sections.reduce((total, section) => total + section.items.length, 0);
+    const processFilledItems = entryForm.process.sections
+        .flatMap((section) => section.items)
+        .filter((item) => item.value_number !== null || (item.value_text ?? '').trim() !== '').length;
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_46%)] px-4 py-6 lg:px-6 lg:py-8">
-            <div className="mx-auto flex max-w-7xl flex-col gap-6">
-                <Card className="border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60">
-                    <CardHeader className="gap-4">
-                        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                            <div className="space-y-2">
-                                <Badge variant="outline">Laporan Bulanan</Badge>
-                                <CardTitle className="text-2xl">{listing.module.title}</CardTitle>
-                                <CardDescription>{listing.module.subtitle}</CardDescription>
+        <div className="min-h-screen bg-slate-50/50 pb-12 pt-6 dark:bg-background px-4 lg:px-8">
+            <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:gap-8">
+                
+                {/* HEADER CARD */}
+                <Card className="relative overflow-hidden border-border/50 shadow-sm">
+                    {/* Decorative Top Accent Line */}
+                    <div className="absolute inset-x-0 top-0 h-1.5 bg-primary" />
+                    
+                    <CardHeader className="gap-6 pb-6 pt-8">
+                        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-none">
+                                        Workspace Harian IPAL
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <CardTitle className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                                        {entryForm.module.title}
+                                    </CardTitle>
+                                    <CardDescription className="mt-1.5 text-base text-muted-foreground/80">
+                                        {entryForm.module.subtitle}
+                                    </CardDescription>
+                                </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Badge variant={listing.today_entry.filled_today ? 'secondary' : 'destructive'}>
-                                    {listing.today_entry.filled_today
-                                        ? 'Hari Ini Sudah Diisi'
-                                        : 'Hari ini belum diisi'}
+                            
+                            <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+                                <Badge variant="outline" className="px-3 py-1.5 text-sm font-medium bg-background shadow-sm">
+                                    Tanggal {entryForm.entry.tanggal}
                                 </Badge>
-                                <Button render={<a href={catatanPengolahanLimbahAirCreate.url({ query: { user_id: userId } })} />}>
-                                    {!listing.today_entry.filled_today ? <Plus className="size-4" /> : null}
-                                    {listing.today_entry.action_label}
+                                <Badge 
+                                    variant={entryForm.entry.read_only ? 'secondary' : 'default'}
+                                    className="px-3 py-1.5 text-sm font-medium shadow-sm"
+                                >
+                                    {entryForm.entry.read_only ? 'Mode Lihat' : 'Mode Input'}
+                                </Badge>
+                                <Button
+                                    variant="outline"
+                                    className="shadow-sm transition-all hover:bg-muted"
+                                    render={
+                                        <a
+                                            href={catatanPengolahanLimbahAirIndex.url({
+                                                query: {
+                                                    user_id: userId,
+                                                    year: Number(entryForm.entry.tanggal.slice(0, 4)),
+                                                },
+                                            })}
+                                        />
+                                    }
+                                >
+                                    <ArrowLeft className="mr-2 size-4" />
+                                    Kembali ke Listing
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
                 </Card>
 
-                <Card className="border-none shadow-sm ring-1 ring-border/60">
-                    <CardHeader className="gap-4 border-b border-border/60 bg-muted/20">
-                        <div className="flex items-center gap-2">
-                            <Filter className="size-4 text-muted-foreground" />
-                            <CardTitle className="text-base">Filter Periode</CardTitle>
-                        </div>
-                        <form
-                            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_130px_auto_auto]"
-                            onSubmit={(event) => {
-                                event.preventDefault();
-                                submitFilters(search, status, year);
-                            }}
-                        >
-                            <div className="relative">
-                                <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    value={search}
-                                    onChange={(event) => setSearch(event.target.value)}
-                                    placeholder="Cari bulan atau nomor bulan"
-                                    className="pl-8"
-                                />
-                            </div>
+                {/* FLASH MESSAGES */}
+                {flash.success ? (
+                    <Alert className="border-green-500/20 bg-green-50/50 text-green-800 dark:bg-green-500/10 dark:text-green-400 shadow-sm">
+                        <AlertTitle className="text-green-800 dark:text-green-400">Berhasil</AlertTitle>
+                        <AlertDescription>{flash.success}</AlertDescription>
+                    </Alert>
+                ) : null}
 
-                            <Select
-                                items={[
-                                    { value: 'ALL', label: 'Semua status proses' },
-                                    { value: 'DRAFT', label: 'Draft' },
-                                    { value: 'SUBMITTED', label: 'Pending' },
-                                    { value: 'APPROVED', label: 'Approved' },
-                                ]}
-                                value={status}
-                                onValueChange={(value) => {
-                                    const nextValue = value ?? 'ALL';
-                                    setStatus(nextValue);
-                                    submitFilters(search, nextValue, year);
-                                }}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Semua status proses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ALL">Semua status proses</SelectItem>
-                                    <SelectItem value="DRAFT">Draft</SelectItem>
-                                    <SelectItem value="SUBMITTED">Pending</SelectItem>
-                                    <SelectItem value="APPROVED">Approved</SelectItem>
-                                </SelectContent>
-                            </Select>
+                {flash.error ? (
+                    <Alert variant="destructive" className="shadow-sm">
+                        <AlertTitle>Gagal</AlertTitle>
+                        <AlertDescription>{flash.error}</AlertDescription>
+                    </Alert>
+                ) : null}
 
-                            <Input
-                                value={year}
-                                onChange={(event) => setYear(event.target.value)}
-                                type="number"
-                                min={2000}
-                                max={2100}
-                                placeholder="Tahun"
-                            />
-
-                            <Button type="submit">Cari</Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    setSearch('');
-                                    setStatus('ALL');
-                                    setYear(String(new Date().getFullYear()));
-                                    router.get(catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } }));
-                                }}
-                            >
-                                <RotateCcw className="size-4" />
-                                Reset
-                            </Button>
-                        </form>
+                {/* SELECTION TABS / CARDS */}
+                <Card className="border-border/50 shadow-sm">
+                    <CardHeader className="pb-5">
+                        <CardTitle className="text-lg font-semibold text-foreground">Pilih Form yang Ingin Diisi</CardTitle>
+                        <CardDescription>
+                            Checklist dipisah dari catatan proses. Batch mixing tetap berada di dalam catatan proses sesuai form fisik.
+                        </CardDescription>
                     </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {/* BUTTON CHECKLIST */}
+                            <button
+                                type="button"
+                                onClick={() => setActiveView('CHECKLIST')}
+                                className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border p-5 text-left transition-all duration-200 ${
+                                    activeView === 'CHECKLIST' 
+                                        ? 'border-primary ring-1 ring-primary bg-primary/[0.03] shadow-md dark:bg-primary/10' 
+                                        : 'border-border/60 bg-card hover:border-primary/40 hover:shadow-sm hover:bg-muted/40'
+                                }`}
+                            >
+                                <div className="flex w-full items-start justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`rounded-lg p-2.5 transition-colors ${
+                                            activeView === 'CHECKLIST' 
+                                                ? 'bg-primary text-primary-foreground' 
+                                                : 'bg-primary/10 text-primary group-hover:bg-primary/20'
+                                        }`}>
+                                            <ClipboardCheck className="size-5" />
+                                        </div>
+                                        <div>
+                                            <p className={`font-semibold tracking-tight ${
+                                                activeView === 'CHECKLIST' ? 'text-foreground' : 'text-foreground/80 group-hover:text-foreground'
+                                            }`}>
+                                                Form Checklist Harian
+                                            </p>
+                                            <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
+                                                Status perlengkapan harian (rekap bulanan).
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Badge variant={activeView === 'CHECKLIST' ? 'default' : 'secondary'} className="shrink-0 font-mono shadow-sm">
+                                        {checklistProgress}
+                                    </Badge>
+                                </div>
+                            </button>
 
-                    <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="px-4">Periode</TableHead>
-                                    <TableHead>Checklist</TableHead>
-                                    <TableHead>Catatan Proses</TableHead>
-                                    <TableHead>Batch Mixing</TableHead>
-                                    <TableHead>Approval Checklist</TableHead>
-                                    <TableHead className="px-4 text-right">Aksi</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {listing.table.data.length > 0 ? (
-                                    listing.table.data.map((row) => (
-                                        <TableRow key={`${row.year}-${row.month}`}>
-                                            <TableCell className="px-4 font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <CalendarDays className="size-4 text-muted-foreground" />
-                                                    {row.period_label}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>{row.checklist_days_count} hari</TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    <Badge variant="outline">{row.process_logs_count} log</Badge>
-                                                    <Badge variant="outline">{row.process_draft_count} draft</Badge>
-                                                    <Badge variant="secondary">{row.process_pending_count} pending</Badge>
-                                                    <Badge>{row.process_approved_count} approved</Badge>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>{row.batch_mixing_days_count} hari</TableCell>
-                                            <TableCell>
-                                                <Badge variant={row.checklist_approval_status === 'APPROVED' ? 'default' : 'outline'}>
-                                                    {row.checklist_approval_status === 'APPROVED' ? 'Approved' : 'Belum Approved'}
-                                                </Badge>
-                                                {row.checklist_approved_by ? (
-                                                    <p className="mt-1 text-xs text-muted-foreground">
-                                                        {row.checklist_approved_by} - {row.checklist_approved_at}
-                                                    </p>
-                                                ) : null}
-                                            </TableCell>
-                                            <TableCell className="px-4 text-right">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    render={
-                                                        <a
-                                                            href={catatanPengolahanLimbahAirMonthlyShow.url(
-                                                                { year: row.year, month: row.month },
-                                                                { query: { user_id: userId } },
-                                                            )}
-                                                        />
-                                                    }
-                                                >
-                                                    Detail Bulan
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                                            Belum ada periode untuk filter yang dipilih.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                            {/* BUTTON PROCESS */}
+                            <button
+                                type="button"
+                                onClick={() => setActiveView('PROCESS')}
+                                className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border p-5 text-left transition-all duration-200 ${
+                                    activeView === 'PROCESS' 
+                                        ? 'border-primary ring-1 ring-primary bg-primary/[0.03] shadow-md dark:bg-primary/10' 
+                                        : 'border-border/60 bg-card hover:border-primary/40 hover:shadow-sm hover:bg-muted/40'
+                                }`}
+                            >
+                                <div className="flex w-full items-start justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`rounded-lg p-2.5 transition-colors ${
+                                            activeView === 'PROCESS' 
+                                                ? 'bg-primary text-primary-foreground' 
+                                                : 'bg-primary/10 text-primary group-hover:bg-primary/20'
+                                        }`}>
+                                            <Droplets className="size-5" />
+                                        </div>
+                                        <div>
+                                            <p className={`font-semibold tracking-tight ${
+                                                activeView === 'PROCESS' ? 'text-foreground' : 'text-foreground/80 group-hover:text-foreground'
+                                            }`}>
+                                                Form Catatan Process
+                                            </p>
+                                            <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
+                                                Catatan proses dengan batch mixing.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Badge variant={activeView === 'PROCESS' ? 'default' : 'secondary'} className="shrink-0 font-mono shadow-sm">
+                                        {processFilledItems}/{processTotalItems}
+                                    </Badge>
+                                </div>
+                            </button>
+                        </div>
                     </CardContent>
                 </Card>
+
+                {/* DYNAMIC FORMS (No changes here) */}
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    {activeView === 'CHECKLIST' ? <ChecklistHarianForm entryForm={entryForm} userId={userId} /> : null}
+                    {activeView === 'PROCESS' ? <CatatanProsesForm entryForm={entryForm} userId={userId} /> : null}
+                </div>
             </div>
         </div>
     );

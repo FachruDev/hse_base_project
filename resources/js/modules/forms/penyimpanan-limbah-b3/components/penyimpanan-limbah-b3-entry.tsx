@@ -201,11 +201,13 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                                 if (value === null || value === '') {
                                                     form.setData('waste_type_id', null);
                                                     form.setData('waste_type_other', '');
+
                                                     return;
                                                 }
 
                                                 if (value === 'OTHER') {
                                                     form.setData('waste_type_id', null);
+
                                                     return;
                                                 }
 
@@ -255,11 +257,13 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                                 if (value === null || value === '') {
                                                     form.setData('initiator_department_id', null);
                                                     form.setData('initiator_department_other', '');
+
                                                     return;
                                                 }
 
                                                 if (value === 'OTHER') {
                                                     form.setData('initiator_department_id', null);
+
                                                     return;
                                                 }
 

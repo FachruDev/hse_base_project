@@ -140,7 +140,7 @@ export function DashboardSidebar({
             <SidebarHeader className="gap-3">
                 <div className="flex items-center justify-between rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3">
                     <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex size-10 items-center justify-center rounded-2xl bg-blue-600 text-xs font-semibold text-white shadow-sm">
+                        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
                             IP
                         </div>
                         <div className="min-w-0">
