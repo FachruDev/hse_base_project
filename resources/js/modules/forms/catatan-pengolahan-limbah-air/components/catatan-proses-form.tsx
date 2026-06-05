@@ -248,6 +248,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                         placeholder="Masukkan angka..."
                                                                         value={value?.value_number ?? ''}
                                                                         readOnly={readOnly}
+                                                                        required={!readOnly}
                                                                         onChange={(event) => {
                                                                             form.setData('process', {
                                                                                 ...form.data.process,
@@ -273,6 +274,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                             });
                                                                         }}
                                                                         disabled={readOnly}
+                                                                        required={!readOnly}
                                                                     >
                                                                         <SelectTrigger className="w-full bg-background shadow-sm transition-all">
                                                                             <SelectValue placeholder="Pilih standar..." />
@@ -298,6 +300,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                                 });
                                                                             }}
                                                                             disabled={readOnly}
+                                                                            required={!readOnly}
                                                                         >
                                                                             <SelectTrigger className="w-full bg-background shadow-sm transition-all">
                                                                                 <SelectValue placeholder="Pilih standar..." />
@@ -313,6 +316,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                                 placeholder="Masukkan kondisi aktual..."
                                                                                 value={value.value_text === ' ' ? '' : value.value_text}
                                                                                 readOnly={readOnly}
+                                                                                required={!readOnly}
                                                                                 onChange={(event) => {
                                                                                     form.setData('process', {
                                                                                         ...form.data.process,
@@ -332,6 +336,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                         placeholder="Masukkan data..."
                                                                         value={value?.value_text ?? ''}
                                                                         readOnly={readOnly}
+                                                                        required={!readOnly}
                                                                         onChange={(event) => {
                                                                             form.setData('process', {
                                                                                 ...form.data.process,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { useForm } from '@inertiajs/react';
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { confirmDelete } from '@/lib/sweetalert';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,18 +30,20 @@ export function BatchMixingSection({ entryForm, form, readOnly, selectedBatchNo,
         }));
     };
 
-    const totalSectionsCount = form.data.batch.length * entryForm.batch.sections.length;
-    const isAllClosed = Object.keys(collapsedSections).length > 0 && Object.keys(collapsedSections).length === totalSectionsCount;
-
-    const openAllSections = () => setCollapsedSections({});
-    const closeAllSections = () => {
-        const allKeys: Record<string, boolean> = {};
-        form.data.batch.forEach((batch) => {
-            entryForm.batch.sections.forEach((section) => {
-                allKeys[`batch-${batch.batch_no}-section-${section.id}`] = true;
-            });
+    const openBatchSections = (batchNo: number) => {
+        const newKeys: Record<string, boolean> = {};
+        entryForm.batch.sections.forEach((section) => {
+            newKeys[`batch-${batchNo}-section-${section.id}`] = false;
         });
-        setCollapsedSections(allKeys);
+        setCollapsedSections((prev) => ({ ...prev, ...newKeys }));
+    };
+    
+    const closeBatchSections = (batchNo: number) => {
+        const newKeys: Record<string, boolean> = {};
+        entryForm.batch.sections.forEach((section) => {
+            newKeys[`batch-${batchNo}-section-${section.id}`] = true;
+        });
+        setCollapsedSections((prev) => ({ ...prev, ...newKeys }));
     };
 
     if (!form.data.has_mixing) {
@@ -58,23 +61,6 @@ export function BatchMixingSection({ entryForm, form, readOnly, selectedBatchNo,
             {/* Header controls */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3">
                 <p className="text-sm font-semibold text-foreground">Daftar Batch Mixing</p>
-                {form.data.batch.length > 0 && (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            if (isAllClosed) {
-                                openAllSections();
-                            } else {
-                                closeAllSections();
-                            }
-                        }}
-                        className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
-                    >
-                        {isAllClosed ? 'Buka Semua' : 'Tutup Semua'}
-                    </Button>
-                )}
             </div>
 
             {!readOnly ? (
@@ -144,151 +130,198 @@ export function BatchMixingSection({ entryForm, form, readOnly, selectedBatchNo,
                         .sort((a, b) => a.batch_no - b.batch_no)
                         .map((batch) => {
                             const batchFormIndex = form.data.batch.findIndex((currentBatch) => currentBatch.batch_no === batch.batch_no);
+                            const isBatchCollapsed = collapsedSections[`batch-${batch.batch_no}`] || false;
 
                             return (
                                 <div key={batch.batch_no} className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition-all duration-200 hover:shadow-md">
                                     {/* Header Batch */}
-                                    <div className="flex items-center justify-between border-b border-border/50 bg-primary px-5 py-3 dark:bg-muted/20">
+                                    <div 
+                                        className="flex cursor-pointer select-none items-center justify-between border-b border-border/50 bg-primary px-5 py-3 dark:bg-muted/20 hover:bg-primary/90 transition-colors"
+                                        onClick={() => toggleSection(`batch-${batch.batch_no}`)}
+                                    >
                                         <div className="flex items-center gap-2.5">
+                                            <div className="flex size-6 items-center justify-center rounded-md bg-primary-foreground/20 text-primary-foreground transition-transform">
+                                                {isBatchCollapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+                                            </div>
                                             <div className="flex size-7 items-center justify-center rounded-md bg-primary/20 font-mono text-lg font-bold text-primary-foreground">
                                                 #{batch.batch_no}
                                             </div>
                                             <p className="font-semibold text-sm text-primary-foreground">Detail Batch {batch.batch_no}</p>
                                         </div>
-                                        {!readOnly ? (
+                                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                             <Button
                                                 type="button"
-                                                variant="ghost"
+                                                variant="outline"
                                                 size="sm"
-                                                className="h-8 px-2 bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
-                                                aria-label={`Hapus batch ${batch.batch_no}`}
                                                 onClick={() => {
-                                                    form.setData(
-                                                        'batch',
-                                                        form.data.batch.filter((currentBatch) => currentBatch.batch_no !== batch.batch_no),
-                                                    );
+                                                    let isAllClosed = true;
+                                                    entryForm.batch.sections.forEach((section) => {
+                                                        if (!collapsedSections[`batch-${batch.batch_no}-section-${section.id}`]) {
+                                                            isAllClosed = false;
+                                                        }
+                                                    });
+                                                    
+                                                    if (isAllClosed) {
+                                                        openBatchSections(batch.batch_no);
+                                                    } else {
+                                                        closeBatchSections(batch.batch_no);
+                                                    }
                                                 }}
+                                                className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95 border-none"
                                             >
-                                                <Trash2 className="size-4" />
-                                                <span className="sr-only sm:not-sr-only sm:ml-2 sm:text-xs">Hapus</span>
+                                                {(() => {
+                                                    let isAllClosed = true;
+                                                    entryForm.batch.sections.forEach((section) => {
+                                                        if (!collapsedSections[`batch-${batch.batch_no}-section-${section.id}`]) {
+                                                            isAllClosed = false;
+                                                        }
+                                                    });
+                                                    return isAllClosed ? 'Buka Semua' : 'Tutup Semua';
+                                                })()}
                                             </Button>
-                                        ) : null}
+                                            {!readOnly ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2 bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
+                                                    aria-label={`Hapus batch ${batch.batch_no}`}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        const confirmed = await confirmDelete('Hapus Batch?', `Anda yakin ingin menghapus Batch ${batch.batch_no}?`);
+                                                        if (confirmed) {
+                                                            form.setData(
+                                                                'batch',
+                                                                form.data.batch.filter((currentBatch) => currentBatch.batch_no !== batch.batch_no),
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                    <span className="sr-only sm:not-sr-only sm:ml-2 sm:text-xs">Hapus</span>
+                                                </Button>
+                                            ) : null}
+                                        </div>
                                     </div>
                                     
                                     {/* Body Batch (Sections) */}
-                                    <div className="p-2 sm:p-4 space-y-4">
-                                        {entryForm.batch.sections.map((section) => {
-                                            const sectionKey = `batch-${batch.batch_no}-section-${section.id}`;
-                                            const isCollapsed = collapsedSections[sectionKey];
+                                    {!isBatchCollapsed && (
+                                        <div className="p-2 sm:p-4 space-y-4 animate-in fade-in slide-in-from-top-1">
+                                            {entryForm.batch.sections.map((section) => {
+                                                const sectionKey = `batch-${batch.batch_no}-section-${section.id}`;
+                                                const isCollapsed = collapsedSections[sectionKey];
 
-                                            return (
-                                                <div key={section.id} className="rounded-lg border border-border/40 bg-slate-50/30 dark:bg-muted/5 transition-all duration-200">
-                                                    <div
-                                                        className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-primary rounded-lg hover:bg-primary/85 transition-all duration-300"
-                                                        onClick={() => toggleSection(sectionKey)}
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex size-6 items-center justify-center rounded-md bg-muted text-muted-foreground transition-transform">
-                                                                {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+                                                return (
+                                                    <div key={section.id} className="rounded-lg border border-border/40 bg-slate-50/30 dark:bg-muted/5 transition-all duration-200">
+                                                        <div
+                                                            className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-primary rounded-lg hover:bg-primary/85 transition-all duration-300"
+                                                            onClick={() => toggleSection(sectionKey)}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex size-6 items-center justify-center rounded-md bg-muted text-muted-foreground transition-transform">
+                                                                    {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+                                                                </div>
+                                                                <p className="font-medium text-primary-foreground">{section.name}</p>
                                                             </div>
-                                                            <p className="font-medium text-primary-foreground">{section.name}</p>
                                                         </div>
+
+                                                        {!isCollapsed && (
+                                                            <div className="border-t border-border/40 p-0 animate-in fade-in slide-in-from-top-1">
+                                                                <div className="overflow-x-auto">
+                                                                    <Table>
+                                                                        <TableHeader className="bg-transparent">
+                                                                            <TableRow className="hover:bg-transparent">
+                                                                                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[40%]">Uraian</TableHead>
+                                                                                <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[60%]">Nilai Aktual</TableHead>
+                                                                            </TableRow>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                            {section.items.map((batchItem) => {
+                                                                                // Find the value in the batch form state
+                                                                                const valueIndex = batch.values.findIndex(v => v.item_id === batchItem.id);
+                                                                                const value = valueIndex !== -1 ? batch.values[valueIndex] : null;
+
+                                                                                if (!value) return null;
+
+                                                                                return (
+                                                                                    <TableRow key={`${batch.batch_no}-${value.item_id}`} className="transition-colors hover:bg-primary/15 odd:bg-primary/10">
+                                                                                        <TableCell className="px-4 py-3 font-medium text-foreground/80">
+                                                                                            {batchItem.name}
+                                                                                            <span className="ml-2 text-[10px] uppercase text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
+                                                                                                {batchItem.input_type}
+                                                                                            </span>
+                                                                                        </TableCell>
+                                                                                        <TableCell className="min-w-[240px] py-2 pr-4">
+                                                                                            {batchItem.input_type === 'number' ? (
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    className="bg-background shadow-sm transition-all focus-visible:ring-primary/50"
+                                                                                                    value={value.value_number}
+                                                                                                    readOnly={readOnly}
+                                                                                                    required={!readOnly}
+                                                                                                    onChange={(event) => {
+                                                                                                        form.setData('batch', [
+                                                                                                            ...form.data.batch.map((existingBatch, existingBatchIndex) => {
+                                                                                                                if (existingBatchIndex !== batchFormIndex) {
+                                                                                                                    return existingBatch;
+                                                                                                                }
+                                                                                                                return {
+                                                                                                                    ...existingBatch,
+                                                                                                                    values: existingBatch.values.map((existingValue, existingValueIndex) =>
+                                                                                                                        existingValueIndex === valueIndex
+                                                                                                                            ? {
+                                                                                                                                ...existingValue,
+                                                                                                                                value_number: event.target.value,
+                                                                                                                            }
+                                                                                                                            : existingValue,
+                                                                                     ),
+                                                                                                                };
+                                                                                                            }),
+                                                                                                        ]);
+                                                                                                    }}
+                                                                                                />
+                                                                                            ) : (
+                                                                                                <Input
+                                                                                                    className="bg-background shadow-sm transition-all focus-visible:ring-primary/50"
+                                                                                                    value={value.value_text}
+                                                                                                    readOnly={readOnly}
+                                                                                                    required={!readOnly}
+                                                                                                    onChange={(event) => {
+                                                                                                        form.setData('batch', [
+                                                                                                            ...form.data.batch.map((existingBatch, existingBatchIndex) => {
+                                                                                                                if (existingBatchIndex !== batchFormIndex) {
+                                                                                                                    return existingBatch;
+                                                                                                                }
+                                                                                                                return {
+                                                                                                                    ...existingBatch,
+                                                                                                                    values: existingBatch.values.map((existingValue, existingValueIndex) =>
+                                                                                                                        existingValueIndex === valueIndex
+                                                                                                                            ? {
+                                                                                                                                ...existingValue,
+                                                                                                                                value_text: event.target.value,
+                                                                                                                            }
+                                                                                                                            : existingValue,
+                                                                                     ),
+                                                                                                                };
+                                                                                                            }),
+                                                                                                        ]);
+                                                                                                    }}
+                                                                                                />
+                                                                                            )}
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                );
+                                                                            })}
+                                                                        </TableBody>
+                                                                    </Table>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-
-                                                    {!isCollapsed && (
-                                                        <div className="border-t border-border/40 p-0 animate-in fade-in slide-in-from-top-1">
-                                                            <div className="overflow-x-auto">
-                                                                <Table>
-                                                                    <TableHeader className="bg-transparent">
-                                                                        <TableRow className="hover:bg-transparent">
-                                                                            <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[40%]">Uraian</TableHead>
-                                                                            <TableHead className="py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[60%]">Nilai Aktual</TableHead>
-                                                                        </TableRow>
-                                                                    </TableHeader>
-                                                                    <TableBody>
-                                                                        {section.items.map((batchItem) => {
-                                                                            // Find the value in the batch form state
-                                                                            const valueIndex = batch.values.findIndex(v => v.item_id === batchItem.id);
-                                                                            const value = valueIndex !== -1 ? batch.values[valueIndex] : null;
-
-                                                                            if (!value) return null;
-
-                                                                            return (
-                                                                                <TableRow key={`${batch.batch_no}-${value.item_id}`} className="transition-colors hover:bg-primary/15 odd:bg-primary/10">
-                                                                                    <TableCell className="px-4 py-3 font-medium text-foreground/80">
-                                                                                        {batchItem.name}
-                                                                                        <span className="ml-2 text-[10px] uppercase text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
-                                                                                            {batchItem.input_type}
-                                                                                        </span>
-                                                                                    </TableCell>
-                                                                                    <TableCell className="min-w-[240px] py-2 pr-4">
-                                                                                        {batchItem.input_type === 'number' ? (
-                                                                                            <Input
-                                                                                                type="number"
-                                                                                                className="bg-background shadow-sm transition-all focus-visible:ring-primary/50"
-                                                                                                value={value.value_number}
-                                                                                                readOnly={readOnly}
-                                                                                                onChange={(event) => {
-                                                                                                    form.setData('batch', [
-                                                                                                        ...form.data.batch.map((existingBatch, existingBatchIndex) => {
-                                                                                                            if (existingBatchIndex !== batchFormIndex) {
-                                                                                                                return existingBatch;
-                                                                                                            }
-                                                                                                            return {
-                                                                                                                ...existingBatch,
-                                                                                                                values: existingBatch.values.map((existingValue, existingValueIndex) =>
-                                                                                                                    existingValueIndex === valueIndex
-                                                                                                                        ? {
-                                                                                                                            ...existingValue,
-                                                                                                                            value_number: event.target.value,
-                                                                                                                        }
-                                                                                                                        : existingValue,
-                                                                                                                ),
-                                                                                                            };
-                                                                                                        }),
-                                                                                                    ]);
-                                                                                                }}
-                                                                                            />
-                                                                                        ) : (
-                                                                                            <Input
-                                                                                                className="bg-background shadow-sm transition-all focus-visible:ring-primary/50"
-                                                                                                value={value.value_text}
-                                                                                                readOnly={readOnly}
-                                                                                                onChange={(event) => {
-                                                                                                    form.setData('batch', [
-                                                                                                        ...form.data.batch.map((existingBatch, existingBatchIndex) => {
-                                                                                                            if (existingBatchIndex !== batchFormIndex) {
-                                                                                                                return existingBatch;
-                                                                                                            }
-                                                                                                            return {
-                                                                                                                ...existingBatch,
-                                                                                                                values: existingBatch.values.map((existingValue, existingValueIndex) =>
-                                                                                                                    existingValueIndex === valueIndex
-                                                                                                                        ? {
-                                                                                                                            ...existingValue,
-                                                                                                                            value_text: event.target.value,
-                                                                                                                        }
-                                                                                                                        : existingValue,
-                                                                                                                ),
-                                                                                                            };
-                                                                                                        }),
-                                                                                                    ]);
-                                                                                                }}
-                                                                                            />
-                                                                                        )}
-                                                                                    </TableCell>
-                                                                                </TableRow>
-                                                                            );
-                                                                        })}
-                                                                    </TableBody>
-                                                                </Table>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
