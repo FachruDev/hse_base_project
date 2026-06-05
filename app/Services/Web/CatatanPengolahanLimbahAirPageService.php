@@ -37,7 +37,17 @@ class CatatanPengolahanLimbahAirPageService
             ->get()
             ->keyBy('month');
 
-        $rows = collect(range(1, 12))
+        $currentYear = (int) now()->year;
+        $currentMonth = (int) now()->month;
+
+        $startMonth = ($year === 2026) ? 6 : 1;
+        $endMonth = ($year === $currentYear) ? $currentMonth : 12;
+
+        $months = ($year >= 2026 && $year <= $currentYear && $startMonth <= $endMonth)
+            ? range($startMonth, $endMonth)
+            : [];
+
+        $rows = collect($months)
             ->reverse()
             ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month)))
             ->filter(fn (array $row): bool => $this->matchesMonthlyFilters($row, $filters))
@@ -580,11 +590,7 @@ class CatatanPengolahanLimbahAirPageService
             return 'Isi Harian';
         }
 
-        return match ($status) {
-            'SUBMITTED' => 'Lihat Entri Hari Ini',
-            'APPROVED' => 'Lihat Entri Hari Ini',
-            default => 'Lanjutkan Draft',
-        };
+        return 'Lihat Isian Hari Ini';
     }
 
     private function resolveEntryMode(?string $status, bool $filledToday, bool $forceReadOnly): string

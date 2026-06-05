@@ -55,11 +55,11 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                             <div className="flex flex-wrap items-center gap-3">
                                 <Badge variant={listing.today_entry.filled_today ? 'secondary' : 'destructive'}>
                                     {listing.today_entry.filled_today
-                                        ? `Hari ini: ${listing.today_entry.status ?? 'DRAFT'}`
+                                        ? 'Hari Ini Sudah Diisi'
                                         : 'Hari ini belum diisi'}
                                 </Badge>
                                 <Button render={<a href={catatanPengolahanLimbahAirCreate.url({ query: { user_id: userId } })} />}>
-                                    <Plus className="size-4" />
+                                    {!listing.today_entry.filled_today ? <Plus className="size-4" /> : null}
                                     {listing.today_entry.action_label}
                                 </Button>
                             </div>
@@ -93,9 +93,9 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                             <Select
                                 items={[
                                     { value: 'ALL', label: 'Semua status proses' },
-                                    { value: 'DRAFT', label: 'Ada draft' },
-                                    { value: 'SUBMITTED', label: 'Ada pending' },
-                                    { value: 'APPROVED', label: 'Ada approved' },
+                                    { value: 'DRAFT', label: 'Draft' },
+                                    { value: 'SUBMITTED', label: 'Pending' },
+                                    { value: 'APPROVED', label: 'Approved' },
                                 ]}
                                 value={status}
                                 onValueChange={(value) => {
@@ -109,9 +109,9 @@ export function CatatanPengolahanLimbahAirListing({ listing, userId }: CatatanPe
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="ALL">Semua status proses</SelectItem>
-                                    <SelectItem value="DRAFT">Ada draft</SelectItem>
-                                    <SelectItem value="SUBMITTED">Ada pending</SelectItem>
-                                    <SelectItem value="APPROVED">Ada approved</SelectItem>
+                                    <SelectItem value="DRAFT">Draft</SelectItem>
+                                    <SelectItem value="SUBMITTED">Pending</SelectItem>
+                                    <SelectItem value="APPROVED">Approved</SelectItem>
                                 </SelectContent>
                             </Select>
 
