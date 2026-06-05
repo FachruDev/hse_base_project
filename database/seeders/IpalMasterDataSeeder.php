@@ -82,53 +82,53 @@ class IpalMasterDataSeeder extends Seeder
 
         $sections = [
             'Penampungan Awal' => [
-                ['name' => 'Debit inlet pada flow meter', 'standard_condition' => 'Berjalan', 'input_type' => 'number'],
-                ['name' => 'Penyaringan sampah kasar', 'standard_condition' => 'Saringan bersih tidak tersumbat', 'input_type' => 'text'],
+                ['name' => 'Debit inlet pada flow meter', 'standard_condition' => 'Berjalan', 'input_type' => 'option_standard'],
+                ['name' => 'Penyaringan sampah kasar', 'standard_condition' => 'Saringan bersih tidak tersumbat', 'input_type' => 'option_standard'],
             ],
             'Perangkap Lemak/Minyak' => [
-                ['name' => 'Kondisi endapan lemak/minyak', 'standard_condition' => 'Warna muda', 'input_type' => 'text'],
-                ['name' => 'Efluent', 'standard_condition' => 'Warna putih pekat', 'input_type' => 'text'],
+                ['name' => 'Kondisi endapan lemak/minyak', 'standard_condition' => 'Warna muda', 'input_type' => 'option_standard'],
+                ['name' => 'Efluent', 'standard_condition' => 'Warna putih pekat', 'input_type' => 'option_with_manual'],
             ],
             'Ekualisasi' => [
-                ['name' => 'Kepekatan air limbah', 'standard_condition' => 'Pekat', 'input_type' => 'text'],
-                ['name' => 'Warna air limbah', 'standard_condition' => 'Muda', 'input_type' => 'text'],
+                ['name' => 'Kepekatan air limbah', 'standard_condition' => 'Pekat', 'input_type' => 'option_standard'],
+                ['name' => 'Warna air limbah', 'standard_condition' => 'Muda', 'input_type' => 'option_standard'],
                 ['name' => 'pH', 'standard_condition' => 'pH 4 - 10', 'input_type' => 'number'],
             ],
             'Sedimentasi Kimia' => [
-                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'text'],
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'text'],
+                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option_standard'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
                 ['name' => 'Monitoring pH', 'standard_condition' => 'pH 6 - 9', 'input_type' => 'number'],
-                ['name' => 'Masukan udara', 'standard_condition' => 'Berfungsi, udara merata', 'input_type' => 'text'],
+                ['name' => 'Masukan udara', 'standard_condition' => 'Berfungsi, udara merata', 'input_type' => 'option_standard'],
             ],
             'Aerasi (Lumpur Aktif)' => [
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'text'],
-                ['name' => 'Lumpur (SV 30)', 'standard_condition' => '20% - 50%, warna coklat terang', 'input_type' => 'text'],
-                ['name' => 'Busa', 'standard_condition' => 'Putih tipis', 'input_type' => 'text'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
+                ['name' => 'Lumpur (SV 30)', 'standard_condition' => '20% - 50%, warna coklat terang', 'input_type' => 'option_standard'],
+                ['name' => 'Busa', 'standard_condition' => 'Putih tipis', 'input_type' => 'option_standard'],
             ],
             'Clarifier' => [
-                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'text'],
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'text'],
-                ['name' => 'Pengembalian lumpur', 'standard_condition' => 'Segar, warna coklat terang', 'input_type' => 'text'],
+                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option_standard'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
+                ['name' => 'Pengembalian lumpur', 'standard_condition' => 'Segar, warna coklat terang', 'input_type' => 'option_standard'],
             ],
             'Stabilisasi' => [
-                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'text'],
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'text'],
+                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option_standard'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
                 ['name' => 'pH', 'standard_condition' => 'pH 6 - 9', 'input_type' => 'number'],
             ],
             'Filtrasi' => [
-                ['name' => 'Kondisi media & karbon aktif filter', 'standard_condition' => 'Effluent jernih', 'input_type' => 'text'],
+                ['name' => 'Kondisi media & karbon aktif filter', 'standard_condition' => 'Effluent jernih', 'input_type' => 'option_standard'],
             ],
             'Outlet / Titik Sampling' => [
-                ['name' => 'Kran', 'standard_condition' => 'Bersih, tidak tersumbat', 'input_type' => 'text'],
+                ['name' => 'Kran', 'standard_condition' => 'Bersih, tidak tersumbat', 'input_type' => 'option_standard'],
                 ['name' => 'Angka pada water meter', 'standard_condition' => 'Terbaca', 'input_type' => 'number'],
-                ['name' => 'Kondisi visual air outlet', 'standard_condition' => 'Tidak berwarna, tidak berbusa', 'input_type' => 'text'],
+                ['name' => 'Kondisi visual air outlet', 'standard_condition' => 'Tidak berwarna, tidak berbusa', 'input_type' => 'option_standard'],
             ],
             'Bio Indikator' => [
-                ['name' => 'Air', 'standard_condition' => 'Jernih, tidak berbusa', 'input_type' => 'text'],
-                ['name' => 'Ikan', 'standard_condition' => 'Sehat, jumlah sesuai standar', 'input_type' => 'text'],
+                ['name' => 'Air', 'standard_condition' => 'Jernih, tidak berbusa', 'input_type' => 'option_standard'],
+                ['name' => 'Jumlah ikan', 'standard_condition' => 'Sesuai standar', 'input_type' => 'number'],
             ],
             'Drying Bed' => [
-                ['name' => 'Kondisi lumpur', 'standard_condition' => 'Kering', 'input_type' => 'text'],
+                ['name' => 'Kondisi lumpur', 'standard_condition' => 'Kering', 'input_type' => 'option_standard'],
                 ['name' => 'Berat lumpur (Kg)', 'standard_condition' => 'Tercatat', 'input_type' => 'number'],
             ],
             'Verifikasi pH Meter' => [

@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import type { ComponentType } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { ThemeProvider } from '@/components/theme-provider';
+import { ScrollToTop } from '@/components/scroll-to-top';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -31,6 +32,7 @@ createInertiaApp({
             el,
             <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
                 <App {...props} />
+                <ScrollToTop />
             </ThemeProvider>,
         );
     },

@@ -153,26 +153,22 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                 >
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3">
                         <p className="text-sm font-semibold text-foreground">Daftar Unit & Uraian Proses</p>
-                        <div className="flex gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={openAllSections}
-                                className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
-                            >
-                                Buka Semua
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={closeAllSections}
-                                className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
-                            >
-                                Tutup Semua
-                            </Button>
-                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                const isAllClosed = Object.keys(collapsedSections).length === entryForm.process.sections.length;
+                                if (isAllClosed) {
+                                    openAllSections();
+                                } else {
+                                    closeAllSections();
+                                }
+                            }}
+                            className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
+                        >
+                            {Object.keys(collapsedSections).length === entryForm.process.sections.length ? 'Buka Semua' : 'Tutup Semua'}
+                        </Button>
                     </div>
 
                     <div className="space-y-6">
@@ -222,7 +218,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                     <Input
                                                                         type="number"
                                                                         className="bg-background shadow-sm transition-all"
-                                                                        placeholder="Masukkan data..."
+                                                                        placeholder="Masukkan angka..."
                                                                         value={value?.value_number ?? ''}
                                                                         readOnly={readOnly}
                                                                         onChange={(event) => {
@@ -230,16 +226,79 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                                 ...form.data.process,
                                                                                 values: form.data.process.values.map((currentValue, currentIndex) =>
                                                                                     currentIndex === valueIndex
-                                                                                        ? {
-                                                                                              ...currentValue,
-                                                                                              value_number: event.target.value,
-                                                                                              value_text: '',
-                                                                                          }
+                                                                                        ? { ...currentValue, value_number: event.target.value, value_text: '' }
                                                                                         : currentValue,
                                                                                 ),
                                                                             });
                                                                         }}
                                                                     />
+                                                                ) : item.input_type === 'option_standard' ? (
+                                                                    <Select
+                                                                        value={value?.value_text ?? ''}
+                                                                        onValueChange={(val) => {
+                                                                            form.setData('process', {
+                                                                                ...form.data.process,
+                                                                                values: form.data.process.values.map((currentValue, currentIndex) =>
+                                                                                    currentIndex === valueIndex
+                                                                                        ? { ...currentValue, value_text: val, value_number: '' }
+                                                                                        : currentValue,
+                                                                                ),
+                                                                            });
+                                                                        }}
+                                                                        disabled={readOnly}
+                                                                    >
+                                                                        <SelectTrigger className="w-full bg-background shadow-sm transition-all">
+                                                                            <SelectValue placeholder="Pilih standar..." />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Standar">Standar</SelectItem>
+                                                                            <SelectItem value="Tidak Standar">Tidak Standar</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                ) : item.input_type === 'option_with_manual' ? (
+                                                                    <div className="space-y-2">
+                                                                        <Select
+                                                                            value={value?.value_text === 'Standar' ? 'Standar' : (value?.value_text ? 'Lainnya' : '')}
+                                                                            onValueChange={(val) => {
+                                                                                const newText = val === 'Lainnya' ? ' ' : val;
+                                                                                form.setData('process', {
+                                                                                    ...form.data.process,
+                                                                                    values: form.data.process.values.map((currentValue, currentIndex) =>
+                                                                                        currentIndex === valueIndex
+                                                                                            ? { ...currentValue, value_text: newText, value_number: '' }
+                                                                                            : currentValue,
+                                                                                    ),
+                                                                                });
+                                                                            }}
+                                                                            disabled={readOnly}
+                                                                        >
+                                                                            <SelectTrigger className="w-full bg-background shadow-sm transition-all">
+                                                                                <SelectValue placeholder="Pilih standar..." />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="Standar">Standar</SelectItem>
+                                                                                <SelectItem value="Lainnya">Yang lain...</SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                        {value?.value_text && value.value_text !== 'Standar' && (
+                                                                            <Input
+                                                                                className="bg-background shadow-sm transition-all animate-in fade-in slide-in-from-top-2"
+                                                                                placeholder="Masukkan kondisi aktual..."
+                                                                                value={value.value_text === ' ' ? '' : value.value_text}
+                                                                                readOnly={readOnly}
+                                                                                onChange={(event) => {
+                                                                                    form.setData('process', {
+                                                                                        ...form.data.process,
+                                                                                        values: form.data.process.values.map((currentValue, currentIndex) =>
+                                                                                            currentIndex === valueIndex
+                                                                                                ? { ...currentValue, value_text: event.target.value, value_number: '' }
+                                                                                                : currentValue,
+                                                                                        ),
+                                                                                    });
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                    </div>
                                                                 ) : (
                                                                     <Input
                                                                         className="bg-background shadow-sm transition-all"
@@ -251,11 +310,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                                                 ...form.data.process,
                                                                                 values: form.data.process.values.map((currentValue, currentIndex) =>
                                                                                     currentIndex === valueIndex
-                                                                                        ? {
-                                                                                              ...currentValue,
-                                                                                              value_text: event.target.value,
-                                                                                              value_number: '',
-                                                                                          }
+                                                                                        ? { ...currentValue, value_text: event.target.value, value_number: '' }
                                                                                         : currentValue,
                                                                                 ),
                                                                             });
