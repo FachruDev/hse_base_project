@@ -113,6 +113,12 @@ export type BatchField = {
     input_type: string;
 };
 
+export type BatchSectionField = {
+    id: number;
+    name: string;
+    items: BatchField[];
+};
+
 export type BatchGroupValue = {
     item_id: number;
     value_text: string | null;
@@ -156,7 +162,7 @@ export type CatatanPengolahanLimbahAirEntryPayload = {
     };
     batch: {
         max_batch_no: number;
-        items: BatchField[];
+        sections: BatchSectionField[];
         groups: BatchGroup[];
     };
 };

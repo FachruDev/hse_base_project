@@ -153,22 +153,49 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                 >
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3">
                         <p className="text-sm font-semibold text-foreground">Daftar Unit & Uraian Proses</p>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                const isAllClosed = Object.keys(collapsedSections).length === entryForm.process.sections.length;
-                                if (isAllClosed) {
-                                    openAllSections();
-                                } else {
-                                    closeAllSections();
-                                }
-                            }}
-                            className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
-                        >
-                            {Object.keys(collapsedSections).length === entryForm.process.sections.length ? 'Buka Semua' : 'Tutup Semua'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            {!readOnly && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        // Find all option_standard and option_with_manual and set them to "Standar"
+                                        const newValues = [...form.data.process.values];
+                                        entryForm.process.sections.forEach(section => {
+                                            section.items.forEach(item => {
+                                                if (item.input_type === 'option_standard' || item.input_type === 'option_with_manual') {
+                                                    const valIndex = newValues.findIndex(v => v.item_id === item.id);
+                                                    if (valIndex !== -1) {
+                                                        newValues[valIndex] = { ...newValues[valIndex], value_text: 'Standar' };
+                                                    }
+                                                }
+                                            });
+                                        });
+                                        form.setData('process', { ...form.data.process, values: newValues });
+                                    }}
+                                    className="h-8 px-3 text-xs bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-all active:scale-95"
+                                >
+                                    Isi Semua Standar
+                                </Button>
+                            )}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    const isAllClosed = Object.keys(collapsedSections).length === entryForm.process.sections.length;
+                                    if (isAllClosed) {
+                                        openAllSections();
+                                    } else {
+                                        closeAllSections();
+                                    }
+                                }}
+                                className="h-8 px-3 text-xs bg-background shadow-sm hover:bg-muted transition-all active:scale-95"
+                            >
+                                {Object.keys(collapsedSections).length === entryForm.process.sections.length ? 'Buka Semua' : 'Tutup Semua'}
+                            </Button>
+                        </div>
                     </div>
 
                     <div className="space-y-6">
@@ -206,7 +233,7 @@ export function CatatanProsesForm({ entryForm, userId }: CatatanProsesFormProps)
                                                     const value = form.data.process.values[valueIndex];
 
                                                     return (
-                                                        <TableRow key={item.id} className="transition-colors hover:bg-primary/15">
+                                                        <TableRow key={item.id} className="transition-colors hover:bg-primary/15 odd:bg-primary/10">
                                                             <TableCell className="px-5 align-top pt-5 font-medium text-foreground/80">
                                                                 {item.name}
                                                             </TableCell>

@@ -5,6 +5,7 @@ namespace App\Models\Master;
 use App\Models\Ipal\IpalBatchValue;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BatchItem extends Model
@@ -14,6 +15,7 @@ class BatchItem extends Model
     protected $table = 'm_batch_items';
 
     protected $fillable = [
+        'section_id',
         'name',
         'input_type',
         'order_no',
@@ -29,5 +31,10 @@ class BatchItem extends Model
     public function values(): HasMany
     {
         return $this->hasMany(IpalBatchValue::class, 'item_id');
+    }
+
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(BatchSection::class, 'section_id');
     }
 }

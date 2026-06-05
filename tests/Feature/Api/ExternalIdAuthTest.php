@@ -18,13 +18,13 @@ class ExternalIdAuthTest extends TestCase
         $response
             ->assertUnauthorized()
             ->assertJson([
-                'message' => 'Parameter userid wajib diisi.',
+                'message' => 'Parameter user_id wajib diisi.',
             ]);
     }
 
     public function test_rejects_request_when_userid_is_not_registered(): void
     {
-        $response = $this->getJson('/api/master/checklist?userid=unknown.user');
+        $response = $this->getJson('/api/master/checklist?user_id=unknown.user');
 
         $response
             ->assertUnauthorized()

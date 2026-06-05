@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Master\BatchItem;
+use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistItem;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessItem;
@@ -171,31 +172,54 @@ class IpalMasterDataSeeder extends Seeder
 
     private function seedBatch(): void
     {
-        $items = [
-            ['name' => 'Air limbah awal - pH', 'input_type' => 'number'],
-            ['name' => 'Air limbah awal - Warna', 'input_type' => 'text'],
-            ['name' => 'Netralisasi - Jumlah Chemical', 'input_type' => 'number'],
-            ['name' => 'Netralisasi - pH', 'input_type' => 'number'],
-            ['name' => 'Netralisasi - Waktu', 'input_type' => 'text'],
-            ['name' => 'Netralisasi - Warna', 'input_type' => 'text'],
-            ['name' => 'Koagulasi - Jumlah Chemical', 'input_type' => 'number'],
-            ['name' => 'Koagulasi - pH', 'input_type' => 'number'],
-            ['name' => 'Koagulasi - Waktu', 'input_type' => 'text'],
-            ['name' => 'Koagulasi - Warna', 'input_type' => 'text'],
-            ['name' => 'Flokulasi - Jumlah Chemical', 'input_type' => 'number'],
-            ['name' => 'Flokulasi - pH', 'input_type' => 'number'],
-            ['name' => 'Flokulasi - Waktu', 'input_type' => 'text'],
-            ['name' => 'Flokulasi - Warna', 'input_type' => 'text'],
+        $sections = [
+            'Air limbah awal' => [
+                ['name' => 'pH', 'input_type' => 'number'],
+                ['name' => 'Warna', 'input_type' => 'text'],
+            ],
+            'Netralisasi' => [
+                ['name' => 'Jumlah Chemical', 'input_type' => 'number'],
+                ['name' => 'pH', 'input_type' => 'number'],
+                ['name' => 'Waktu', 'input_type' => 'text'],
+                ['name' => 'Warna', 'input_type' => 'text'],
+            ],
+            'Koagulasi' => [
+                ['name' => 'Jumlah Chemical', 'input_type' => 'number'],
+                ['name' => 'pH', 'input_type' => 'number'],
+                ['name' => 'Waktu', 'input_type' => 'text'],
+                ['name' => 'Warna', 'input_type' => 'text'],
+            ],
+            'Flokulasi' => [
+                ['name' => 'Jumlah Chemical', 'input_type' => 'number'],
+                ['name' => 'pH', 'input_type' => 'number'],
+                ['name' => 'Waktu', 'input_type' => 'text'],
+                ['name' => 'Warna', 'input_type' => 'text'],
+            ],
         ];
 
-        foreach ($items as $index => $item) {
-            BatchItem::query()->updateOrCreate(
-                ['name' => $item['name']],
-                [
-                    'input_type' => $item['input_type'],
-                    'order_no' => $index + 1,
-                ],
+        $sectionOrder = 1;
+        $itemGlobalOrder = 1;
+
+        foreach ($sections as $sectionName => $items) {
+            $section = BatchSection::query()->updateOrCreate(
+                ['name' => $sectionName],
+                ['order_no' => $sectionOrder]
             );
+
+            foreach ($items as $item) {
+                BatchItem::query()->updateOrCreate(
+                    [
+                        'section_id' => $section->id,
+                        'name' => $item['name'],
+                    ],
+                    [
+                        'input_type' => $item['input_type'],
+                        'order_no' => $itemGlobalOrder++,
+                    ],
+                );
+            }
+
+            $sectionOrder++;
         }
     }
 }

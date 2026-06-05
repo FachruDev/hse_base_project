@@ -5,6 +5,7 @@ namespace App\Services\Web;
 use App\Models\Ipal\IpalChecklistApproval;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Master\BatchItem;
+use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
@@ -199,10 +200,13 @@ class CatatanPengolahanLimbahAirPageService
             ->orderBy('id')
             ->first();
 
-        $batchItems = BatchItem::query()
+        $batchSections = BatchSection::query()
+            ->with(['items' => fn ($itemQuery) => $itemQuery->orderBy('order_no')->orderBy('id')])
             ->orderBy('order_no')
             ->orderBy('id')
             ->get();
+
+        $batchItems = $batchSections->flatMap->items->values();
 
         $processStatus = $log?->processLog?->status;
         $processReadOnly = $forceReadOnly || in_array($processStatus, ['SUBMITTED', 'APPROVED'], true);
@@ -252,10 +256,14 @@ class CatatanPengolahanLimbahAirPageService
             ],
             'batch' => [
                 'max_batch_no' => 7,
-                'items' => $batchItems->map(fn (BatchItem $item): array => [
-                    'id' => $item->id,
-                    'name' => $item->name,
-                    'input_type' => $item->input_type,
+                'sections' => $batchSections->map(fn (BatchSection $section): array => [
+                    'id' => $section->id,
+                    'name' => $section->name,
+                    'items' => $section->items->map(fn (BatchItem $item): array => [
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'input_type' => $item->input_type,
+                    ])->all(),
                 ])->all(),
                 'groups' => $this->mapBatchGroups(
                     $log?->processLog?->batches ? $log->processLog->batches : collect(),

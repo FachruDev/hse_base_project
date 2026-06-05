@@ -1,4 +1,4 @@
-import type { BatchField } from '@/modules/dashboard/types';
+import type { BatchSectionField, BatchField } from '@/modules/dashboard/types';
 
 export type EntryView = 'CHECKLIST' | 'PROCESS';
 
@@ -47,8 +47,14 @@ export type ProcessFormState = {
     batch: BatchGroupPayload[];
 };
 
-export function findBatchItem(items: BatchField[], itemId: number): BatchField | undefined {
-    return items.find((item) => item.id === itemId);
+export function findBatchItem(sections: BatchSectionField[], itemId: number): BatchField | undefined {
+    for (const section of sections) {
+        const item = section.items.find((i) => i.id === itemId);
+        if (item) {
+            return item;
+        }
+    }
+    return undefined;
 }
 
 export function normalizeChecklistStatus(status: string | null): ChecklistStatus {
