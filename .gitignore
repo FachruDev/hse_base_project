@@ -12,6 +12,7 @@
 /storage/pail
 /vendor
 .env
+.env.copy
 .env.backup
 .env.production
 .phpactor.json

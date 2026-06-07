@@ -2,3 +2,6 @@
 command = "php"
 args = ["artisan", "boost:mcp"]
 cwd = "C:\\Users\\lenovo\\Documents\\hse_project"
+
+[mcp_servers.laravel-boost.tools.search-docs]
+approval_mode = "approve"
