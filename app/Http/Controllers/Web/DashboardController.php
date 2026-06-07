@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\B3Storage\StoreB3StorageLogRequest;
 use App\Http\Requests\Web\B3StorageLogIndexRequest;
+use App\Http\Requests\Web\B3StorageMonthlyApprovalRequest;
+use App\Http\Requests\Web\B3StorageMonthlyPeriodRequest;
 use App\Http\Requests\Web\CatatanPengolahanLimbahAirIndexRequest;
 use App\Http\Requests\Web\IpalEntryDateRequest;
 use App\Http\Requests\Web\IpalMonthlyPeriodRequest;
@@ -24,6 +26,7 @@ use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class DashboardController extends Controller
 {
@@ -134,11 +137,46 @@ class DashboardController extends Controller
         B3StorageLogIndexRequest $request,
         B3StoragePageService $pageService,
     ): Response {
-        abort_unless($request->user()?->can('b3storage.logs.view'), 403);
+        abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
 
         return Inertia::render('dashboard/forms/penyimpanan-limbah-b3/index', [
             'listing' => $pageService->buildListing($this->authenticatedUser($request), $request->filters()),
         ]);
+    }
+
+    public function b3StorageMonthlyShow(
+        B3StorageMonthlyPeriodRequest $request,
+        B3StoragePageService $pageService,
+        B3StorageService $b3StorageService,
+    ): Response {
+        abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
+
+        return Inertia::render('dashboard/forms/penyimpanan-limbah-b3/monthly', [
+            'monthlyDetail' => $pageService->buildMonthlyDetail(
+                $this->authenticatedUser($request),
+                $request->year(),
+                $request->month(),
+                $b3StorageService,
+            ),
+        ]);
+    }
+
+    public function b3StorageApproveMonthly(
+        B3StorageMonthlyApprovalRequest $request,
+        B3StorageService $b3StorageService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('b3storage.monthly-approval.approve'), 403);
+        $user = $this->authenticatedUser($request);
+
+        $b3StorageService->approveMonthly($request->approvalPayload(), $user);
+
+        return redirect()
+            ->route('dashboard.forms.penyimpanan-limbah-b3.monthly.show', [
+                'year' => $request->year(),
+                'month' => $request->month(),
+                'user_id' => $user->external_id,
+            ])
+            ->with('success', 'Approval bulanan limbah B3 berhasil disimpan.');
     }
 
     public function b3StorageCreate(
@@ -174,14 +212,11 @@ class DashboardController extends Controller
             ->with('success', 'Log penyimpanan limbah B3 berhasil disimpan.');
     }
 
-    public function b3StoragePhoto(Request $request, B3StorageLog $log): HttpResponse
+    public function b3StoragePhoto(Request $request, B3StorageLog $log): SymfonyResponse
     {
         abort_unless($request->user()?->can('b3storage.logs.view'), 403);
 
-        $user = $this->authenticatedUser($request);
-        if (! $user->can('b3storage.logs.delete') && $log->operator_id !== $user->id) {
-            abort(403);
-        }
+        $this->authenticatedUser($request);
 
         if (! is_string($log->photo_path) || $log->photo_path === '') {
             abort(404);

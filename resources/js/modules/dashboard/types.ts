@@ -236,16 +236,22 @@ export type IpalMonthlyDetailPayload = {
     };
 };
 
-export type B3StorageListingRow = {
-    id: number;
-    movement_date: string | null;
-    movement_time: string | null;
-    movement_type: 'MASUK' | 'KELUAR' | string;
-    waste_type: string | null;
-    initiator_department: string | null;
-    weight_kg: string;
-    document_number: string;
-    photo_path: string | null;
+export type B3StorageMonthlyListingRow = {
+    month: number;
+    year: number;
+    period_label: string;
+    total_logs_count: number;
+    incoming_logs_count: number;
+    outgoing_logs_count: number;
+    total_weight_kg: number;
+    waste_types_count: number;
+    departments_count: number;
+    approval_status: 'NOT_SUBMITTED' | 'PARTIALLY_APPROVED' | 'APPROVED' | string;
+    approval_status_label: string;
+    environment_supervisor: string | null;
+    environment_supervisor_signed_at: string | null;
+    hse_department_head: string | null;
+    hse_department_head_signed_at: string | null;
 };
 
 export type B3StorageLogListingPayload = {
@@ -255,14 +261,83 @@ export type B3StorageLogListingPayload = {
     };
     filters: {
         search: string;
-        movement_type: string;
-        month: number;
+        status: string;
         year: number;
-        per_page: number;
+    };
+    capabilities: {
+        create_log: boolean;
     };
     table: {
-        data: B3StorageListingRow[];
-        meta: ListingPaginationMeta;
+        data: B3StorageMonthlyListingRow[];
+    };
+};
+
+export type B3StorageMonthlyReportRow = {
+    no: number;
+    id: number;
+    tanggal_masuk: string | null;
+    tanggal_keluar: string | null;
+    jam: string | null;
+    weights_by_waste_type: Record<string, string | number | null>;
+    weight_other: string | number | null;
+    waste_type_other: string | null;
+    document_number: string;
+    initiator_department: string | null;
+    operator_name: string | null;
+    photo_path: string | null;
+    note: string | null;
+};
+
+export type B3StorageMonthlyDetailPayload = {
+    module: {
+        title: string;
+        subtitle: string;
+    };
+    period: {
+        month: number;
+        year: number;
+        label: string;
+    };
+    summary: {
+        total_logs_count: number;
+        incoming_logs_count: number;
+        outgoing_logs_count: number;
+        total_weight_kg: string | number;
+        departments_count: number;
+    };
+    columns: {
+        waste_types: Array<{
+            id: number;
+            name: string;
+            order_no: number;
+        }>;
+        has_other_column: boolean;
+    };
+    rows: B3StorageMonthlyReportRow[];
+    totals: {
+        by_waste_type: Record<string, string | number>;
+        other: string | number;
+        overall: string | number;
+    };
+    approval: {
+        status: string;
+        status_label: string;
+        environment_supervisor: {
+            id: number | null;
+            name: string | null;
+            signed_at: string | null;
+        };
+        hse_department_head: {
+            id: number | null;
+            name: string | null;
+            signed_at: string | null;
+        };
+        note: string | null;
+    };
+    capabilities: {
+        approve_monthly: boolean;
+        next_approval_role: 'ENVIRONMENT_SUPERVISOR' | 'HSE_DEPARTMENT_HEAD' | null;
+        next_approval_label: string | null;
     };
 };
 

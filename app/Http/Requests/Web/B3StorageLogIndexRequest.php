@@ -25,15 +25,13 @@ class B3StorageLogIndexRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:100'],
-            'movement_type' => ['nullable', Rule::in(['MASUK', 'KELUAR'])],
-            'month' => ['nullable', 'integer', 'between:1,12'],
+            'status' => ['nullable', Rule::in(['NOT_SUBMITTED', 'PARTIALLY_APPROVED', 'APPROVED'])],
             'year' => ['nullable', 'integer', 'between:2000,2100'],
-            'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50])],
         ];
     }
 
     /**
-     * @return array{search: string, movement_type: string, month: int, year: int, per_page: int}
+     * @return array{search: string, status: string, year: int}
      */
     public function filters(): array
     {
@@ -41,10 +39,8 @@ class B3StorageLogIndexRequest extends FormRequest
 
         return [
             'search' => (string) ($validated['search'] ?? ''),
-            'movement_type' => (string) ($validated['movement_type'] ?? ''),
-            'month' => (int) ($validated['month'] ?? now()->month),
+            'status' => (string) ($validated['status'] ?? ''),
             'year' => (int) ($validated['year'] ?? now()->year),
-            'per_page' => (int) ($validated['per_page'] ?? 10),
         ];
     }
 }

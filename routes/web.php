@@ -45,6 +45,14 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/penyimpanan-limbah-b3/create',
         [DashboardController::class, 'b3StorageCreate'],
     )->name('dashboard.forms.penyimpanan-limbah-b3.create');
+    Route::get(
+        '/dashboard/forms/penyimpanan-limbah-b3/monthly/{year}/{month}',
+        [DashboardController::class, 'b3StorageMonthlyShow'],
+    )->name('dashboard.forms.penyimpanan-limbah-b3.monthly.show');
+    Route::post(
+        '/dashboard/forms/penyimpanan-limbah-b3/monthly/{year}/{month}/approval',
+        [DashboardController::class, 'b3StorageApproveMonthly'],
+    )->name('dashboard.forms.penyimpanan-limbah-b3.monthly.approval');
     Route::post(
         '/dashboard/forms/penyimpanan-limbah-b3',
         [DashboardController::class, 'b3StorageStore'],
