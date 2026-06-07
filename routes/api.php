@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\Auth\MobileAuthController;
 use App\Http\Controllers\Api\B3Storage\B3StorageInitiatorDepartmentController;
 use App\Http\Controllers\Api\B3Storage\B3StorageLogController;
 use App\Http\Controllers\Api\B3Storage\B3StorageMonthlyReportController;
@@ -19,7 +20,14 @@ use App\Http\Controllers\Api\Master\ProcessSectionController;
 use App\Http\Controllers\Api\Master\ProcessTemplateController;
 use Illuminate\Support\Facades\Route;
 
+Route::post('auth/login', [MobileAuthController::class, 'login']);
+
 Route::middleware('external.user')->group(function (): void {
+    Route::prefix('auth')->group(function (): void {
+        Route::get('me', [MobileAuthController::class, 'me']);
+        Route::post('logout', [MobileAuthController::class, 'logout']);
+    });
+
     Route::prefix('master')->group(function (): void {
         Route::get('checklist', [MasterDataController::class, 'checklist']);
         Route::get('process', [MasterDataController::class, 'process']);
@@ -42,6 +50,7 @@ Route::middleware('external.user')->group(function (): void {
     });
 
     Route::prefix('ipal')->group(function (): void {
+        Route::get('logs', [IpalLogController::class, 'index']);
         Route::post('logs', [IpalLogController::class, 'store']);
         Route::get('logs/{log}', [IpalLogController::class, 'show']);
         Route::post('logs/{log}/submit', [IpalLogController::class, 'submit']);
@@ -58,6 +67,7 @@ Route::middleware('external.user')->group(function (): void {
 
         Route::apiResource('logs', B3StorageLogController::class)
             ->parameters(['logs' => 'log']);
+        Route::get('logs/{log}/photo', [B3StorageLogController::class, 'photo']);
 
         Route::get('monthly-report', [B3StorageMonthlyReportController::class, 'index']);
         Route::post('monthly-report/approve', [B3StorageMonthlyReportController::class, 'approve']);

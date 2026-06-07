@@ -11,6 +11,8 @@ use App\Services\B3Storage\B3StorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class B3StorageLogController extends Controller
 {
@@ -76,6 +78,19 @@ class B3StorageLogController extends Controller
         return response()->json([
             'message' => 'Log penyimpanan limbah B3 berhasil dihapus.',
         ]);
+    }
+
+    public function photo(B3StorageLog $log): StreamedResponse
+    {
+        if (! is_string($log->photo_path) || $log->photo_path === '') {
+            abort(Response::HTTP_NOT_FOUND, 'Foto tidak tersedia.');
+        }
+
+        if (! Storage::disk('public')->exists($log->photo_path)) {
+            abort(Response::HTTP_NOT_FOUND, 'File foto tidak ditemukan.');
+        }
+
+        return Storage::disk('public')->response($log->photo_path);
     }
 
     private function authenticatedUser(Request $request): User

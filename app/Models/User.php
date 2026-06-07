@@ -28,6 +28,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'external_id',
+        'email',
         'name',
         'department_id',
         'is_active',
@@ -50,6 +51,11 @@ class User extends Authenticatable
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function mobileApiTokens(): HasMany
+    {
+        return $this->hasMany(MobileApiToken::class);
     }
 
     public function ipalDailyLogs(): HasMany

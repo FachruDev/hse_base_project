@@ -18,6 +18,29 @@ class IpalLogController extends Controller
         private readonly IpalLogService $ipalLogService,
     ) {}
 
+    public function index(Request $request): JsonResponse
+    {
+        $month = $request->integer('month');
+        $year = $request->integer('year');
+        $perPage = max(1, min(100, $request->integer('per_page', 50)));
+
+        $logs = IpalDailyLog::query()
+            ->with([
+                'operator:id,external_id,name',
+                'checklist.template:id,name',
+                'processLog:id,log_id,status,submitted_at',
+                'processLog.batches:id,process_log_id,batch_no',
+                'processLog.approval:id,process_log_id,operator_signed_at,supervisor_signed_at',
+            ])
+            ->when($month > 0, fn ($query) => $query->whereMonth('tanggal', $month))
+            ->when($year > 0, fn ($query) => $query->whereYear('tanggal', $year))
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        return response()->json($logs);
+    }
+
     public function store(StoreIpalLogRequest $request): JsonResponse
     {
         $log = $this->ipalLogService->createLog($request->validated(), $this->authenticatedUser($request));
