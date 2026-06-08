@@ -45,6 +45,24 @@ Permission UI: `b3storage.logs.create`.
 
 Membuat log B3. Gunakan `multipart/form-data` jika mengirim foto.
 
+Master data untuk render form:
+
+- `GET /b3-storage/master/waste-types` untuk pilihan jenis limbah.
+- `GET /b3-storage/master/initiator-departments` untuk pilihan dept inisiator.
+
+Field form yang disajikan:
+
+- Nama petugas: otomatis dari user login, tidak perlu dikirim.
+- Tanggal masuk/keluar: `movement_date`.
+- Jam: `movement_time`.
+- Jenis pergerakan: `movement_type` (`MASUK` atau `KELUAR`).
+- Jenis limbah: `waste_type_id` atau `waste_type_other`.
+- Berat limbah: `weight_kg`.
+- Nomor dokumen: `document_number`.
+- Dept inisiator: `initiator_department_id` atau `initiator_department_other`.
+- Foto serah terima: `photo`.
+- Catatan: `note`.
+
 Fields:
 
 ```text

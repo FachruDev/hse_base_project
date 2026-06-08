@@ -64,6 +64,7 @@ Dokumen ini adalah acuan permission untuk Flutter. Permission dikirim dari `POST
 
 - API IPAL belum punya endpoint report bulanan/matrix bulanan seperti web dashboard. API yang tersedia saat ini masih index/detail log harian, submit, dan approve harian.
 - API IPAL belum punya endpoint approval checklist bulanan HSE Dept Head. Approval checklist bulanan saat ini tersedia di web dashboard.
+- Master data IPAL sudah mengirim kategori proses, uraian proses, kondisi standar, tipe input, dan section batch. Namun opsi pilihan detail untuk `option_standard`/`option_with_manual` masih belum punya tabel option terpisah; Flutter dapat menampilkan pilihan umum dan tetap mengirim hasilnya sebagai `value_text`.
 - Beberapa route API admin/master CRUD masih ada di backend, tetapi tidak masuk scope mobile. Mobile cukup memakai endpoint master read-only di dokumen ini.
 - Sebagian endpoint API lama belum memakai middleware permission per route. Karena itu Flutter tetap wajib memakai daftar permission dari login/me untuk UX, dan backend permission hardening bisa dijadikan pekerjaan lanjutan.
 - Belum ada endpoint upload/sync offline khusus. Jika Flutter butuh mode offline, perlu kontrak tambahan untuk conflict handling dan retry.

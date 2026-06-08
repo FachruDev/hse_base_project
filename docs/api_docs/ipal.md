@@ -17,11 +17,50 @@ Permission terkait:
 
 Endpoint IPAL saat ini menyimpan 3 bagian dalam satu log harian:
 
-- Form 1: checklist pemeriksaan unit, wajib.
-- Form 2: catatan proses, wajib untuk hari operasional.
+- Form 1: catatan proses pengolahan limbah air, wajib untuk hari operasional.
+- Form 2: checklist pemeriksaan harian, wajib.
 - Form 3: batch mixing, optional. Isi hanya kalau ada proses mixing pada hari tersebut.
 
 Satu operator hanya bisa membuat satu log IPAL per tanggal.
+
+## Master Data untuk Render Form
+
+Sebelum membuka form IPAL, Flutter perlu mengambil:
+
+- `GET /master/checklist` untuk checklist pemeriksaan harian.
+- `GET /master/process` untuk catatan proses dan batch mixing.
+
+Catatan proses memiliki struktur:
+
+- `sections[].name`: kategori proses/unit proses.
+- `items[].name`: uraian proses.
+- `items[].standard_condition`: kondisi standar.
+- `items[].input_type`: menentukan komponen input kondisi aktual.
+- `process.values[].note`: keterangan.
+
+Checklist harian memiliki struktur:
+
+- `items[].category`: kategori/perlengkapan.
+- `items[].name`: nama item pemeriksaan.
+- `items[].standard_condition`: kondisi standar.
+- `checklist.values[].status`: status aktual.
+- `checklist.values[].note`: catatan.
+
+Batch mixing memiliki struktur:
+
+- `batch_sections[].name`: proses batch.
+- `batch_sections[].items[]`: item input per proses batch.
+- Payload tetap dikirim sebagai `batch[].batch_no` dan `batch[].values[]`.
+
+Mapping `input_type`:
+
+| `input_type` | Field submit | Catatan |
+| --- | --- | --- |
+| `number` | `value_number` | Angka saja. |
+| `text` | `value_text` | Free text. |
+| `select` | `value_text` | Pilihan/dropdown. |
+| `option_standard` | `value_text` | Pilihan aktual standar. |
+| `option_with_manual` | `value_text` | Pilihan aktual standar + manual/lainnya. |
 
 ## GET /ipal/logs
 
@@ -89,7 +128,7 @@ Request draft dengan checklist + proses:
         "item_id": 11,
         "value_text": "Bersih",
         "value_number": null,
-        "note": null
+        "note": "Keterangan optional"
       }
     ]
   },
@@ -138,6 +177,12 @@ Request dengan batch mixing:
   ]
 }
 ```
+
+Contoh mapping batch mixing:
+
+- Ambil daftar section dari `/master/process` field `batch_sections`.
+- User menambah `Batch 1`, `Batch 2`, dan seterusnya.
+- Untuk setiap batch, kirim nilai item berdasarkan `item_id` dari `batch_sections[].items[]`.
 
 Response 201:
 

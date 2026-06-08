@@ -14,6 +14,14 @@ Permission UI: `master.checklist.view`.
 
 Mengambil template dan item checklist pemeriksaan unit IPAL.
 
+Dipakai untuk Form 2: Checklist Pemeriksaan Harian. Field yang perlu ditampilkan:
+
+- `items[].category`: pengelompokan/perlengkapan proses.
+- `items[].name`: nama perlengkapan.
+- `items[].standard_condition`: kondisi standar.
+- Status input user: `OK`, `NOT_OK`, atau `NA`.
+- `note`: catatan optional saat submit.
+
 Response:
 
 ```json
@@ -28,7 +36,8 @@ Response:
           "id": 1,
           "template_id": 1,
           "name": "Water meter inlet",
-          "standard": "Berfungsi, tidak tersumbat",
+          "category": "Penampungan Awal",
+          "standard_condition": "Berfungsi, tidak tersumbat",
           "order_no": 1,
           "is_active": true
         }
@@ -50,6 +59,26 @@ Permission UI: `master.process.view` dan `master.batch.view`.
 
 Mengambil template catatan proses dan item batch mixing.
 
+Dipakai untuk:
+
+- Form 1: Catatan Proses Pengolahan Limbah Air.
+- Form 3: Batch Mixing, sebagai section optional di dalam form catatan proses.
+
+Field catatan proses yang perlu ditampilkan:
+
+- `templates[].sections[].name`: kategori/unit proses.
+- `templates[].sections[].items[].name`: uraian proses.
+- `templates[].sections[].items[].standard_condition`: kondisi standar.
+- Input user: kondisi aktual, dikirim sebagai `value_number` atau `value_text`.
+- `process.values[].note`: keterangan optional.
+
+Field batch mixing yang perlu ditampilkan:
+
+- `batch_sections[].name`: proses batch, contoh `Air limbah awal`, `Netralisasi`, `Koagulasi`, `Flokulasi`.
+- `batch_sections[].items[].name`: uraian batch per proses.
+- `batch_sections[].items[].input_type`: tipe input batch.
+- Di payload submit, batch dikirim per `batch_no`, masing-masing berisi semua `values`.
+
 Response:
 
 ```json
@@ -67,10 +96,28 @@ Response:
               {
                 "id": 1,
                 "label": "Debit inlet pada flow meter",
-                "input_type": "number",
-                "standard": "Berjalan"
+                "name": "Debit inlet pada flow meter",
+                "standard_condition": "Berjalan",
+                "input_type": "option_standard",
+                "order_no": 1
               }
             ]
+          }
+        ]
+      }
+    ],
+    "batch_sections": [
+      {
+        "id": 1,
+        "name": "Air limbah awal",
+        "order_no": 1,
+        "items": [
+          {
+            "id": 1,
+            "section_id": 1,
+            "name": "pH",
+            "input_type": "number",
+            "order_no": 1
           }
         ]
       }
@@ -78,7 +125,8 @@ Response:
     "batch_items": [
       {
         "id": 1,
-        "label": "pH",
+        "section_id": 1,
+        "name": "pH",
         "input_type": "number",
         "order_no": 1
       }
@@ -87,7 +135,19 @@ Response:
 }
 ```
 
-`input_type = number` isi `value_number`. Selain itu isi `value_text`.
+`batch_items` tetap tersedia untuk kompatibilitas, tetapi Flutter sebaiknya memakai `batch_sections` agar tampilan batch punya pemisah proses.
+
+### Tipe Input IPAL
+
+| `input_type` | Tampilan Flutter | Field submit |
+| --- | --- | --- |
+| `number` | Input angka. | `value_number` |
+| `text` | Input teks bebas. | `value_text` |
+| `select` | Dropdown/option dari konfigurasi master jika tersedia. | `value_text` |
+| `option_standard` | Dropdown sederhana berbasis kondisi standar, dengan opsi aktual yang umum dipakai operator. | `value_text` |
+| `option_with_manual` | Dropdown + opsi manual/lainnya. | `value_text` |
+
+Untuk semua tipe selain `number`, backend memvalidasi nilai lewat `value_text`.
 
 ## B3 Master
 
@@ -104,3 +164,8 @@ Permission UI: `b3storage.master.view`.
 List dept inisiator aktif/nonaktif. Pakai `id` untuk `initiator_department_id`.
 
 Kedua endpoint mengikuti response resource Laravel biasa. Untuk pilihan "Yang lain", kirim field `waste_type_other` atau `initiator_department_other` dan kosongkan id terkait.
+
+Dipakai untuk Form 4 Penyimpanan Limbah B3:
+
+- Jenis limbah: `waste_type_id` atau `waste_type_other`.
+- Dept inisiator: `initiator_department_id` atau `initiator_department_other`.

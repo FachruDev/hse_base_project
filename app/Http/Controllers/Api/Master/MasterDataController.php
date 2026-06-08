@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\Master\BatchItem;
+use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessTemplate;
 use Illuminate\Http\JsonResponse;
@@ -45,9 +46,17 @@ class MasterDataController extends Controller
             ->orderBy('order_no')
             ->get();
 
+        $batchSections = BatchSection::query()
+            ->orderBy('order_no')
+            ->with([
+                'items' => fn ($items) => $items->orderBy('order_no'),
+            ])
+            ->get();
+
         return response()->json([
             'data' => [
                 'templates' => $templates,
+                'batch_sections' => $batchSections,
                 'batch_items' => $batchItems,
             ],
         ]);
