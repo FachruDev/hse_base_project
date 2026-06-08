@@ -12,9 +12,11 @@
 /storage/pail
 /vendor
 .env
-.env.copy
+.env.prod
+.env.dev
 .env.backup
 .env.production
+!.env.docker.example
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
