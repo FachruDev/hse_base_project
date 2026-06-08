@@ -61,6 +61,17 @@ Validation error:
 }
 ```
 
+## Scope Mobile API
+
+Dokumentasi ini hanya mencakup kebutuhan mobile:
+
+- Auth mobile: login, profile, logout.
+- CRUD pengisian 4 form operasional.
+- Index/detail/report yang dibutuhkan operator, supervisor, dan dept head.
+- Master data read-only untuk dropdown/pilihan form.
+
+Endpoint admin, role, permission, dan CRUD master data backoffice tidak termasuk scope mobile walaupun beberapa route masih ada di backend untuk kebutuhan dashboard/internal.
+
 ## Modul Form
 
 - Form 1: Checklist Pemeriksaan Unit IPAL, bagian dari endpoint IPAL.
@@ -68,9 +79,16 @@ Validation error:
 - Form 3: Proses Batch Mixing IPAL, optional dan melekat ke Catatan Proses.
 - Form 4: Penyimpanan Limbah B3, endpoint B3 Storage.
 
+## Permission
+
+Response `POST /auth/login` dan `GET /auth/me` mengembalikan array `permissions`. Flutter sebaiknya memakai permission ini untuk menampilkan tombol dan membatasi action user.
+
+Detail matriks permission ada di `permissions.md`.
+
 ## File Docs
 
 - `auth.md`: login, profile, logout.
+- `permissions.md`: matriks endpoint, permission, dan catatan gap.
 - `master-data.md`: master checklist, proses, batch, B3 waste type, department.
 - `ipal.md`: endpoint form 1-3 IPAL.
 - `b3-storage.md`: endpoint form 4 B3 dan report bulanan.

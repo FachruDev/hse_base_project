@@ -6,7 +6,18 @@ Semua endpoint membutuhkan:
 Authorization: Bearer {access_token}
 ```
 
+Permission terkait:
+
+- `b3storage.logs.create`: membuat log B3.
+- `b3storage.logs.view`: melihat index/detail/foto log B3.
+- `b3storage.logs.update`: update log B3.
+- `b3storage.logs.delete`: hapus log B3.
+- `b3storage.monthly-report.view`: melihat report bulanan B3.
+- `b3storage.monthly-approval.approve`: approval bulanan Environment Supervisor/HSE Dept Head.
+
 ## GET /b3-storage/logs
+
+Permission UI: `b3storage.logs.view`.
 
 Riwayat log penyimpanan limbah B3.
 
@@ -29,6 +40,8 @@ Response berupa pagination Laravel. Field penting:
 - `operator`
 
 ## POST /b3-storage/logs
+
+Permission UI: `b3storage.logs.create`.
 
 Membuat log B3. Gunakan `multipart/form-data` jika mengirim foto.
 
@@ -88,23 +101,33 @@ Validasi foto:
 
 ## GET /b3-storage/logs/{log}
 
+Permission UI: `b3storage.logs.view`.
+
 Detail satu log B3.
 
 ## PUT/PATCH /b3-storage/logs/{log}
+
+Permission UI: `b3storage.logs.update`.
 
 Update log B3. Payload sama seperti create. Jika upload `photo` baru, file lama akan diganti.
 
 ## DELETE /b3-storage/logs/{log}
 
+Permission UI: `b3storage.logs.delete`.
+
 Menghapus log B3 dan foto terkait.
 
 ## GET /b3-storage/logs/{log}/photo
+
+Permission UI: `b3storage.logs.view`.
 
 Mengambil file foto log B3.
 
 Header tetap memakai bearer token. Endpoint ini mengembalikan file image, bukan JSON.
 
 ## GET /b3-storage/monthly-report
+
+Permission UI: `b3storage.monthly-report.view`.
 
 Report bulanan B3 sesuai format form fisik.
 
@@ -175,6 +198,8 @@ Response 200:
 ```
 
 ## POST /b3-storage/monthly-report/approve
+
+Permission UI: `b3storage.monthly-approval.approve`.
 
 Approval bulanan B3.
 

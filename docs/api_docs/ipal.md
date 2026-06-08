@@ -6,6 +6,13 @@ Semua endpoint membutuhkan:
 Authorization: Bearer {access_token}
 ```
 
+Permission terkait:
+
+- `ipal.logs.create`: membuat draft/submit log IPAL harian.
+- `ipal.logs.view`: melihat index/detail log IPAL.
+- `ipal.logs.submit`: submit catatan proses harian.
+- `ipal.logs.approve`: approve catatan proses harian.
+
 ## Struktur Form
 
 Endpoint IPAL saat ini menyimpan 3 bagian dalam satu log harian:
@@ -17,6 +24,8 @@ Endpoint IPAL saat ini menyimpan 3 bagian dalam satu log harian:
 Satu operator hanya bisa membuat satu log IPAL per tanggal.
 
 ## GET /ipal/logs
+
+Permission UI: `ipal.logs.view`.
 
 Riwayat log IPAL.
 
@@ -41,6 +50,8 @@ Response berupa pagination Laravel. Field penting per row:
 - `process_log.batches`: ada data berarti ada batch mixing
 
 ## POST /ipal/logs
+
+Permission UI: `ipal.logs.create`.
 
 Membuat log IPAL harian.
 
@@ -151,9 +162,13 @@ Catatan:
 
 ## GET /ipal/logs/{log}
 
+Permission UI: `ipal.logs.view`.
+
 Detail lengkap log IPAL, termasuk checklist, catatan proses, batch mixing, dan approval harian.
 
 ## POST /ipal/logs/{log}/submit
+
+Permission UI: `ipal.logs.submit`.
 
 Submit catatan proses harian oleh operator.
 
@@ -171,6 +186,8 @@ Response:
 ```
 
 ## POST /ipal/logs/{log}/approve
+
+Permission UI: `ipal.logs.approve`.
 
 Approve catatan proses harian oleh user supervisor/HSE yang berwenang.
 
@@ -193,3 +210,4 @@ Catatan implementasi mobile:
 - Ambil master catatan proses dan batch dari `/master/process`.
 - Tampilkan batch mixing sebagai section optional di bawah catatan proses.
 - Jangan hardcode id item; selalu pakai id dari master data.
+- API IPAL saat ini belum menyediakan report bulanan/matrix bulanan dan approval checklist bulanan. Fitur tersebut sudah ada di web dashboard, tetapi belum masuk kontrak API mobile.

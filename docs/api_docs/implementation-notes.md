@@ -12,18 +12,35 @@
 
 ## Permission
 
-Response login dan `/auth/me` mengembalikan `permissions`. Frontend bisa memakai ini untuk menampilkan/menyembunyikan tombol:
+Response login dan `/auth/me` mengembalikan `permissions`. Frontend bisa memakai ini untuk menampilkan/menyembunyikan tombol. Detail matriks endpoint ada di `permissions.md`.
 
+- `master.checklist.view`: baca master checklist IPAL.
+- `master.process.view`: baca master catatan proses IPAL.
+- `master.batch.view`: baca master batch mixing IPAL.
 - `ipal.logs.create`: input IPAL.
+- `ipal.logs.view`: lihat riwayat/detail IPAL.
 - `ipal.logs.submit`: submit catatan proses IPAL.
 - `ipal.logs.approve`: approve catatan proses IPAL.
+- `b3storage.master.view`: baca master jenis limbah dan dept inisiator B3.
 - `b3storage.logs.create`: input B3.
+- `b3storage.logs.view`: lihat riwayat/detail/foto B3.
 - `b3storage.logs.update`: update B3.
 - `b3storage.logs.delete`: delete B3.
 - `b3storage.monthly-report.view`: lihat report bulanan B3.
 - `b3storage.monthly-approval.approve`: approval bulanan B3.
 
 Catatan: beberapa endpoint API lama masih kompatibel dengan auth `user_id` dan belum memblokir semua permission di level route. Untuk mobile, tetap gunakan daftar permission di atas untuk UX dan koordinasi role.
+
+## Scope Endpoint Mobile
+
+Gunakan hanya endpoint yang didokumentasikan di folder ini:
+
+- Auth.
+- Master data read-only untuk dropdown.
+- IPAL form 1-3.
+- B3 Storage form 4 dan report/approval bulanan.
+
+Jangan gunakan endpoint admin, role, permission, atau CRUD master data dari mobile. Endpoint tersebut untuk dashboard/backoffice.
 
 ## Upload Foto B3 di Flutter
 

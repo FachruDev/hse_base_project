@@ -6,7 +6,11 @@ Semua endpoint di file ini membutuhkan header:
 Authorization: Bearer {access_token}
 ```
 
+Endpoint master data untuk mobile hanya read-only. CRUD master data dikelola dari dashboard/backoffice, bukan dari aplikasi Flutter.
+
 ## GET /master/checklist
+
+Permission UI: `master.checklist.view`.
 
 Mengambil template dan item checklist pemeriksaan unit IPAL.
 
@@ -41,6 +45,8 @@ Status checklist yang dikirim saat submit IPAL:
 - `NA`: Tidak Berlaku
 
 ## GET /master/process
+
+Permission UI: `master.process.view` dan `master.batch.view`.
 
 Mengambil template catatan proses dan item batch mixing.
 
@@ -87,9 +93,13 @@ Response:
 
 ### GET /b3-storage/master/waste-types
 
+Permission UI: `b3storage.master.view`.
+
 List jenis limbah aktif/nonaktif. Pakai `id` untuk `waste_type_id`.
 
 ### GET /b3-storage/master/initiator-departments
+
+Permission UI: `b3storage.master.view`.
 
 List dept inisiator aktif/nonaktif. Pakai `id` untuk `initiator_department_id`.
 
