@@ -14,23 +14,25 @@
          - Dihapus helper function setChecklistAllStatus & clearChecklistAll
 
 ✅ F1-02: Ganti label status "Ya / Tidak" (hanya di form input)
-         File: checklist-harian-form.tsx
-         UPDATE: Bukan dropdown lagi, diganti toggle button dua sisi:
-         - Kiri: "✕ Tidak" (merah saat aktif, hover merah muda)
-         - Kanan: "✓ Ya" (hijau saat aktif, hover hijau muda)
-         - Klik tombol aktif = kembali ke kosong (unselect)
-         (Database values OK / NOT_OK tidak berubah)
+         File: checklist-harian-form.tsx, catatan-proses-form.tsx
+         UPDATE: Semua dropdown kondisi diganti toggle button dua sisi:
+         [Checklist Harian]
+         - Kiri: "✕ Tidak" (merah) | Kanan: "✓ Ya" (hijau)
+         [Catatan Proses - option_standard]
+         - Kiri: "✕ Tidak Standar" (merah) | Kanan: "✓ Standar" (hijau)
+         [Catatan Proses - option_with_manual]
+         - Kiri: "✎ Yang lain..." (amber, muncul input teks) | Kanan: "✓ Standar" (hijau)
+         (Database values tidak berubah)
 
 ✅ F1-03: PH input 2 digit desimal di Form Catatan Proses
          File: catatan-proses-form.tsx
-         UPDATE: step="0.01" + onBlur rounding → dibatasi tepat 2 desimal
-         saat user selesai input (misal: 7.5 → 7.50, 7.123 → 7.12)
+         UPDATE: Universal 2 desimal untuk semua input number
+         step="0.01" + onBlur rounding → tepat 2 desimal (7.123 → 7.12)
 
 ✅ F1-04: Drying bed — berat lumpur jadi desimal
          File: catatan-proses-form.tsx
-         UPDATE: Item yang namanya mengandung "berat"/"lumpur"/"kg"
-         pakai step="0.1" + onBlur rounding → dibatasi tepat 1 desimal
-         (misal: 4.2 kg, 5.6 kg)
+         UPDATE: Disamakan dengan F1-03 → 2 desimal (4.50 kg, 7.83 kg)
+         Semua number input di catatan proses konsisten 2 digit desimal
 
 ✅ F1-05: PH batch mixing 2 digit desimal
          File: batch-mixing-section.tsx
@@ -71,19 +73,29 @@
   FASE 2 — Backend Logic (Perubahan logika, tanpa DB baru)
 ────────────────────────────────────────────────────────
 
-[ ] F2-01: Tambah role "non_hse_operator"
-         Permission: hanya b3storage.logs.create
-         (untuk user dept lain yang isi form B3 via tablet)
+✅ F2-01: Tambah role "non_hse_operator"
+         File: database/seeders/RolePermissionSeeder.php
+         - Role ID=5 ditambahkan ke DB
+         - Permission: hanya b3storage.logs.create
 
-[ ] F2-02: Pindahkan proses "Masukan Udara" dari section Sedimentasi Kimia
-         → paling awal di section Aerasi (Lumpur Aktif)
-         (update order_no + section_id di DB via migration data)
+✅ F2-02: Pindahkan proses "Masukan Udara" dari section Sedimentasi Kimia
+         File: database/migrations/2026_06_12_..._update_masukan_udara_section_to_aerasi.php
+               database/seeders/IpalMasterDataSeeder.php
+         - Item ID=11: section_id 4→5, order_no 4→0 (paling awal di Aerasi)
 
-[ ] F2-03: Tambah item "Kondisi Ikan" di section Bio Indikator (paling bawah)
-         (insert item baru di database)
+✅ F2-03: Tambah item "Kondisi Ikan" di section Bio Indikator (paling bawah)
+         File: database/migrations/2026_06_12_..._add_kondisi_ikan_to_bio_indikator.php
+               database/seeders/IpalMasterDataSeeder.php
+         - Item ID=32: input_type="option_standard"
+           standard_condition="Aktif, tidak ada yang mati", order_no=3
 
-[ ] F2-04: Form IPAL bisa di-edit di hari yang sama selama belum diperiksa supervisor
-         File: CatatanPengolahanLimbahAirPageService.php, IpalLogService.php
+✅ F2-04: Form IPAL bisa di-edit di hari yang sama selama belum diperiksa supervisor
+         File: app/Services/Web/CatatanPengolahanLimbahAirPageService.php
+         Logika baru:
+         - Status APPROVED → selalu read-only
+         - Status SUBMITTED + sudah di-approve supervisor → read-only
+         - Status SUBMITTED + hari ini + belum approve supervisor → bisa diedit
+         - Status DRAFT/null → bisa diedit seperti biasa
 
 [ ] F2-05: Superadmin bisa re-open log yang sudah diperiksa (kasus khusus)
          Tambah endpoint PATCH /dashboard/forms/.../logs/{log}/reopen

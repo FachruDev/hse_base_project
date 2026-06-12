@@ -99,9 +99,9 @@ class IpalMasterDataSeeder extends Seeder
                 ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option_standard'],
                 ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
                 ['name' => 'Monitoring pH', 'standard_condition' => 'pH 6 - 9', 'input_type' => 'number'],
-                ['name' => 'Masukan udara', 'standard_condition' => 'Berfungsi, udara merata', 'input_type' => 'option_standard'],
             ],
             'Aerasi (Lumpur Aktif)' => [
+                ['name' => 'Masukan udara', 'standard_condition' => 'Berfungsi, udara merata', 'input_type' => 'option_standard'],
                 ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
                 ['name' => 'Lumpur (SV 30)', 'standard_condition' => '20% - 50%, warna coklat terang', 'input_type' => 'option_standard'],
                 ['name' => 'Busa', 'standard_condition' => 'Putih tipis', 'input_type' => 'option_standard'],
@@ -127,6 +127,7 @@ class IpalMasterDataSeeder extends Seeder
             'Bio Indikator' => [
                 ['name' => 'Air', 'standard_condition' => 'Jernih, tidak berbusa', 'input_type' => 'option_standard'],
                 ['name' => 'Jumlah ikan', 'standard_condition' => 'Sesuai standar', 'input_type' => 'number'],
+                ['name' => 'Kondisi Ikan', 'standard_condition' => 'Aktif, tidak ada yang mati', 'input_type' => 'option_standard'],
             ],
             'Drying Bed' => [
                 ['name' => 'Kondisi lumpur', 'standard_condition' => 'Kering', 'input_type' => 'option_standard'],

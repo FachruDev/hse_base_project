@@ -34,11 +34,6 @@ import { BatchMixingSection } from './batch-mixing-section';
 import type { ProcessFormState } from './entry-form-types';
 import { buildAvailableBatchNumbers } from './entry-form-types';
 
-function isDryingBedItem(name: string): boolean {
-    const lower = name.toLowerCase();
-    return lower.includes('berat') || lower.includes('lumpur') || lower.includes('kg');
-}
-
 function roundToDecimals(value: string, decimals: number): string {
     const num = parseFloat(value);
     if (isNaN(num)) {
@@ -388,7 +383,7 @@ export function CatatanProsesForm({
                                                                 'number' ? (
                                                                     <Input
                                                                         type="number"
-                                                                        step={isDryingBedItem(item.name) ? '0.1' : '0.01'}
+                                                                        step="0.01"
                                                                         className="bg-background shadow-sm transition-all"
                                                                         placeholder="Masukkan angka..."
                                                                         value={
@@ -402,8 +397,7 @@ export function CatatanProsesForm({
                                                                             !readOnly
                                                                         }
                                                                         onBlur={(event) => {
-                                                                            const decimals = isDryingBedItem(item.name) ? 1 : 2;
-                                                                            const rounded = roundToDecimals(event.target.value, decimals);
+                                                                            const rounded = roundToDecimals(event.target.value, 2);
                                                                             if (rounded !== event.target.value && rounded !== '') {
                                                                                 form.setData(
                                                                                     'process',
@@ -456,172 +450,96 @@ export function CatatanProsesForm({
                                                                     />
                                                                 ) : item.input_type ===
                                                                   'option_standard' ? (
-                                                                    <Select
-                                                                        value={
-                                                                            value?.value_text ??
-                                                                            ''
-                                                                        }
-                                                                        onValueChange={(
-                                                                            val,
-                                                                        ) => {
-                                                                            const nextValue =
-                                                                                val ??
-                                                                                '';
+                                                                    <StandarToggle
+                                                                        value={value?.value_text ?? ''}
+                                                                        disabled={readOnly}
+                                                                        onChange={(nextValue) => {
                                                                             form.setData(
                                                                                 'process',
                                                                                 {
-                                                                                    ...form
-                                                                                        .data
-                                                                                        .process,
+                                                                                    ...form.data.process,
                                                                                     values: form.data.process.values.map(
                                                                                         (
                                                                                             currentValue,
                                                                                             currentIndex,
                                                                                         ) =>
-                                                                                            currentIndex ===
-                                                                                            valueIndex
+                                                                                            currentIndex === valueIndex
                                                                                                 ? {
                                                                                                       ...currentValue,
-                                                                                                      value_text:
-                                                                                                          nextValue,
-                                                                                                      value_number:
-                                                                                                          '',
+                                                                                                      value_text: nextValue,
+                                                                                                      value_number: '',
                                                                                                   }
                                                                                                 : currentValue,
                                                                                     ),
                                                                                 },
                                                                             );
                                                                         }}
-                                                                        disabled={
-                                                                            readOnly
-                                                                        }
-                                                                        required={
-                                                                            !readOnly
-                                                                        }
-                                                                    >
-                                                                        <SelectTrigger className="w-full bg-background shadow-sm transition-all">
-                                                                            <SelectValue placeholder="Pilih standar..." />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            <SelectItem value="Standar">
-                                                                                Standar
-                                                                            </SelectItem>
-                                                                            <SelectItem value="Tidak Standar">
-                                                                                Tidak
-                                                                                Standar
-                                                                            </SelectItem>
-                                                                        </SelectContent>
-                                                                    </Select>
+                                                                    />
                                                                 ) : item.input_type ===
                                                                   'option_with_manual' ? (
                                                                     <div className="space-y-2">
-                                                                        <Select
+                                                                        <StandarWithManualToggle
                                                                             value={
-                                                                                value?.value_text ===
-                                                                                'Standar'
+                                                                                value?.value_text === 'Standar'
                                                                                     ? 'Standar'
                                                                                     : value?.value_text
                                                                                       ? 'Lainnya'
                                                                                       : ''
                                                                             }
-                                                                            onValueChange={(
-                                                                                val,
-                                                                            ) => {
-                                                                                const nextValue =
-                                                                                    val ??
-                                                                                    '';
+                                                                            disabled={readOnly}
+                                                                            onChange={(nextMode) => {
                                                                                 const newText =
-                                                                                    nextValue ===
-                                                                                    'Lainnya'
+                                                                                    nextMode === 'Lainnya'
                                                                                         ? ' '
-                                                                                        : nextValue;
+                                                                                        : nextMode;
                                                                                 form.setData(
                                                                                     'process',
                                                                                     {
-                                                                                        ...form
-                                                                                            .data
-                                                                                            .process,
+                                                                                        ...form.data.process,
                                                                                         values: form.data.process.values.map(
                                                                                             (
                                                                                                 currentValue,
                                                                                                 currentIndex,
                                                                                             ) =>
-                                                                                                currentIndex ===
-                                                                                                valueIndex
+                                                                                                currentIndex === valueIndex
                                                                                                     ? {
                                                                                                           ...currentValue,
-                                                                                                          value_text:
-                                                                                                              newText,
-                                                                                                          value_number:
-                                                                                                              '',
+                                                                                                          value_text: newText,
+                                                                                                          value_number: '',
                                                                                                       }
                                                                                                     : currentValue,
                                                                                         ),
                                                                                     },
                                                                                 );
                                                                             }}
-                                                                            disabled={
-                                                                                readOnly
-                                                                            }
-                                                                            required={
-                                                                                !readOnly
-                                                                            }
-                                                                        >
-                                                                            <SelectTrigger className="w-full bg-background shadow-sm transition-all">
-                                                                                <SelectValue placeholder="Pilih standar..." />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                <SelectItem value="Standar">
-                                                                                    Standar
-                                                                                </SelectItem>
-                                                                                <SelectItem value="Lainnya">
-                                                                                    Yang
-                                                                                    lain...
-                                                                                </SelectItem>
-                                                                            </SelectContent>
-                                                                        </Select>
+                                                                        />
                                                                         {value?.value_text &&
-                                                                            value.value_text !==
-                                                                                'Standar' && (
+                                                                            value.value_text !== 'Standar' && (
                                                                                 <Input
                                                                                     className="animate-in bg-background shadow-sm transition-all fade-in slide-in-from-top-2"
                                                                                     placeholder="Masukkan kondisi aktual..."
                                                                                     value={
-                                                                                        value.value_text ===
-                                                                                        ' '
+                                                                                        value.value_text === ' '
                                                                                             ? ''
                                                                                             : value.value_text
                                                                                     }
-                                                                                    readOnly={
-                                                                                        readOnly
-                                                                                    }
-                                                                                    required={
-                                                                                        !readOnly
-                                                                                    }
-                                                                                    onChange={(
-                                                                                        event,
-                                                                                    ) => {
+                                                                                    readOnly={readOnly}
+                                                                                    required={!readOnly}
+                                                                                    onChange={(event) => {
                                                                                         form.setData(
                                                                                             'process',
                                                                                             {
-                                                                                                ...form
-                                                                                                    .data
-                                                                                                    .process,
+                                                                                                ...form.data.process,
                                                                                                 values: form.data.process.values.map(
                                                                                                     (
                                                                                                         currentValue,
                                                                                                         currentIndex,
                                                                                                     ) =>
-                                                                                                        currentIndex ===
-                                                                                                        valueIndex
+                                                                                                        currentIndex === valueIndex
                                                                                                             ? {
                                                                                                                   ...currentValue,
-                                                                                                                  value_text:
-                                                                                                                      event
-                                                                                                                          .target
-                                                                                                                          .value,
-                                                                                                                  value_number:
-                                                                                                                      '',
+                                                                                                                  value_text: event.target.value,
+                                                                                                                  value_number: '',
                                                                                                               }
                                                                                                             : currentValue,
                                                                                                 ),
@@ -823,5 +741,105 @@ export function CatatanProsesForm({
                 </form>
             </CardContent>
         </Card>
+    );
+}
+
+type StandarToggleProps = {
+    value: string;
+    disabled?: boolean;
+    onChange: (value: string) => void;
+};
+
+function StandarToggle({ value, disabled = false, onChange }: StandarToggleProps) {
+    return (
+        <div className="inline-flex overflow-hidden rounded-lg border border-border shadow-sm">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(value === 'Tidak Standar' ? '' : 'Tidak Standar')}
+                className={[
+                    'flex min-w-[110px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
+                    !disabled && 'cursor-pointer',
+                    disabled && 'cursor-not-allowed opacity-60',
+                    value === 'Tidak Standar'
+                        ? 'bg-red-500 text-white shadow-inner'
+                        : 'bg-background text-muted-foreground hover:bg-red-50 hover:text-red-600',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                <span className="text-base leading-none">✕</span>
+                Tidak Standar
+            </button>
+            <div className="w-px bg-border" />
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(value === 'Standar' ? '' : 'Standar')}
+                className={[
+                    'flex min-w-[90px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
+                    !disabled && 'cursor-pointer',
+                    disabled && 'cursor-not-allowed opacity-60',
+                    value === 'Standar'
+                        ? 'bg-emerald-500 text-white shadow-inner'
+                        : 'bg-background text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                <span className="text-base leading-none">✓</span>
+                Standar
+            </button>
+        </div>
+    );
+}
+
+type StandarWithManualToggleProps = {
+    value: string;
+    disabled?: boolean;
+    onChange: (value: string) => void;
+};
+
+function StandarWithManualToggle({ value, disabled = false, onChange }: StandarWithManualToggleProps) {
+    return (
+        <div className="inline-flex overflow-hidden rounded-lg border border-border shadow-sm">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(value === 'Lainnya' ? '' : 'Lainnya')}
+                className={[
+                    'flex min-w-[100px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
+                    !disabled && 'cursor-pointer',
+                    disabled && 'cursor-not-allowed opacity-60',
+                    value === 'Lainnya'
+                        ? 'bg-amber-500 text-white shadow-inner'
+                        : 'bg-background text-muted-foreground hover:bg-amber-50 hover:text-amber-600',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                <span className="text-base leading-none">✎</span>
+                Yang lain...
+            </button>
+            <div className="w-px bg-border" />
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(value === 'Standar' ? '' : 'Standar')}
+                className={[
+                    'flex min-w-[90px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
+                    !disabled && 'cursor-pointer',
+                    disabled && 'cursor-not-allowed opacity-60',
+                    value === 'Standar'
+                        ? 'bg-emerald-500 text-white shadow-inner'
+                        : 'bg-background text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                <span className="text-base leading-none">✓</span>
+                Standar
+            </button>
+        </div>
     );
 }

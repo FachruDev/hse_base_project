@@ -59,6 +59,9 @@ class RolePermissionSeeder extends Seeder
                 'b3storage.logs.update',
                 'b3storage.monthly-report.view',
             ],
+            'non_hse_operator' => [
+                'b3storage.logs.create',
+            ],
         ];
 
         $allPermissions = $this->allPermissions();

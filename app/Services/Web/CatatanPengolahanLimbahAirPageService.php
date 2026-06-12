@@ -209,7 +209,11 @@ class CatatanPengolahanLimbahAirPageService
         $batchItems = $batchSections->flatMap->items->values();
 
         $processStatus = $log?->processLog?->status;
-        $processReadOnly = $forceReadOnly || in_array($processStatus, ['SUBMITTED', 'APPROVED'], true);
+        $isLogFromToday = $log !== null && $log->tanggal?->isToday();
+        $isApprovedBySupervisor = $log?->processLog?->approval?->supervisor_signed_at !== null;
+        $processReadOnly = $forceReadOnly
+            || $processStatus === 'APPROVED'
+            || ($processStatus === 'SUBMITTED' && (! $isLogFromToday || $isApprovedBySupervisor));
         $checklistReadOnly = $processReadOnly || $this->isChecklistPeriodApproved($date);
 
         return [
@@ -226,7 +230,7 @@ class CatatanPengolahanLimbahAirPageService
                     'external_id' => $user->external_id,
                     'department_name' => $user->department?->name,
                 ],
-                'mode' => $this->resolveEntryMode($processStatus, $log !== null, $forceReadOnly),
+                'mode' => $this->resolveEntryMode($processStatus, $log !== null, $forceReadOnly, $isApprovedBySupervisor),
                 'status' => $processStatus ?? ($log !== null ? 'DRAFT' : null),
                 'log_id' => $log?->id,
                 'action_label' => $this->resolveActionLabel($processStatus, $log !== null),
@@ -601,7 +605,7 @@ class CatatanPengolahanLimbahAirPageService
         return 'Lihat Isian Hari Ini';
     }
 
-    private function resolveEntryMode(?string $status, bool $filledToday, bool $forceReadOnly): string
+    private function resolveEntryMode(?string $status, bool $filledToday, bool $forceReadOnly, bool $isApprovedBySupervisor = false): string
     {
         if ($forceReadOnly) {
             return 'lihat';
@@ -611,7 +615,11 @@ class CatatanPengolahanLimbahAirPageService
             return 'baru';
         }
 
-        if (in_array($status, ['SUBMITTED', 'APPROVED'], true)) {
+        if ($status === 'APPROVED') {
+            return 'lihat';
+        }
+
+        if ($status === 'SUBMITTED' && $isApprovedBySupervisor) {
             return 'lihat';
         }
 
