@@ -6,6 +6,7 @@ use App\Models\Master\ProcessItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class IpalProcessValue extends Model
 {
@@ -36,5 +37,10 @@ class IpalProcessValue extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(ProcessItem::class, 'item_id');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(IpalProcessValueAttachment::class, 'process_value_id');
     }
 }

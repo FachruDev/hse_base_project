@@ -25,6 +25,7 @@ class SaveIpalChecklistRequest extends FormRequest
             'checklist.values.*.item_id' => ['required', 'integer', 'exists:m_checklist_items,id'],
             'checklist.values.*.status' => ['required', 'in:OK,NOT_OK,NA'],
             'checklist.values.*.note' => ['nullable', 'string'],
+            'checklist.values.*.attachment' => ['nullable', 'image', 'max:5120'],
         ];
     }
 }

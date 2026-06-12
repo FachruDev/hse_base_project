@@ -6,8 +6,10 @@ import {
     ClipboardCheck,
     Droplets,
     FlaskConical,
+    Printer,
     X,
 } from 'lucide-react';
+
 
 import {
     catatanPengolahanLimbahAirApproveMonthlyChecklist,
@@ -65,7 +67,7 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
     };
 
     return (
-        <div className="min-h-screen w-full max-w-full min-w-0 overflow-x-hidden bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_46%)] px-3 py-5 sm:px-4 lg:px-6 lg:py-8">
+        <div className="print-content min-h-screen w-full max-w-full min-w-0 overflow-x-hidden bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_46%)] px-3 py-5 sm:px-4 lg:px-6 lg:py-8">
             <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-5 lg:gap-6">
                 <Card className="min-w-0 border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60">
                     <CardHeader className="gap-4">
@@ -85,6 +87,7 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                 <Button
                                     nativeButton={false}
                                     variant="outline"
+                                    className="no-print"
                                     render={
                                         <a
                                             href={catatanPengolahanLimbahAirIndex.url(
@@ -102,10 +105,20 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                     <ArrowLeft className="size-4" />
                                     Kembali ke Listing
                                 </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="no-print"
+                                    onClick={() => window.print()}
+                                >
+                                    <Printer className="size-4" />
+                                    Print PDF
+                                </Button>
                                 {monthlyDetail.capabilities
                                     .approve_checklist ? (
                                     <Button
                                         type="button"
+                                        className="no-print"
                                         onClick={approveChecklist}
                                     >
                                         <CheckCircle2 className="size-4" />

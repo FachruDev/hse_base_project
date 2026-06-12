@@ -23,11 +23,13 @@ class CatatanPengolahanLimbahAirIndexRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::in(['DRAFT', 'SUBMITTED', 'APPROVED'])],
             'year' => ['nullable', 'integer', 'between:2000,2100'],
             'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50])],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 
     /**
-     * @return array{search: string, status: string, year: int, per_page: int}
+     * @return array{search: string, status: string, year: int, per_page: int, date_from: string, date_to: string}
      */
     public function filters(): array
     {
@@ -38,6 +40,8 @@ class CatatanPengolahanLimbahAirIndexRequest extends FormRequest
             'status' => (string) ($validated['status'] ?? ''),
             'year' => (int) ($validated['year'] ?? now()->year),
             'per_page' => (int) ($validated['per_page'] ?? 10),
+            'date_from' => (string) ($validated['date_from'] ?? ''),
+            'date_to' => (string) ($validated['date_to'] ?? ''),
         ];
     }
 }

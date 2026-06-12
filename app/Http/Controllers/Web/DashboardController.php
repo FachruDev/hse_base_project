@@ -122,6 +122,24 @@ class DashboardController extends Controller
             ->with('success', 'Catatan proses harian berhasil diperiksa.');
     }
 
+    public function catatanPengolahanLimbahAirReopenDailyLog(
+        Request $request,
+        IpalDailyLog $log,
+        IpalLogService $ipalLogService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('ipal.logs.reopen'), 403);
+        $user = $this->authenticatedUser($request);
+
+        $ipalLogService->reopen($log);
+
+        return redirect()
+            ->route('dashboard.forms.catatan-pengolahan-limbah-air.logs.show', [
+                'log' => $log->id,
+                'user_id' => $user->external_id,
+            ])
+            ->with('success', 'Log catatan proses berhasil di-reopen dan dapat diedit kembali.');
+    }
+
     public function catatanPengolahanLimbahAirApproveMonthlyProcess(
         IpalMonthlyProcessApprovalRequest $request,
         IpalLogService $ipalLogService,

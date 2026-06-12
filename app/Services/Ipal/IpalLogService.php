@@ -4,9 +4,11 @@ namespace App\Services\Ipal;
 
 use App\Models\Ipal\IpalBatch;
 use App\Models\Ipal\IpalChecklistApproval;
+use App\Models\Ipal\IpalChecklistValueAttachment;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Ipal\IpalProcessApproval;
 use App\Models\Ipal\IpalProcessLog;
+use App\Models\Ipal\IpalProcessValueAttachment;
 use App\Models\Master\BatchItem;
 use App\Models\Master\ChecklistItem;
 use App\Models\Master\Holiday;
@@ -15,6 +17,7 @@ use App\Models\Master\ProcessItem;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -231,7 +234,30 @@ class IpalLogService
             }
 
             $checklist->values()->delete();
-            $checklist->values()->createMany($valuesToCreate);
+            $createdValues = collect();
+            foreach ($valuesToCreate as $valueData) {
+                $createdValues->push($checklist->values()->create($valueData));
+            }
+
+            // Handle per-value attachment uploads
+            foreach ($submittedValues as $index => $value) {
+                $attachment = $value['attachment'] ?? null;
+                if ($attachment instanceof UploadedFile) {
+                    $createdValue = $createdValues->get($index);
+                    if ($createdValue !== null) {
+                        $logDate = Carbon::parse($payload['tanggal']);
+                        $path = $attachment->store(
+                            'ipal/checklist/'.$logDate->year.'/'.$logDate->month,
+                            'public',
+                        );
+                        IpalChecklistValueAttachment::query()->create([
+                            'checklist_value_id' => $createdValue->id,
+                            'file_path' => $path,
+                            'original_name' => $attachment->getClientOriginalName(),
+                        ]);
+                    }
+                }
+            }
 
             if ($processLog === null) {
                 $processLog = $this->createDraftProcessLog($dailyLog, null);
@@ -294,7 +320,7 @@ class IpalLogService
                 });
             }
 
-            $this->replaceProcessValues($processLog, $processPayload['values'] ?? [], false);
+            $this->replaceProcessValues($processLog, $processPayload['values'] ?? [], false, $payload['tanggal'] ?? null);
 
             $hasMixing = (bool) ($payload['has_mixing'] ?? false);
             $this->replaceBatchValues($processLog, $hasMixing ? ($payload['batch'] ?? []) : [], false);
@@ -394,6 +420,37 @@ class IpalLogService
 
             $processLog->update([
                 'status' => 'APPROVED',
+            ]);
+
+            return $processLog->fresh();
+        });
+    }
+
+    /**
+     * Re-open a daily log that was already approved by supervisor.
+     * Resets process log status to SUBMITTED and clears supervisor signature.
+     * Intended for Superadmin use only.
+     */
+    public function reopen(IpalDailyLog $dailyLog): IpalProcessLog
+    {
+        return DB::transaction(function () use ($dailyLog): IpalProcessLog {
+            $processLog = $dailyLog->processLog()->with('approval')->firstOrFail();
+
+            if (! in_array($processLog->status, ['APPROVED', 'SUBMITTED'], strict: true)) {
+                throw ValidationException::withMessages([
+                    'status' => ['Hanya log dengan status APPROVED atau SUBMITTED yang bisa di-reopen.'],
+                ]);
+            }
+
+            if ($processLog->approval !== null) {
+                $processLog->approval()->update([
+                    'supervisor_id' => null,
+                    'supervisor_signed_at' => null,
+                ]);
+            }
+
+            $processLog->update([
+                'status' => 'SUBMITTED',
             ]);
 
             return $processLog->fresh();
@@ -527,14 +584,14 @@ class IpalLogService
         string $inputType,
         array $payload,
         bool $strict = true,
-    ): void {
+    ): ?IpalProcessValue {
         $numberValue = $payload['value_number'] ?? null;
         $textValue = $payload['value_text'] ?? null;
 
         if ($inputType === 'number') {
             if ($numberValue === null) {
                 if (! $strict) {
-                    return;
+                    return null;
                 }
 
                 throw ValidationException::withMessages([
@@ -542,19 +599,17 @@ class IpalLogService
                 ]);
             }
 
-            $processLog->values()->create([
+            return $processLog->values()->create([
                 'item_id' => $payload['item_id'],
                 'value_number' => $numberValue,
                 'value_text' => null,
                 'note' => $payload['note'] ?? null,
             ]);
-
-            return;
         }
 
         if (! is_string($textValue) || trim($textValue) === '') {
             if (! $strict) {
-                return;
+                return null;
             }
 
             throw ValidationException::withMessages([
@@ -562,7 +617,7 @@ class IpalLogService
             ]);
         }
 
-        $processLog->values()->create([
+        return $processLog->values()->create([
             'item_id' => $payload['item_id'],
             'value_text' => $textValue,
             'value_number' => null,
@@ -658,7 +713,7 @@ class IpalLogService
     /**
      * @param  array<int, array<string, mixed>>  $valuesPayload
      */
-    private function replaceProcessValues(IpalProcessLog $processLog, array $valuesPayload, bool $strict): void
+    private function replaceProcessValues(IpalProcessLog $processLog, array $valuesPayload, bool $strict, ?string $date = null): void
     {
         $processItems = ProcessItem::query()
             ->select(['m_process_items.id', 'm_process_items.input_type'])
@@ -678,7 +733,22 @@ class IpalLogService
                 ]);
             }
 
-            $this->validateAndCreateProcessValue($processLog, $item->input_type, $value, $strict);
+            $createdValue = $this->validateAndCreateProcessValue($processLog, $item->input_type, $value, $strict);
+
+            // Handle optional per-value attachment upload
+            $attachment = $value['attachment'] ?? null;
+            if ($attachment instanceof UploadedFile && $createdValue !== null) {
+                $logDate = $date !== null ? Carbon::parse($date) : now();
+                $path = $attachment->store(
+                    'ipal/process/'.$logDate->year.'/'.$logDate->month,
+                    'public',
+                );
+                IpalProcessValueAttachment::query()->create([
+                    'process_value_id' => $createdValue->id,
+                    'file_path' => $path,
+                    'original_name' => $attachment->getClientOriginalName(),
+                ]);
+            }
         }
     }
 

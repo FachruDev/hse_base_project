@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, FileImage, Plus, Scale } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileImage, FileSpreadsheet, Plus, Printer, Scale } from 'lucide-react';
+
 
 import {
     b3StorageApproveMonthly,
@@ -64,8 +65,73 @@ export function PenyimpananLimbahB3MonthlyDetail({
         );
     };
 
+    const exportToExcel = () => {
+        const wasteTypeCols = monthlyDetail.columns.waste_types.map((wt) => wt.name);
+        const hasOther = monthlyDetail.columns.has_other_column;
+
+        const headers = [
+            'No',
+            'Tipe Pergerakan',
+            'Tanggal',
+            'Jam',
+            ...wasteTypeCols,
+            ...(hasOther ? ['Yang Lain'] : []),
+            'No. Dokumen',
+            'Dept. Inisiator',
+            'Operator TPS LB3',
+            'Catatan',
+        ];
+
+        const rows = monthlyDetail.rows.map((row) => [
+            row.no,
+            row.tanggal_masuk ? 'MASUK' : row.tanggal_keluar ? 'KELUAR' : '-',
+            row.tanggal_masuk ?? row.tanggal_keluar ?? '-',
+            row.jam ?? '-',
+            ...monthlyDetail.columns.waste_types.map((wt) =>
+                row.weights_by_waste_type[String(wt.id)] ?? '-',
+            ),
+            ...(hasOther ? [row.weight_other ?? '-'] : []),
+            row.document_number,
+            row.initiator_department ?? '-',
+            row.operator_name ?? '-',
+            row.note ?? '-',
+        ]);
+
+        const totalRow = [
+            'TOTAL',
+            '',
+            '',
+            '',
+            ...monthlyDetail.columns.waste_types.map((wt) =>
+                monthlyDetail.totals.by_waste_type[String(wt.id)] ?? 0,
+            ),
+            ...(hasOther ? [monthlyDetail.totals.other] : []),
+            '',
+            '',
+            '',
+            '',
+        ];
+
+        const csvContent = [headers, ...rows, totalRow]
+            .map((row) =>
+                row
+                    .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+                    .join(';'),
+            )
+            .join('\n');
+
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `B3_${monthlyDetail.period.label.replace(/\s/g, '_')}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
-        <div className="min-h-screen w-full max-w-full min-w-0 overflow-x-hidden bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_46%)] px-3 py-5 sm:px-4 lg:px-6 lg:py-8">
+        <div className="print-content min-h-screen w-full max-w-full min-w-0 overflow-x-hidden bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_46%)] px-3 py-5 sm:px-4 lg:px-6 lg:py-8">
             <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-5 lg:gap-6">
                 <Card className="min-w-0 border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60">
                     <CardHeader className="gap-4">
@@ -84,6 +150,7 @@ export function PenyimpananLimbahB3MonthlyDetail({
                             <div className="flex flex-wrap items-center gap-3">
                                 <Button
                                     variant="outline"
+                                    className="no-print"
                                     render={
                                         <a
                                             href={b3StorageIndex.url({
@@ -100,6 +167,25 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                     Kembali ke Listing
                                 </Button>
                                 <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="no-print"
+                                    onClick={() => window.print()}
+                                >
+                                    <Printer className="size-4" />
+                                    Print PDF
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="no-print"
+                                    onClick={exportToExcel}
+                                >
+                                    <FileSpreadsheet className="size-4" />
+                                    Export Excel
+                                </Button>
+                                <Button
+                                    className="no-print"
                                     render={
                                         <a
                                             href={b3StorageCreate.url({

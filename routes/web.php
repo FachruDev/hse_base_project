@@ -33,6 +33,10 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}/approve',
         [DashboardController::class, 'catatanPengolahanLimbahAirApproveDailyLog'],
     )->name('dashboard.forms.catatan-pengolahan-limbah-air.logs.approve');
+    Route::patch(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}/reopen',
+        [DashboardController::class, 'catatanPengolahanLimbahAirReopenDailyLog'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.logs.reopen');
     Route::post(
         '/dashboard/forms/catatan-pengolahan-limbah-air/monthly/{year}/{month}/process-approval',
         [DashboardController::class, 'catatanPengolahanLimbahAirApproveMonthlyProcess'],

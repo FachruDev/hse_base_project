@@ -260,6 +260,18 @@ class B3StorageService
             $initiatorDepartmentOther = null;
         }
 
+        $initiatorUserId = $currentLog?->initiator_user_id;
+        $initiatorUserExternalId = isset($payload['initiator_user_external_id'])
+            ? trim((string) $payload['initiator_user_external_id'])
+            : null;
+
+        if ($initiatorUserExternalId !== null && $initiatorUserExternalId !== '') {
+            $initiatorUser = User::query()->where('external_id', $initiatorUserExternalId)->first();
+            $initiatorUserId = $initiatorUser?->id;
+        } elseif ($initiatorUserExternalId === '') {
+            $initiatorUserId = null;
+        }
+
         $photoPath = $currentLog?->photo_path;
         if ($photo instanceof UploadedFile) {
             if (is_string($photoPath) && $photoPath !== '') {
@@ -277,6 +289,7 @@ class B3StorageService
             'waste_type_other' => $wasteTypeOther !== '' ? $wasteTypeOther : null,
             'initiator_department_id' => $initiatorDepartmentId,
             'initiator_department_other' => $initiatorDepartmentOther !== '' ? $initiatorDepartmentOther : null,
+            'initiator_user_id' => $initiatorUserId,
             'weight_kg' => $payload['weight_kg'],
             'document_number' => $payload['document_number'],
             'photo_path' => $photoPath,

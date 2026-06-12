@@ -30,6 +30,7 @@ type B3FormState = {
     waste_type_other: string;
     initiator_department_id: number | null;
     initiator_department_other: string;
+    initiator_user_external_id: string;
     weight_kg: string;
     document_number: string;
     photo: File | null;
@@ -48,6 +49,7 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
         waste_type_other: '',
         initiator_department_id: null,
         initiator_department_other: '',
+        initiator_user_external_id: '',
         weight_kg: '',
         document_number: '',
         photo: null,
@@ -342,6 +344,29 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                     <FieldError>{form.errors.note}</FieldError>
                                 </FieldContent>
                             </Field>
+
+                            <div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
+                                <div>
+                                    <p className="text-sm font-medium">Petugas Dept. Inisiator</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Kosongkan jika tidak ada petugas inisiator dari dept lain
+                                    </p>
+                                </div>
+                                <Field>
+                                    <FieldLabel htmlFor="initiator_user_external_id">ID Petugas Dept. Inisiator</FieldLabel>
+                                    <FieldContent>
+                                        <Input
+                                            id="initiator_user_external_id"
+                                            value={form.data.initiator_user_external_id}
+                                            onChange={(event) =>
+                                                form.setData('initiator_user_external_id', event.target.value)
+                                            }
+                                            placeholder="Masukkan ID petugas..."
+                                        />
+                                        <FieldError>{form.errors.initiator_user_external_id}</FieldError>
+                                    </FieldContent>
+                                </Field>
+                            </div>
 
                             <div className="flex justify-end gap-3">
                                 <Button type="submit" disabled={form.processing}>

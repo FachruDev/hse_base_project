@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { Save } from 'lucide-react';
+import { Paperclip, Save, X } from 'lucide-react';
 import * as React from 'react';
 
 import { catatanPengolahanLimbahAirSaveChecklist } from '@/actions/App/Http/Controllers/Web/DashboardController';
@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard/types';
 import type { ChecklistFormState, ChecklistStatus } from './entry-form-types';
 import { normalizeChecklistStatus } from './entry-form-types';
+import { RowPhoto } from './row-photo';
 
 type ChecklistHarianFormProps = {
     entryForm: CatatanPengolahanLimbahAirEntryPayload;
@@ -18,6 +19,8 @@ type ChecklistHarianFormProps = {
 };
 
 export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormProps) {
+    const fileInputRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
+
     const form = useForm<ChecklistFormState>({
         tanggal: entryForm.entry.tanggal,
         checklist: {
@@ -26,6 +29,7 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
                 item_id: item.id,
                 status: normalizeChecklistStatus(item.status),
                 note: item.note ?? '',
+                attachment: null,
             })),
         },
     });
@@ -59,50 +63,85 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
                                 <TableHead>Kondisi Standar</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="px-4">Catatan</TableHead>
+                                <TableHead className="px-4">Foto</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {entryForm.checklist.items.map((item, index) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="px-4 font-medium">{item.name}</TableCell>
-                                    <TableCell>{item.standard_condition ?? '-'}</TableCell>
-                                    <TableCell className="min-w-[200px]">
-                                        <YaTidakToggle
-                                            value={form.data.checklist.values[index]?.status ?? ''}
-                                            disabled={readOnly}
-                                            onChange={(nextStatus) => {
-                                                form.setData('checklist', {
-                                                    ...form.data.checklist,
-                                                    values: form.data.checklist.values.map((valueItem, valueIndex) =>
-                                                        valueIndex === index ? { ...valueItem, status: nextStatus as ChecklistStatus } : valueItem,
-                                                    ),
-                                                });
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="px-4">
-                                        <Textarea
-                                            value={form.data.checklist.values[index]?.note ?? ''}
-                                            readOnly={readOnly}
-                                            onChange={(event) => {
-                                                form.setData('checklist', {
-                                                    ...form.data.checklist,
-                                                    values: form.data.checklist.values.map((valueItem, valueIndex) =>
-                                                        valueIndex === index ? { ...valueItem, note: event.target.value } : valueItem,
-                                                    ),
-                                                });
-                                            }}
-                                            className="min-h-14"
-                                            placeholder="Contoh: perlu pembersihan ulang"
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {entryForm.checklist.items.map((item, index) => {
+                                const existingAttachmentUrl = item.attachment_url as string | null | undefined;
+                                const existingAttachmentName = item.attachment_original_name as string | null | undefined;
+                                const currentFile = form.data.checklist.values[index]?.attachment;
+
+                                return (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="px-4 font-medium">{item.name}</TableCell>
+                                        <TableCell>{item.standard_condition ?? '-'}</TableCell>
+                                        <TableCell className="min-w-[200px]">
+                                            <YaTidakToggle
+                                                value={form.data.checklist.values[index]?.status ?? ''}
+                                                disabled={readOnly}
+                                                onChange={(nextStatus) => {
+                                                    form.setData('checklist', {
+                                                        ...form.data.checklist,
+                                                        values: form.data.checklist.values.map((valueItem, valueIndex) =>
+                                                            valueIndex === index ? { ...valueItem, status: nextStatus as ChecklistStatus } : valueItem,
+                                                        ),
+                                                    });
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="px-4">
+                                            <Textarea
+                                                value={form.data.checklist.values[index]?.note ?? ''}
+                                                readOnly={readOnly}
+                                                onChange={(event) => {
+                                                    form.setData('checklist', {
+                                                        ...form.data.checklist,
+                                                        values: form.data.checklist.values.map((valueItem, valueIndex) =>
+                                                            valueIndex === index ? { ...valueItem, note: event.target.value } : valueItem,
+                                                        ),
+                                                    });
+                                                }}
+                                                className="min-h-14"
+                                                placeholder="Contoh: perlu pembersihan ulang"
+                                            />
+                                        </TableCell>
+                                        <TableCell className="px-4">
+                                            <RowPhoto
+                                                index={index}
+                                                readOnly={readOnly}
+                                                existingUrl={existingAttachmentUrl}
+                                                existingName={existingAttachmentName}
+                                                currentFile={currentFile}
+                                                inputRef={(el) => { fileInputRefs.current[index] = el; }}
+                                                onFileChange={(file) => {
+                                                    form.setData('checklist', {
+                                                        ...form.data.checklist,
+                                                        values: form.data.checklist.values.map(
+                                                            (val, i) => i === index ? { ...val, attachment: file } : val
+                                                        )
+                                                    });
+                                                }}
+                                                onClear={() => {
+                                                    const input = fileInputRefs.current[index];
+                                                    if (input) { input.value = ''; }
+                                                    form.setData('checklist', {
+                                                        ...form.data.checklist,
+                                                        values: form.data.checklist.values.map(
+                                                            (val, i) => i === index ? { ...val, attachment: null } : val
+                                                        )
+                                                    });
+                                                }}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
 
                     {!readOnly ? (
-                        <div className="flex justify-end p-4">
+                        <div className="mt-8 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border/50 bg-slate-50/80 p-4 shadow-sm dark:bg-muted/20">
                             <Button
                                 type="submit"
                                 disabled={

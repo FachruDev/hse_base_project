@@ -16,7 +16,7 @@ use Illuminate\Support\Collection;
 class CatatanPengolahanLimbahAirPageService
 {
     /**
-     * @param  array{search: string, status: string, year: int, per_page: int}  $filters
+     * @param  array{search: string, status: string, year: int, per_page: int, date_from: string, date_to: string}  $filters
      * @return array<string, mixed>
      */
     public function buildListing(User $user, array $filters, IpalLogService $ipalLogService): array
@@ -146,7 +146,9 @@ class CatatanPengolahanLimbahAirPageService
         $log->loadMissing([
             'operator.department',
             'checklist.values:id,checklist_id,item_id,status,note',
+            'checklist.values.attachments',
             'processLog.values:id,process_log_id,item_id,value_text,value_number,note',
+            'processLog.values.attachments',
             'processLog.batches.values:id,batch_id,item_id,value_text,value_number',
             'processLog.approval',
         ]);
@@ -156,6 +158,9 @@ class CatatanPengolahanLimbahAirPageService
         $canApproveDailyProcess = $viewer->can('ipal.logs.approve')
             && $processStatus === 'SUBMITTED'
             && ! $isApprovedBySupervisor;
+        $canReopenDailyProcess = $viewer->can('ipal.logs.reopen')
+            && in_array($processStatus, ['APPROVED', 'SUBMITTED'], strict: true)
+            && $isApprovedBySupervisor;
 
         $payload = $this->buildEntryPayload(
             $log->operator,
@@ -165,6 +170,7 @@ class CatatanPengolahanLimbahAirPageService
         );
 
         $payload['capabilities']['approve_daily_process'] = $canApproveDailyProcess;
+        $payload['capabilities']['reopen_daily_process'] = $canReopenDailyProcess;
 
         return $payload;
     }
@@ -174,7 +180,9 @@ class CatatanPengolahanLimbahAirPageService
         return IpalDailyLog::query()
             ->with([
                 'checklist.values:id,checklist_id,item_id,status,note',
+                'checklist.values.attachments',
                 'processLog.values:id,process_log_id,item_id,value_text,value_number,note',
+                'processLog.values.attachments',
                 'processLog.batches.values:id,batch_id,item_id,value_text,value_number',
             ])
             ->whereBelongsTo($user, 'operator')
@@ -332,7 +340,7 @@ class CatatanPengolahanLimbahAirPageService
     }
 
     /**
-     * @param  array{search: string, status: string, year: int, per_page: int}  $filters
+     * @param  array{search: string, status: string, year: int, per_page: int, date_from: string, date_to: string}  $filters
      */
     private function matchesMonthlyFilters(array $row, array $filters): bool
     {
@@ -343,6 +351,27 @@ class CatatanPengolahanLimbahAirPageService
 
             if (! $matchesPeriod && ! $matchesMonth) {
                 return false;
+            }
+        }
+
+        if ($filters['date_from'] !== '' || $filters['date_to'] !== '') {
+            $monthStart = Carbon::create($row['year'], $row['month'], 1)->startOfMonth();
+            $monthEnd = $monthStart->copy()->endOfMonth();
+
+            if ($filters['date_from'] !== '') {
+                $dateFrom = Carbon::parse($filters['date_from'])->startOfDay();
+
+                if ($monthEnd->lt($dateFrom)) {
+                    return false;
+                }
+            }
+
+            if ($filters['date_to'] !== '') {
+                $dateTo = Carbon::parse($filters['date_to'])->endOfDay();
+
+                if ($monthStart->gt($dateTo)) {
+                    return false;
+                }
             }
         }
 
@@ -501,6 +530,7 @@ class CatatanPengolahanLimbahAirPageService
     {
         return $items->map(function ($item) use ($valueMap): array {
             $value = $valueMap->get($item->id);
+            $attachment = $value?->attachments?->first();
 
             return [
                 'id' => $item->id,
@@ -510,6 +540,9 @@ class CatatanPengolahanLimbahAirPageService
                 'status' => $value?->status,
                 'status_label' => $this->resolveChecklistStatusLabel($value?->status),
                 'note' => $value?->note,
+                'attachment_path' => $attachment?->file_path,
+                'attachment_url' => $attachment !== null ? $attachment->getUrl() : null,
+                'attachment_original_name' => $attachment?->original_name,
             ];
         })->all();
     }
@@ -526,6 +559,7 @@ class CatatanPengolahanLimbahAirPageService
             'name' => $section->name,
             'items' => $section->items->map(function ($item) use ($valueMap): array {
                 $value = $valueMap->get($item->id);
+                $attachment = $value?->attachments?->first();
 
                 return [
                     'id' => $item->id,
@@ -535,6 +569,9 @@ class CatatanPengolahanLimbahAirPageService
                     'value_text' => $value?->value_text,
                     'value_number' => $value?->value_number,
                     'note' => $value?->note,
+                    'attachment_path' => $attachment?->file_path,
+                    'attachment_url' => $attachment !== null ? $attachment->getUrl() : null,
+                    'attachment_original_name' => $attachment?->original_name,
                 ];
             })->all(),
         ])->all();

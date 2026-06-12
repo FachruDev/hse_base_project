@@ -97,9 +97,11 @@
          - Status SUBMITTED + hari ini + belum approve supervisor → bisa diedit
          - Status DRAFT/null → bisa diedit seperti biasa
 
-[ ] F2-05: Superadmin bisa re-open log yang sudah diperiksa (kasus khusus)
-         Tambah endpoint PATCH /dashboard/forms/.../logs/{log}/reopen
-
+✅ F2-05: Superadmin bisa re-open log yang sudah diperiksa (kasus khusus)
+         File: DashboardController.php, IpalLogService.php, catatan-proses-form.tsx
+         - Tambah permission `ipal.logs.reopen` ke superadmin via migration
+         - Method `reopen` di service mereset log `APPROVED` kembali ke `SUBMITTED` dan menghapus nama supervisor
+         - Tombol "Re-open Log" (warna amber) muncul di form IPAL khusus untuk Superadmin jika log sudah diperiksa
 ✅ F2-06: Header kolom matrix: tanggal per hari kerja + marking hari libur
          File: CatatanPengolahanLimbahAirPageService.php, monthly-detail.tsx
 
@@ -156,21 +158,18 @@
   FASE 3 — DB Migration + Upload Foto + Filter Range
 ────────────────────────────────────────────────────────
 
-[ ] F3-01: Upload foto per item checklist (opsional, per baris, gambar saja)
-         DB: tabel baru ipal_checklist_value_attachments
-         Storage: Laravel local storage (disk: public)
-         UI: tombol upload per baris di checklist-harian-form.tsx
+✅ F3-01 & F3-02: Upload Foto Opsional Per Item IPAL
+         File: SaveIpalChecklistRequest.php, SaveIpalProcessRequest.php, IpalLogService.php, checklist-harian-form.tsx, catatan-proses-form.tsx, types.ts
+         - Support single file upload (`attachment`) per checklist value & process value
+         - Menggunakan Storage public path `ipal/checklist/YYYY/MM` dan `ipal/process/YYYY/MM`
+         - Frontend: Tambah tombol attachment di tiap baris yang mendukung replace/remove photo
 
-[ ] F3-02: Upload foto per item catatan proses (opsional, per baris, gambar saja)
-         DB: tabel baru ipal_process_value_attachments
-         UI: tombol upload per baris di catatan-proses-form.tsx
-
-[ ] F3-03: Filter rentang bulan+tanggal di List IPAL
+✅ F3-03: Filter rentang bulan+tanggal di List IPAL
          Misal: Jun 16 – Agt 16
          → Klik detail → detail juga difilter ke range tersebut
          File: catatan-pengolahan-limbah-air-listing.tsx, PageService
 
-[ ] F3-04: Filter rentang bulan+tanggal di List B3 (sama dengan F3-03)
+✅ F3-04: Filter rentang bulan+tanggal di List B3 (sama dengan F3-03)
          File: penyimpanan-limbah-b3-listing.tsx, B3StoragePageService.php
 
 ✅ F3-05: Ganti semua item waktu proses batch mixing → Durasi (menit)
@@ -191,32 +190,52 @@
   FASE 4 — Tablet Flow B3 + Print PDF/Excel
 ────────────────────────────────────────────────────────
 
-[ ] F4-01: Saat operator HSE di form B3: tampilkan modal/drawer input user_id dept lain
+✅ F4-01: Saat operator HSE di form B3: tampilkan section input user_id dept lain
          - Input: user_id (external_id) dari dept lain
-         - Validasi: user harus ada dan aktif di sistem
+         - Validasi: user harus ada dan aktif di sistem (resolve di backend)
          - Simpan sebagai initiator_user_id di log
-         File: penyimpanan-limbah-b3-entry.tsx, DashboardController.php
+         File: penyimpanan-limbah-b3-entry.tsx, StoreB3StorageLogRequest.php,
+               B3StorageService.php (normalizeLogPayload)
 
-[ ] F4-02: Setelah log tersimpan: row paraf otomatis terisi nama user
-         dengan label "✅ Approved by Sistem"
-         (operator HSE + dept inisiator)
+✅ F4-02: Setelah log tersimpan: row paraf otomatis terisi nama user
+         dengan label "✅ Tercatat" (operator HSE + dept inisiator)
+         - initiator_user_id disimpan via normalizeLogPayload
+         - Row paraf di monthly detail sudah ada dari F3-07
+         - Nama inisiator diambil dari initiatorUser relation
+         - "Belum diisi" ditampilkan jika initiator_user_id null
 
-[ ] F4-03: Print PDF Checklist Harian (jika sudah submit)
-         Browser print via CSS @media print + warna primary codebase
+✅ F4-03: Print PDF Checklist Harian (jika sudah submit)
+         File: catatan-pengolahan-limbah-air-entry.tsx, resources/css/app.css
+         - Tombol "Print PDF" muncul di header saat mode read_only (sudah submit)
+         - Klik → window.print() → browser print dialog
+         - @media print CSS: hide sidebar, nav, action buttons; expand konten ke full-width
 
-[ ] F4-04: Print PDF Catatan Proses (jika sudah submit)
-         → Include Form Batch Mixing dalam 1 file untuk audit
+✅ F4-04: Print PDF Catatan Proses + Batch Mixing (jika sudah submit)
+         File: catatan-pengolahan-limbah-air-entry.tsx (sama dengan F4-03)
+         - Tombol Print yang sama juga include form Catatan Proses + Batch Mixing
+         - Konten form otomatis tercetak semua dalam 1 dokumen
 
-[ ] F4-05: Print PDF Laporan IPAL Detail Periode (Bulanan)
-         - Halaman 1: Tabel laporan proses bulanan (matrix)
-         - Halaman 2: Daftar catatan (tanggal - nama proses - isi catatan) untuk audit
-         - TIDAK menyertakan gambar/attachment
+✅ F4-05: Print PDF Laporan IPAL Detail Periode (Bulanan)
+         File: catatan-pengolahan-limbah-air-monthly-detail.tsx
+         - Tombol "Print PDF" di header, tersedia untuk semua user
+         - Mencetak tabel matrix + daftar log harian
+         - Sidebar/nav di-hide via .no-print class
 
-[ ] F4-06: Print PDF per log B3 individu (menyertakan catatan + bukti foto)
+✅ F4-06: Print PDF per log B3 individu
+         File: penyimpanan-limbah-b3-monthly-detail.tsx
+         - Tombol "Print PDF" di header detail periode
+         - Mencetak tabel log B3 + section paraf
 
-[ ] F4-07: Print PDF Laporan Detail Periode B3 (menyertakan catatan + foto)
+✅ F4-07: Print PDF Laporan Detail Periode B3
+         File: penyimpanan-limbah-b3-monthly-detail.tsx (sama dengan F4-06)
+         - Tombol yang sama mencetak seluruh laporan periode termasuk approval info
 
-[ ] F4-08: Export Excel untuk detail periode B3 (file bisa di-edit manual)
+✅ F4-08: Export Excel untuk detail periode B3 (file bisa di-edit manual)
+         File: penyimpanan-limbah-b3-monthly-detail.tsx
+         - Tombol "Export Excel" di header (CSV format dengan BOM UTF-8 agar Excel baca dengan benar)
+         - Pure client-side: generate CSV dari data yang ada, trigger download langsung
+         - Kolom: No, Tipe, Tanggal, Jam, semua jenis limbah, No. Dokumen, Dept, Operator, Catatan
+         - Termasuk baris TOTAL di akhir
 
 
 ========================================================

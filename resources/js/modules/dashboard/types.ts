@@ -76,6 +76,8 @@ export type CatatanPengolahanLimbahAirListingPayload = {
         status: string;
         year: number;
         per_page: number;
+        date_from: string;
+        date_to: string;
     };
     capabilities: {
         can_approve_process_monthly: boolean;
@@ -93,6 +95,8 @@ export type ChecklistField = {
     status: string | null;
     status_label: string | null;
     note: string | null;
+    attachment_url?: string | null;
+    attachment_original_name?: string | null;
 };
 
 export type ProcessField = {
@@ -103,6 +107,8 @@ export type ProcessField = {
     value_text: string | null;
     value_number: number | null;
     note: string | null;
+    attachment_url?: string | null;
+    attachment_original_name?: string | null;
 };
 
 export type ProcessSectionField = {
@@ -171,6 +177,7 @@ export type CatatanPengolahanLimbahAirEntryPayload = {
     };
     capabilities: {
         approve_daily_process: boolean;
+        reopen_daily_process?: boolean;
     };
 };
 
@@ -273,6 +280,8 @@ export type B3StorageLogListingPayload = {
         search: string;
         status: string;
         year: number;
+        date_from: string;
+        date_to: string;
     };
     capabilities: {
         create_log: boolean;

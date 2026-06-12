@@ -1,12 +1,14 @@
 import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, ChevronUp, FlaskConical, Save, Send } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, FlaskConical, Paperclip, RotateCcw, Save, Send, X } from 'lucide-react';
 import * as React from 'react';
 
 import {
     catatanPengolahanLimbahAirApproveDailyLog,
+    catatanPengolahanLimbahAirReopenDailyLog,
     catatanPengolahanLimbahAirSaveProcess,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +19,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -33,10 +36,11 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import type { CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard/types';
+import type { CatatanPengolahanLimbahAirEntryPayload, ProcessField } from '@/modules/dashboard/types';
 import { BatchMixingSection } from './batch-mixing-section';
 import type { ProcessFormState } from './entry-form-types';
 import { buildAvailableBatchNumbers } from './entry-form-types';
+import { RowPhoto } from './row-photo';
 
 function roundToDecimals(value: string, decimals: number): string {
     const num = parseFloat(value);
@@ -60,6 +64,7 @@ export function CatatanProsesForm({
     const [collapsedSections, setCollapsedSections] = React.useState<
         Record<string | number, boolean>
     >({});
+    const fileInputRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
     const batchItems = entryForm.batch.sections.flatMap(
         (section) => section.items,
     );
@@ -98,6 +103,7 @@ export function CatatanProsesForm({
                             ? String(item.value_number)
                             : '',
                     note: item.note ?? '',
+                    attachment: null,
                 })),
             ),
         },
@@ -355,6 +361,9 @@ export function CatatanProsesForm({
                                                     </TableHead>
                                                     <TableHead className="px-5 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                                                         Keterangan
+                                                    </TableHead>
+                                                    <TableHead className="px-5 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                                        Foto
                                                     </TableHead>
                                                 </TableRow>
                                             </TableHeader>
@@ -640,6 +649,40 @@ export function CatatanProsesForm({
                                                                     placeholder="Catatan tambahan..."
                                                                 />
                                                             </TableCell>
+                                                            <TableCell className="px-5 pt-4 align-top">
+                                                                <RowPhoto
+                                                                    index={valueIndex}
+                                                                    readOnly={readOnly}
+                                                                    existingUrl={(item as Record<string, unknown>).attachment_url as string | null | undefined}
+                                                                    existingName={(item as Record<string, unknown>).attachment_original_name as string | null | undefined}
+                                                                    currentFile={value?.attachment ?? null}
+                                                                    inputRef={(el) => { fileInputRefs.current[valueIndex] = el; }}
+                                                                    onFileChange={(file) => {
+                                                                        form.setData('process', {
+                                                                            ...form.data.process,
+                                                                            values: form.data.process.values.map(
+                                                                                (currentValue, currentIndex) =>
+                                                                                    currentIndex === valueIndex
+                                                                                        ? { ...currentValue, attachment: file }
+                                                                                        : currentValue,
+                                                                            ),
+                                                                        });
+                                                                    }}
+                                                                    onClear={() => {
+                                                                        const input = fileInputRefs.current[valueIndex];
+                                                                        if (input) { input.value = ''; }
+                                                                        form.setData('process', {
+                                                                            ...form.data.process,
+                                                                            values: form.data.process.values.map(
+                                                                                (currentValue, currentIndex) =>
+                                                                                    currentIndex === valueIndex
+                                                                                        ? { ...currentValue, attachment: null }
+                                                                                        : currentValue,
+                                                                            ),
+                                                                        });
+                                                                    }}
+                                                                />
+                                                            </TableCell>
                                                         </TableRow>
                                                     );
                                                 })}
@@ -767,6 +810,35 @@ export function CatatanProsesForm({
                             >
                                 <CheckCircle2 className="mr-2 size-4" />
                                 ✓ Di Periksa
+                            </Button>
+                        </div>
+                    ) : null}
+                    {/* SUPERADMIN RE-OPEN BUTTON (F2-05) */}
+                    {entryForm.capabilities.reopen_daily_process && entryForm.entry.log_id ? (
+                        <div className="mt-4 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/20">
+                            <p className="mr-auto text-sm text-amber-700 dark:text-amber-300">
+                                Log ini sudah diperiksa. Sebagai Superadmin, kamu bisa me-reopen log ini untuk dikoreksi operator.
+                            </p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-amber-300 text-amber-700 shadow-sm hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300"
+                                onClick={() => {
+                                    if (entryForm.entry.log_id === null) {
+                                        return;
+                                    }
+                                    router.patch(
+                                        catatanPengolahanLimbahAirReopenDailyLog.url(
+                                            { log: entryForm.entry.log_id },
+                                            { query: { user_id: userId } },
+                                        ),
+                                        {},
+                                        { preserveScroll: true },
+                                    );
+                                }}
+                            >
+                                <RotateCcw className="mr-2 size-4" />
+                                Re-open Log
                             </Button>
                         </div>
                     ) : null}

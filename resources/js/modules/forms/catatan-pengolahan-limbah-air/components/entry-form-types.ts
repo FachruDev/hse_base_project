@@ -8,6 +8,7 @@ export type ChecklistValuePayload = {
     item_id: number;
     status: ChecklistStatus;
     note: string;
+    attachment?: File | null;
 };
 
 export type ProcessValuePayload = {
@@ -15,6 +16,7 @@ export type ProcessValuePayload = {
     value_text: string;
     value_number: string;
     note: string;
+    attachment?: File | null;
 };
 
 export type BatchValuePayload = {

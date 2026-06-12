@@ -59,6 +59,8 @@ export function CatatanPengolahanLimbahAirListing({
     const [search, setSearch] = React.useState(listing.filters.search);
     const [status, setStatus] = React.useState(listing.filters.status || 'ALL');
     const [year, setYear] = React.useState(String(listing.filters.year));
+    const [dateFrom, setDateFrom] = React.useState(listing.filters.date_from);
+    const [dateTo, setDateTo] = React.useState(listing.filters.date_to);
     const statusItems = [
         { value: 'ALL', label: 'Semua status' },
         { value: 'DRAFT', label: 'Ada draft' },
@@ -70,6 +72,8 @@ export function CatatanPengolahanLimbahAirListing({
         nextSearch: string,
         nextStatus: string,
         nextYear: string,
+        nextDateFrom: string,
+        nextDateTo: string,
     ) => {
         router.get(
             catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } }),
@@ -77,6 +81,8 @@ export function CatatanPengolahanLimbahAirListing({
                 search: nextSearch || undefined,
                 status: nextStatus === 'ALL' ? undefined : nextStatus,
                 year: Number(nextYear),
+                date_from: nextDateFrom || undefined,
+                date_to: nextDateTo || undefined,
             },
             {
                 preserveScroll: true,
@@ -155,7 +161,7 @@ export function CatatanPengolahanLimbahAirListing({
                             className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_140px_auto_auto]"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                submitFilters(search, status, year);
+                                submitFilters(search, status, year, dateFrom, dateTo);
                             }}
                         >
                             <div className="relative">
@@ -176,7 +182,7 @@ export function CatatanPengolahanLimbahAirListing({
                                 onValueChange={(value) => {
                                     const nextValue = value ?? 'ALL';
                                     setStatus(nextValue);
-                                    submitFilters(search, nextValue, year);
+                                    submitFilters(search, nextValue, year, dateFrom, dateTo);
                                 }}
                             >
                                 <SelectTrigger className="w-full">
@@ -209,6 +215,28 @@ export function CatatanPengolahanLimbahAirListing({
                                 placeholder="Tahun"
                             />
 
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs text-muted-foreground">Dari</label>
+                                <Input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={(event) =>
+                                        setDateFrom(event.target.value)
+                                    }
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs text-muted-foreground">Sampai</label>
+                                <Input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={(event) =>
+                                        setDateTo(event.target.value)
+                                    }
+                                />
+                            </div>
+
                             <Button type="submit">Cari</Button>
                             <Button
                                 type="button"
@@ -220,6 +248,8 @@ export function CatatanPengolahanLimbahAirListing({
                                     setSearch('');
                                     setStatus('ALL');
                                     setYear(currentYear);
+                                    setDateFrom('');
+                                    setDateTo('');
                                     router.get(
                                         catatanPengolahanLimbahAirIndex.url({
                                             query: { user_id: userId },

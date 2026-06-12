@@ -1,4 +1,5 @@
-import { ArrowLeft, ClipboardCheck, Droplets } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, Droplets, Printer } from 'lucide-react';
+
 import * as React from 'react';
 
 import { catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
@@ -29,7 +30,7 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
         .filter((item) => item.value_number !== null || (item.value_text ?? '').trim() !== '').length;
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_50%)] px-4 py-6 lg:px-6 lg:py-8">
+        <div className="print-content min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_50%)] px-4 py-6 lg:px-6 lg:py-8">
             <div className="mx-auto flex max-w-7xl flex-col gap-6">
                 <Card className="border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60">
                     <CardHeader className="gap-4">
@@ -60,6 +61,17 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
                                     <ArrowLeft className="size-4" />
                                     Kembali ke Listing
                                 </Button>
+                                {entryForm.entry.read_only ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="no-print"
+                                        onClick={() => window.print()}
+                                    >
+                                        <Printer className="size-4" />
+                                        Print PDF
+                                    </Button>
+                                ) : null}
                             </div>
                         </div>
                     </CardHeader>

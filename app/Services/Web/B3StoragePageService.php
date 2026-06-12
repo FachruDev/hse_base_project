@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 class B3StoragePageService
 {
     /**
-     * @param  array{search: string, status: string, year: int}  $filters
+     * @param  array{search: string, status: string, year: int, date_from: string, date_to: string}  $filters
      * @return array<string, mixed>
      */
     public function buildListing(User $user, array $filters, IpalLogService $ipalLogService): array
@@ -187,7 +187,7 @@ class B3StoragePageService
     }
 
     /**
-     * @param  array{search: string, status: string, year: int}  $filters
+     * @param  array{search: string, status: string, year: int, date_from: string, date_to: string}  $filters
      */
     private function matchesMonthlyFilters(array $row, array $filters): bool
     {
@@ -198,6 +198,27 @@ class B3StoragePageService
 
             if (! $matchesPeriod && ! $matchesMonth) {
                 return false;
+            }
+        }
+
+        if ($filters['date_from'] !== '' || $filters['date_to'] !== '') {
+            $monthStart = Carbon::create($row['year'], $row['month'], 1)->startOfMonth();
+            $monthEnd = $monthStart->copy()->endOfMonth();
+
+            if ($filters['date_from'] !== '') {
+                $dateFrom = Carbon::parse($filters['date_from'])->startOfDay();
+
+                if ($monthEnd->lt($dateFrom)) {
+                    return false;
+                }
+            }
+
+            if ($filters['date_to'] !== '') {
+                $dateTo = Carbon::parse($filters['date_to'])->endOfDay();
+
+                if ($monthStart->gt($dateTo)) {
+                    return false;
+                }
             }
         }
 
