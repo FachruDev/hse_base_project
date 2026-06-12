@@ -1,9 +1,11 @@
 import { router } from '@inertiajs/react';
 import {
     CalendarDays,
+    CheckCircle,
     CheckCircle2,
     ClipboardCheck,
     Droplets,
+    Eye,
     Filter,
     Plus,
     RotateCcw,
@@ -354,12 +356,14 @@ export function CatatanPengolahanLimbahAirListing({
                                                                 );
                                                             }}
                                                         >
+                                                            <CheckCircle className="mr-2 size-4" />
                                                             Approve Bulanan
                                                         </Button>
                                                     ) : null}
                                                     <Button
                                                         nativeButton={false}
                                                         variant="outline"
+                                                        size="icon"
                                                         render={
                                                             <a
                                                                 href={catatanPengolahanLimbahAirMonthlyShow.url(
@@ -377,7 +381,7 @@ export function CatatanPengolahanLimbahAirListing({
                                                             />
                                                         }
                                                     >
-                                                        Detail
+                                                        <Eye className="size-4" />
                                                     </Button>
                                                 </div>
                                             </TableCell>

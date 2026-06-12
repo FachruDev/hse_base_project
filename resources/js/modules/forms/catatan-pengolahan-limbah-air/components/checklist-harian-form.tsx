@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Paperclip, Save, X } from 'lucide-react';
 import * as React from 'react';
+import { showAlert } from '@/lib/sweetalert';
 
 import { catatanPengolahanLimbahAirSaveChecklist } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,23 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
         event.preventDefault();
         form.post(catatanPengolahanLimbahAirSaveChecklist.url({ query: { user_id: userId } }), {
             preserveScroll: true,
+            onSuccess: () => {
+                showAlert({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: 'Checklist harian berhasil disimpan!',
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+            },
+            onError: () => {
+                showAlert({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan',
+                    text: 'Terdapat kesalahan pada isian form Anda.',
+                    confirmButtonText: 'Tutup',
+                });
+            }
         });
     };
 
@@ -51,9 +69,13 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
                         <CardDescription>{entryForm.checklist.template_name ?? 'Template checklist belum tersedia.'}</CardDescription>
                     </div>
                     <Badge variant="outline">Tanggal Pengisian: {entryForm.entry.tanggal}</Badge>
-
                 </div>
             </CardHeader>
+            {Object.keys(form.errors).length > 0 ? (
+                <div className="bg-destructive/10 text-destructive p-4 text-sm border-b border-destructive/20 font-medium">
+                    Gagal menyimpan: {Object.values(form.errors)[0]}
+                </div>
+            ) : null}
             <CardContent className="p-0">
                 <form onSubmit={saveChecklist}>
                     <Table>

@@ -233,10 +233,12 @@ class IpalLogService
                 ];
             }
 
-            $checklist->values()->delete();
             $createdValues = collect();
             foreach ($valuesToCreate as $valueData) {
-                $createdValues->push($checklist->values()->create($valueData));
+                $createdValues->push($checklist->values()->updateOrCreate(
+                    ['item_id' => $valueData['item_id']],
+                    ['status' => $valueData['status'], 'note' => $valueData['note']]
+                ));
             }
 
             // Handle per-value attachment uploads
@@ -250,6 +252,7 @@ class IpalLogService
                             'ipal/checklist/'.$logDate->year.'/'.$logDate->month,
                             'public',
                         );
+                        IpalChecklistValueAttachment::query()->where('checklist_value_id', $createdValue->id)->delete();
                         IpalChecklistValueAttachment::query()->create([
                             'checklist_value_id' => $createdValue->id,
                             'file_path' => $path,
@@ -599,12 +602,14 @@ class IpalLogService
                 ]);
             }
 
-            return $processLog->values()->create([
-                'item_id' => $payload['item_id'],
-                'value_number' => $numberValue,
-                'value_text' => null,
-                'note' => $payload['note'] ?? null,
-            ]);
+            return $processLog->values()->updateOrCreate(
+                ['item_id' => $payload['item_id']],
+                [
+                    'value_number' => $numberValue,
+                    'value_text' => null,
+                    'note' => $payload['note'] ?? null,
+                ]
+            );
         }
 
         if (! is_string($textValue) || trim($textValue) === '') {
@@ -617,12 +622,14 @@ class IpalLogService
             ]);
         }
 
-        return $processLog->values()->create([
-            'item_id' => $payload['item_id'],
-            'value_text' => $textValue,
-            'value_number' => null,
-            'note' => $payload['note'] ?? null,
-        ]);
+        return $processLog->values()->updateOrCreate(
+            ['item_id' => $payload['item_id']],
+            [
+                'value_text' => $textValue,
+                'value_number' => null,
+                'note' => $payload['note'] ?? null,
+            ]
+        );
     }
 
     /**
@@ -722,8 +729,6 @@ class IpalLogService
             ->get()
             ->keyBy('id');
 
-        $processLog->values()->delete();
-
         foreach ($valuesPayload as $value) {
             $item = $processItems->get($value['item_id'] ?? null);
 
@@ -743,6 +748,7 @@ class IpalLogService
                     'ipal/process/'.$logDate->year.'/'.$logDate->month,
                     'public',
                 );
+                IpalProcessValueAttachment::query()->where('process_value_id', $createdValue->id)->delete();
                 IpalProcessValueAttachment::query()->create([
                     'process_value_id' => $createdValue->id,
                     'file_path' => $path,

@@ -32,7 +32,7 @@ export function RowPhoto({
                         type="file"
                         id={`file-upload-${index}`}
                         ref={inputRef}
-                        accept="image/*,.pdf"
+                        accept="image/*"
                         className="hidden"
                         onChange={(e) => {
                             const file = e.target.files?.[0] ?? null;

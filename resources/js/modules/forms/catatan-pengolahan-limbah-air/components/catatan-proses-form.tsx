@@ -1,5 +1,5 @@
-import { useForm } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
+import { showAlert } from '@/lib/sweetalert';
 import { CheckCircle2, ChevronDown, ChevronUp, FlaskConical, Paperclip, RotateCcw, Save, Send, X } from 'lucide-react';
 import * as React from 'react';
 
@@ -132,7 +132,7 @@ export function CatatanProsesForm({
                 entryForm.batch.max_batch_no,
                 form.data.batch,
             ),
-        [entryForm.batch.max_batch_no, form.data.batch],
+        [form.data.batch, entryForm.batch.max_batch_no],
     );
     const selectedAvailableBatchNo = availableBatchNumbers
         .map(String)
@@ -140,30 +140,30 @@ export function CatatanProsesForm({
         ? selectedBatchNo
         : String(availableBatchNumbers[0] ?? '1');
 
-    const filteredSections = entryForm.process.sections
-        .map((section) => {
-            const keyword = processQuery.trim().toLowerCase();
+    const submitFilters = (keyword: string) => {
+        return entryForm.process.sections
+            .map((section) => {
+                if (!keyword) return section;
 
-            if (keyword === '') {
-                return section;
-            }
+                const filteredItems = section.items.filter((item) => {
+                    return (
+                        section.name.toLowerCase().includes(keyword) ||
+                        item.name.toLowerCase().includes(keyword) ||
+                        (item.standard_condition ?? '')
+                            .toLowerCase()
+                            .includes(keyword)
+                    );
+                });
 
-            const filteredItems = section.items.filter((item) => {
-                return (
-                    section.name.toLowerCase().includes(keyword) ||
-                    item.name.toLowerCase().includes(keyword) ||
-                    (item.standard_condition ?? '')
-                        .toLowerCase()
-                        .includes(keyword)
-                );
-            });
+                return {
+                    ...section,
+                    items: filteredItems,
+                };
+            })
+            .filter((section) => section.items.length > 0);
+    };
 
-            return {
-                ...section,
-                items: filteredItems,
-            };
-        })
-        .filter((section) => section.items.length > 0);
+    const filteredSections = submitFilters(processQuery);
 
     const saveProcess = (action: 'DRAFT' | 'SUBMIT') => {
         form.transform((data) => ({
@@ -177,6 +177,23 @@ export function CatatanProsesForm({
             }),
             {
                 preserveScroll: true,
+                onSuccess: () => {
+                    showAlert({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: `Catatan proses berhasil ${action === 'SUBMIT' ? 'disubmit' : 'disimpan'}!`,
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                },
+                onError: () => {
+                    showAlert({
+                        icon: 'error',
+                        title: 'Gagal Menyimpan',
+                        text: 'Terdapat kesalahan pada isian form Anda.',
+                        confirmButtonText: 'Tutup',
+                    });
+                },
                 onFinish: () => {
                     form.transform((data) => data);
                 },
@@ -217,6 +234,11 @@ export function CatatanProsesForm({
                     </div>
                 </div>
             </CardHeader>
+            {Object.keys(form.errors).length > 0 ? (
+                <div className="bg-destructive/10 text-destructive p-4 text-sm border-b border-destructive/20 font-medium">
+                    Gagal menyimpan: {Object.values(form.errors)[0]}
+                </div>
+            ) : null}
             <CardContent className="space-y-8 p-5 sm:p-6">
                 <form
                     className="space-y-8"

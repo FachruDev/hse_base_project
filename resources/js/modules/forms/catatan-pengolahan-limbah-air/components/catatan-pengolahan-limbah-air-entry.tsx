@@ -32,7 +32,7 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
     return (
         <div className="print-content min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,hsl(var(--background))_50%)] px-4 py-6 lg:px-6 lg:py-8">
             <div className="mx-auto flex max-w-7xl flex-col gap-6">
-                <Card className="border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60">
+                <Card className="border-none bg-[linear-gradient(135deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] shadow-sm ring-1 ring-border/60 print:hidden">
                     <CardHeader className="gap-4">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                             <div className="space-y-2">
@@ -91,7 +91,7 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
                     </Alert>
                 ) : null}
 
-                <Card className="border-none shadow-sm ring-1 ring-border/60">
+                <Card className="border-none shadow-sm ring-1 ring-border/60 print:hidden">
                     <CardHeader>
                         <CardTitle className="text-base">Pilih Form yang Ingin Diisi</CardTitle>
                         <CardDescription>

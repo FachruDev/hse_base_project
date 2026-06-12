@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { CalendarDays, Filter, Plus, RotateCcw, Search } from 'lucide-react';
+import { CalendarDays, Filter, Plus, RotateCcw, Search, CheckCircle, Eye } from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -314,13 +314,13 @@ export function PenyimpananLimbahB3Listing({
                                                                         },
                                                                     );
                                                                 }}
-                                                            >
+                                                                <CheckCircle className="mr-2 size-4" />
                                                                 {row.next_approval_label}
                                                             </Button>
                                                         ) : null}
                                                         <Button
                                                             variant="outline"
-                                                            size="sm"
+                                                            size="icon"
                                                             render={
                                                                 <a
                                                                     href={b3StorageMonthlyShow.url(
@@ -338,7 +338,7 @@ export function PenyimpananLimbahB3Listing({
                                                                 />
                                                             }
                                                         >
-                                                            Detail Bulan
+                                                            <Eye className="size-4" />
                                                         </Button>
                                                     </div>
                                                 </TableCell>

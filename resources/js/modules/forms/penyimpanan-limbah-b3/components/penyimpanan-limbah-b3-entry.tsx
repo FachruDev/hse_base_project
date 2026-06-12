@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
 import * as React from 'react';
+import { showAlert } from '@/lib/sweetalert';
 
 import { b3StorageIndex, b3StorageStore } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -80,6 +81,23 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
 
         form.post(b3StorageStore.url({ query: { user_id: userId } }), {
             preserveScroll: true,
+            onSuccess: () => {
+                showAlert({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: 'Data limbah B3 berhasil disimpan!',
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+            },
+            onError: () => {
+                showAlert({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan',
+                    text: 'Terdapat kesalahan pada isian form Anda.',
+                    confirmButtonText: 'Tutup',
+                });
+            }
         });
     };
 

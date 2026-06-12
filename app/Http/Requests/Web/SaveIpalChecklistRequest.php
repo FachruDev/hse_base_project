@@ -23,9 +23,9 @@ class SaveIpalChecklistRequest extends FormRequest
             'checklist.template_id' => ['required', 'integer', 'exists:m_checklist_templates,id'],
             'checklist.values' => ['required', 'array', 'min:1'],
             'checklist.values.*.item_id' => ['required', 'integer', 'exists:m_checklist_items,id'],
-            'checklist.values.*.status' => ['required', 'in:OK,NOT_OK,NA'],
+            'checklist.values.*.status' => ['nullable', 'in:OK,NOT_OK,NA'],
             'checklist.values.*.note' => ['nullable', 'string'],
-            'checklist.values.*.attachment' => ['nullable', 'image', 'max:5120'],
+            'checklist.values.*.attachment' => ['nullable', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }
