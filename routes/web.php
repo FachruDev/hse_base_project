@@ -29,6 +29,14 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}',
         [DashboardController::class, 'catatanPengolahanLimbahAirLogShow'],
     )->name('dashboard.forms.catatan-pengolahan-limbah-air.logs.show');
+    Route::patch(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}/approve',
+        [DashboardController::class, 'catatanPengolahanLimbahAirApproveDailyLog'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.logs.approve');
+    Route::post(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/monthly/{year}/{month}/process-approval',
+        [DashboardController::class, 'catatanPengolahanLimbahAirApproveMonthlyProcess'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.monthly.process-approval');
     Route::post(
         '/dashboard/forms/catatan-pengolahan-limbah-air/checklist',
         [DashboardController::class, 'catatanPengolahanLimbahAirSaveChecklist'],

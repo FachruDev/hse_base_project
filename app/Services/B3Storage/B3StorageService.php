@@ -103,7 +103,7 @@ class B3StorageService
         })->values()->all();
 
         $logs = B3StorageLog::query()
-            ->with(['wasteType:id,name', 'initiatorDepartment:id,name', 'operator:id,external_id,name'])
+            ->with(['wasteType:id,name', 'initiatorDepartment:id,name', 'operator:id,external_id,name', 'initiatorUser:id,name'])
             ->whereMonth('movement_date', $month)
             ->whereYear('movement_date', $year)
             ->orderBy('movement_date')
@@ -143,6 +143,8 @@ class B3StorageService
                 'waste_type_other' => $log->waste_type_other,
                 'document_number' => $log->document_number,
                 'initiator_department' => $log->initiatorDepartment?->name ?? $log->initiator_department_other,
+                'initiator_user_id' => $log->initiator_user_id,
+                'initiator_user_name' => $log->initiatorUser?->name,
                 'operator_name' => $log->operator?->name,
                 'photo_path' => $log->photo_path,
                 'note' => $log->note,

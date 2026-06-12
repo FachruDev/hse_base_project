@@ -9,6 +9,8 @@ use App\Models\Ipal\IpalProcessApproval;
 use App\Models\Ipal\IpalProcessLog;
 use App\Models\Master\BatchItem;
 use App\Models\Master\ChecklistItem;
+use App\Models\Master\Holiday;
+use App\Models\Master\OperationalWeekday;
 use App\Models\Master\ProcessItem;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
@@ -396,6 +398,111 @@ class IpalLogService
 
             return $processLog->fresh();
         });
+    }
+
+    /**
+     * Approve all SUBMITTED ipal_process_logs for the given month/year to APPROVED.
+     * Only logs still in SUBMITTED status are affected.
+     */
+    public function approveMonthlyProcess(int $month, int $year, User $supervisor): int
+    {
+        return DB::transaction(function () use ($month, $year, $supervisor): int {
+            $logs = IpalDailyLog::query()
+                ->with(['processLog.approval'])
+                ->whereYear('tanggal', $year)
+                ->whereMonth('tanggal', $month)
+                ->get();
+
+            $count = 0;
+            $now = now();
+
+            foreach ($logs as $dailyLog) {
+                $processLog = $dailyLog->processLog;
+
+                if ($processLog === null || $processLog->status !== 'SUBMITTED') {
+                    continue;
+                }
+
+                $processLog->approval()->updateOrCreate(
+                    ['process_log_id' => $processLog->id],
+                    [
+                        'operator_id' => $processLog->approval?->operator_id ?? $dailyLog->operator_id,
+                        'supervisor_id' => $supervisor->id,
+                        'supervisor_signed_at' => $now,
+                    ],
+                );
+
+                $processLog->update(['status' => 'APPROVED']);
+                $count++;
+            }
+
+            return $count;
+        });
+    }
+
+    /**
+     * Returns true when the given month/year is "completable":
+     * - today is strictly past the last calendar day of the month, OR
+     * - today is the last operational (non-weekend, non-holiday) weekday of the month.
+     */
+    public function isMonthCompletable(int $year, int $month): bool
+    {
+        $today = now()->startOfDay();
+        $periodEnd = Carbon::create($year, $month, 1)->endOfMonth()->startOfDay();
+
+        // Month is completely in the past
+        if ($today->gt($periodEnd)) {
+            return true;
+        }
+
+        // Today must be inside the period
+        $periodStart = Carbon::create($year, $month, 1)->startOfDay();
+        if ($today->lt($periodStart)) {
+            return false;
+        }
+
+        // Find last operational day of the month
+        $lastOperationalDay = $this->findLastOperationalDayOfMonth($year, $month);
+
+        if ($lastOperationalDay === null) {
+            return false;
+        }
+
+        return $today->greaterThanOrEqualTo($lastOperationalDay);
+    }
+
+    private function findLastOperationalDayOfMonth(int $year, int $month): ?Carbon
+    {
+        $offDayOfWeekIsos = OperationalWeekday::query()
+            ->where('is_off', true)
+            ->pluck('day_of_week_iso')
+            ->all();
+
+        $holidayDates = Holiday::query()
+            ->whereYear('holiday_date', $year)
+            ->whereMonth('holiday_date', $month)
+            ->where('is_active', true)
+            ->pluck('holiday_date')
+            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+            ->all();
+
+        $daysInMonth = Carbon::create($year, $month, 1)->daysInMonth;
+
+        for ($day = $daysInMonth; $day >= 1; $day--) {
+            $date = Carbon::create($year, $month, $day);
+
+            if (in_array($date->dayOfWeekIso, $offDayOfWeekIsos, true)) {
+                continue;
+            }
+
+            if (in_array($date->toDateString(), $holidayDates, true)) {
+                continue;
+            }
+
+            return $date->startOfDay();
+        }
+
+        return null;
     }
 
     public function detail(IpalDailyLog $dailyLog): IpalDailyLog

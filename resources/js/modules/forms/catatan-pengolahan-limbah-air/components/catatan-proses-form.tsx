@@ -1,8 +1,12 @@
 import { useForm } from '@inertiajs/react';
-import { ChevronDown, ChevronUp, FlaskConical, Save, Send } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { CheckCircle2, ChevronDown, ChevronUp, FlaskConical, Save, Send } from 'lucide-react';
 import * as React from 'react';
 
-import { catatanPengolahanLimbahAirSaveProcess } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import {
+    catatanPengolahanLimbahAirApproveDailyLog,
+    catatanPengolahanLimbahAirSaveProcess,
+} from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -735,6 +739,34 @@ export function CatatanProsesForm({
                             >
                                 <Send className="mr-2 size-4" />
                                 Submit Harian
+                            </Button>
+                        </div>
+                    ) : null}
+                    {/* SUPERVISOR APPROVE BUTTON (F2-08) */}
+                    {entryForm.capabilities.approve_daily_process && entryForm.entry.log_id ? (
+                        <div className="mt-4 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20">
+                            <p className="mr-auto text-sm text-emerald-700 dark:text-emerald-300">
+                                Catatan proses ini menunggu pemeriksaan supervisor.
+                            </p>
+                            <Button
+                                type="button"
+                                className="bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+                                onClick={() => {
+                                    if (entryForm.entry.log_id === null) {
+                                        return;
+                                    }
+                                    router.patch(
+                                        catatanPengolahanLimbahAirApproveDailyLog.url(
+                                            { log: entryForm.entry.log_id },
+                                            { query: { user_id: userId } },
+                                        ),
+                                        {},
+                                        { preserveScroll: true },
+                                    );
+                                }}
+                            >
+                                <CheckCircle2 className="mr-2 size-4" />
+                                ✓ Di Periksa
                             </Button>
                         </div>
                     ) : null}

@@ -1,8 +1,9 @@
 import { router } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, FileImage, Scale } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileImage, Plus, Scale } from 'lucide-react';
 
 import {
     b3StorageApproveMonthly,
+    b3StorageCreate,
     b3StorageIndex,
     b3StoragePhoto,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
@@ -97,6 +98,18 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                 >
                                     <ArrowLeft className="size-4" />
                                     Kembali ke Listing
+                                </Button>
+                                <Button
+                                    render={
+                                        <a
+                                            href={b3StorageCreate.url({
+                                                query: { user_id: userId },
+                                            })}
+                                        />
+                                    }
+                                >
+                                    <Plus className="size-4" />
+                                    Tambah Entri
                                 </Button>
                                 {monthlyDetail.capabilities.approve_monthly &&
                                 monthlyDetail.capabilities
@@ -399,6 +412,76 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                         </TableCell>
                                     </TableRow>
                                 </TableFooter>
+                                <TableBody>
+                                    <TableRow className="bg-muted/30">
+                                        <TableCell
+                                            colSpan={
+                                                3 +
+                                                monthlyDetail.columns.waste_types.length +
+                                                (monthlyDetail.columns.has_other_column ? 1 : 0)
+                                            }
+                                            className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            Tanda Tangan &amp; Paraf
+                                        </TableCell>
+                                        <TableCell
+                                            colSpan={5}
+                                            className="bg-muted/40"
+                                        />
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={2}
+                                            className="sticky left-0 z-10 bg-background px-3 py-3 text-sm text-muted-foreground"
+                                        >
+                                            Petugas Operator TPS LB3
+                                        </TableCell>
+                                        <TableCell
+                                            colSpan={
+                                                1 +
+                                                monthlyDetail.columns.waste_types.length +
+                                                (monthlyDetail.columns.has_other_column ? 1 : 0)
+                                            }
+                                            className="py-3 text-sm font-medium"
+                                        >
+                                            {monthlyDetail.rows[0]?.operator_name ?? '-'}
+                                        </TableCell>
+                                        <TableCell colSpan={4} className="py-3">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                ✅ Tercatat
+                                            </span>
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={2}
+                                            className="sticky left-0 z-10 bg-background px-3 py-3 text-sm text-muted-foreground"
+                                        >
+                                            Petugas Dept. Inisiator
+                                        </TableCell>
+                                        <TableCell
+                                            colSpan={
+                                                1 +
+                                                monthlyDetail.columns.waste_types.length +
+                                                (monthlyDetail.columns.has_other_column ? 1 : 0)
+                                            }
+                                            className="py-3 text-sm font-medium"
+                                        >
+                                            {monthlyDetail.rows.find((r) => r.initiator_user_name != null)?.initiator_user_name ?? '-'}
+                                        </TableCell>
+                                        <TableCell colSpan={4} className="py-3">
+                                            {monthlyDetail.rows.some((r) => r.initiator_user_name != null) ? (
+                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                    ✅ Tercatat
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                                    Belum diisi
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
                             </Table>
                         </div>
                     </CardContent>

@@ -21,6 +21,7 @@ class B3StorageLog extends Model
         'waste_type_other',
         'initiator_department_id',
         'initiator_department_other',
+        'initiator_user_id',
         'weight_kg',
         'document_number',
         'photo_path',
@@ -50,5 +51,10 @@ class B3StorageLog extends Model
     public function operator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'operator_id');
+    }
+
+    public function initiatorUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'initiator_user_id');
     }
 }

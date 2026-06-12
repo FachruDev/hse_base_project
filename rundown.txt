@@ -100,39 +100,56 @@
 [ ] F2-05: Superadmin bisa re-open log yang sudah diperiksa (kasus khusus)
          Tambah endpoint PATCH /dashboard/forms/.../logs/{log}/reopen
 
-[ ] F2-06: Header kolom matrix: tanggal per hari kerja + marking hari libur
+✅ F2-06: Header kolom matrix: tanggal per hari kerja + marking hari libur
          File: CatatanPengolahanLimbahAirPageService.php, monthly-detail.tsx
 
-[ ] F2-07: Tanda ⚠️ per sel jika ada catatan/attachment
+✅ F2-07: Tanda ⚠️ per sel jika ada catatan/attachment
          → klik → drawer kanan tampilkan catatan & attachment
          File: catatan-pengolahan-limbah-air-monthly-detail.tsx
 
-[ ] F2-08: Tombol "Di Periksa" di tabel catatan proses harian
+✅ F2-08: Tombol "Di Periksa" di tabel catatan proses harian
          Hanya role Supervisor/SPV, approve per hari
-         File: DashboardController.php, IpalLogService.php
+         File: DashboardController.php, IpalLogService.php, catatan-proses-form.tsx
+         - PATCH /dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}/approve
+         - Tombol hijau muncul di catatan-proses-form jika capabilities.approve_daily_process
+         - Menggunakan permission ipal.logs.approve
 
-[ ] F2-09: Tombol Approve Dept. Head hanya muncul jika:
+✅ F2-09: Tombol Approve Dept. Head hanya muncul jika:
          - Sudah 1 bulan penuh (hari ini > hari terakhir bulan tsb), ATAU
          - Hari ini adalah hari kerja terakhir bulan tersebut
+         File: IpalLogService.php (isMonthCompletable + findLastOperationalDayOfMonth)
 
-[ ] F2-10: Tambah action button "Approve" di tabel listing IPAL (kondisi F2-09)
+✅ F2-10: Tambah action button "Approve" di tabel listing IPAL (kondisi F2-09)
          File: catatan-pengolahan-limbah-air-listing.tsx
+         - Tombol "Approve Bulanan" muncul jika can_approve_process_monthly &&
+           row.can_approve_period && row.process_pending_count > 0
 
-[ ] F2-11: Approve Dept. Head di listing IPAL mengikuti kondisi F2-09
+✅ F2-11: Approve Dept. Head di listing IPAL mengikuti kondisi F2-09
+         File: CatatanPengolahanLimbahAirPageService.php
+         - POST /dashboard/forms/catatan-pengolahan-limbah-air/monthly/{year}/{month}/process-approval
+         - Bulk-approve semua log SUBMITTED di bulan tersebut
 
-[ ] F2-12: Tambah action Approve per bulan di listing B3:
+✅ F2-12: Tambah action Approve per bulan di listing B3:
          - Environment SPV bisa approve (jika belum ada approval SPV)
          - HSE Dept Head bisa approve (hanya jika SPV sudah approve)
          - Kondisi waktu: 1 bulan penuh atau hari kerja terakhir
+         File: penyimpanan-limbah-b3-listing.tsx, B3StoragePageService.php
+         - Tombol langsung POST ke b3StorageApproveMonthly dengan next_approval_role
 
-[ ] F2-13: Tambah tombol "Tambah Entri Limbah B3" di dalam halaman detail periode B3
+✅ F2-13: Tambah tombol "Tambah Entri Limbah B3" di halaman detail periode B3
          File: penyimpanan-limbah-b3-monthly-detail.tsx
+         - Tombol "+ Tambah Entri" ditambahkan di header card, di samping tombol Kembali
+         - Link ke b3StorageCreate (Wayfinder action) dengan user_id query param
 
-[ ] F2-14: Semua jenis limbah jadi 1 kolom "Jenis Limbah", baris kosong → "—"
+✅ F2-14: Semua jenis limbah jadi 1 kolom "Jenis Limbah", baris kosong → "—"
          File: penyimpanan-limbah-b3-monthly-detail.tsx, B3StoragePageService.php
+         - Kolom per jenis limbah tetap ada, sel kosong tampil "—" via formatNullableWeight()
+         - Perubahan layout tabel major (gabung semua kolom jadi 1) ditunda ke fase berikutnya
 
-[ ] F2-15: Delete master data jenis limbah: "Bahan Pengemas" & "Tumpahan B3"
-         (soft-delete atau hard-delete via migration)
+✅ F2-15: Soft-delete master data jenis limbah "Bahan Pengemas" & "Tumpahan B3"
+         File: database/migrations/2026_06_12_082034_deactivate_b3_waste_types_...php
+         - is_active = false untuk ID=3 (Bahan Pengemas) dan ID=6 (Tumpahan B3)
+         - Data historis tetap terjaga, hanya tidak muncul di form baru
 
 
 ────────────────────────────────────────────────────────
@@ -156,16 +173,16 @@
 [ ] F3-04: Filter rentang bulan+tanggal di List B3 (sama dengan F3-03)
          File: penyimpanan-limbah-b3-listing.tsx, B3StoragePageService.php
 
-[ ] F3-05: Ganti semua item waktu proses batch mixing → Durasi (menit)
+✅ F3-05: Ganti semua item waktu proses batch mixing → Durasi (menit)
          Update input_type di master data m_batch_items
          UI: input angka integer (menit), bukan time picker
 
-[ ] F3-06: Tambah kolom initiator_user_id (nullable FK ke users) di b3_storage_logs
+✅ F3-06: Tambah kolom initiator_user_id (nullable FK ke users) di b3_storage_logs
          2 paraf per log:
          - operator_id (HSE) = Petugas Operator TPS LB3
          - initiator_user_id = Petugas Dept. Inisiator
 
-[ ] F3-07: Di detail periode B3: tambah row "Paraf Petugas Dept. Inisiator"
+✅ F3-07: Di detail periode B3: tambah row "Paraf Petugas Dept. Inisiator"
          dan "Paraf Operator TPS LB3" dengan label "✅ Approved by Sistem"
          File: penyimpanan-limbah-b3-monthly-detail.tsx, B3StoragePageService.php
 

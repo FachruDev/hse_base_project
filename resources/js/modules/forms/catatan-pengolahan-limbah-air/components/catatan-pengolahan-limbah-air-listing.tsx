@@ -12,6 +12,7 @@ import {
 import * as React from 'react';
 
 import {
+    catatanPengolahanLimbahAirApproveMonthlyProcess,
     catatanPengolahanLimbahAirCreate,
     catatanPengolahanLimbahAirIndex,
     catatanPengolahanLimbahAirMonthlyShow,
@@ -295,28 +296,60 @@ export function CatatanPengolahanLimbahAirListing({
                                                 />
                                             </TableCell>
                                             <TableCell className="px-4 text-right">
-                                                <Button
-                                                    nativeButton={false}
-                                                    variant="outline"
-                                                    render={
-                                                        <a
-                                                            href={catatanPengolahanLimbahAirMonthlyShow.url(
-                                                                {
-                                                                    year: row.year,
-                                                                    month: row.month,
-                                                                },
-                                                                {
-                                                                    query: {
-                                                                        user_id:
-                                                                            userId,
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {listing.capabilities
+                                                        .can_approve_process_monthly &&
+                                                    row.can_approve_period &&
+                                                    row.process_pending_count >
+                                                        0 ? (
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                                            onClick={() => {
+                                                                router.post(
+                                                                    catatanPengolahanLimbahAirApproveMonthlyProcess.url(
+                                                                        {
+                                                                            year: row.year,
+                                                                            month: row.month,
+                                                                        },
+                                                                        {
+                                                                            query: {
+                                                                                user_id:
+                                                                                    userId,
+                                                                            },
+                                                                        },
+                                                                    ),
+                                                                    {},
+                                                                );
+                                                            }}
+                                                        >
+                                                            Approve Bulanan
+                                                        </Button>
+                                                    ) : null}
+                                                    <Button
+                                                        nativeButton={false}
+                                                        variant="outline"
+                                                        render={
+                                                            <a
+                                                                href={catatanPengolahanLimbahAirMonthlyShow.url(
+                                                                    {
+                                                                        year: row.year,
+                                                                        month: row.month,
                                                                     },
-                                                                },
-                                                            )}
-                                                        />
-                                                    }
-                                                >
-                                                    Detail
-                                                </Button>
+                                                                    {
+                                                                        query: {
+                                                                            user_id:
+                                                                                userId,
+                                                                        },
+                                                                    },
+                                                                )}
+                                                            />
+                                                        }
+                                                    >
+                                                        Detail
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))

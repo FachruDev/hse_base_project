@@ -8,8 +8,10 @@ use App\Http\Requests\Web\B3StorageLogIndexRequest;
 use App\Http\Requests\Web\B3StorageMonthlyApprovalRequest;
 use App\Http\Requests\Web\B3StorageMonthlyPeriodRequest;
 use App\Http\Requests\Web\CatatanPengolahanLimbahAirIndexRequest;
+use App\Http\Requests\Web\IpalDailyLogApproveRequest;
 use App\Http\Requests\Web\IpalEntryDateRequest;
 use App\Http\Requests\Web\IpalMonthlyPeriodRequest;
+use App\Http\Requests\Web\IpalMonthlyProcessApprovalRequest;
 use App\Http\Requests\Web\SaveIpalChecklistRequest;
 use App\Http\Requests\Web\SaveIpalProcessRequest;
 use App\Models\B3Storage\B3StorageLog;
@@ -40,9 +42,10 @@ class DashboardController extends Controller
     public function catatanPengolahanLimbahAirIndex(
         CatatanPengolahanLimbahAirIndexRequest $request,
         CatatanPengolahanLimbahAirPageService $pageService,
+        IpalLogService $ipalLogService,
     ): Response {
         return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/index', [
-            'listing' => $pageService->buildListing($request->user(), $request->filters()),
+            'listing' => $pageService->buildListing($request->user(), $request->filters(), $ipalLogService),
         ]);
     }
 
@@ -94,11 +97,50 @@ class DashboardController extends Controller
         IpalDailyLog $log,
         CatatanPengolahanLimbahAirPageService $pageService,
     ): Response {
-        $this->authenticatedUser($request);
+        $viewer = $this->authenticatedUser($request);
 
         return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/show', [
-            'entryForm' => $pageService->buildDailyDetail($log),
+            'entryForm' => $pageService->buildDailyDetail($log, $viewer),
         ]);
+    }
+
+    public function catatanPengolahanLimbahAirApproveDailyLog(
+        IpalDailyLogApproveRequest $request,
+        IpalDailyLog $log,
+        IpalLogService $ipalLogService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('ipal.logs.approve'), 403);
+        $supervisor = $this->authenticatedUser($request);
+
+        $ipalLogService->approve($log, $supervisor);
+
+        return redirect()
+            ->route('dashboard.forms.catatan-pengolahan-limbah-air.logs.show', [
+                'log' => $log->id,
+                'user_id' => $supervisor->external_id,
+            ])
+            ->with('success', 'Catatan proses harian berhasil diperiksa.');
+    }
+
+    public function catatanPengolahanLimbahAirApproveMonthlyProcess(
+        IpalMonthlyProcessApprovalRequest $request,
+        IpalLogService $ipalLogService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('ipal.logs.approve'), 403);
+        $supervisor = $this->authenticatedUser($request);
+
+        $count = $ipalLogService->approveMonthlyProcess(
+            $request->month(),
+            $request->year(),
+            $supervisor,
+        );
+
+        return redirect()
+            ->route('dashboard.forms.catatan-pengolahan-limbah-air.index', [
+                'user_id' => $supervisor->external_id,
+                'year' => $request->year(),
+            ])
+            ->with('success', "Berhasil meng-approve {$count} catatan proses bulan ini.");
     }
 
     public function catatanPengolahanLimbahAirSaveChecklist(
@@ -136,11 +178,12 @@ class DashboardController extends Controller
     public function b3StorageIndex(
         B3StorageLogIndexRequest $request,
         B3StoragePageService $pageService,
+        IpalLogService $ipalLogService,
     ): Response {
         abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
 
         return Inertia::render('dashboard/forms/penyimpanan-limbah-b3/index', [
-            'listing' => $pageService->buildListing($this->authenticatedUser($request), $request->filters()),
+            'listing' => $pageService->buildListing($this->authenticatedUser($request), $request->filters(), $ipalLogService),
         ]);
     }
 

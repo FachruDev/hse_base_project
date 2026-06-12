@@ -8,6 +8,7 @@ use App\Models\B3Storage\B3StorageMonthlyApproval;
 use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\User;
 use App\Services\B3Storage\B3StorageService;
+use App\Services\Ipal\IpalLogService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -17,7 +18,7 @@ class B3StoragePageService
      * @param  array{search: string, status: string, year: int}  $filters
      * @return array<string, mixed>
      */
-    public function buildListing(User $user, array $filters): array
+    public function buildListing(User $user, array $filters, IpalLogService $ipalLogService): array
     {
         $year = $filters['year'];
         $logs = B3StorageLog::query()
@@ -44,7 +45,7 @@ class B3StoragePageService
         $rows = collect(range(1, 12))
             ->reverse()
             ->filter(fn (int $month): bool => $year < $currentYear || ($year === $currentYear && $month <= $currentMonth))
-            ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month)))
+            ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month), $ipalLogService))
             ->filter(fn (array $row): bool => $this->matchesMonthlyFilters($row, $filters))
             ->values()
             ->all();
@@ -57,6 +58,7 @@ class B3StoragePageService
             'filters' => $filters,
             'capabilities' => [
                 'create_log' => $user->can('b3storage.logs.create'),
+                'can_approve_b3_monthly' => $user->can('b3storage.monthly-approval.approve'),
             ],
             'table' => [
                 'data' => $rows,
@@ -150,6 +152,7 @@ class B3StoragePageService
         int $month,
         Collection $logs,
         ?B3StorageMonthlyApproval $approval,
+        IpalLogService $ipalLogService,
     ): array {
         $monthLogs = $logs->filter(fn (B3StorageLog $log): bool => (int) $log->movement_date?->month === $month);
         $period = Carbon::create($year, $month, 1);
@@ -177,6 +180,9 @@ class B3StoragePageService
             'environment_supervisor_signed_at' => $approval?->environment_supervisor_signed_at?->format('Y-m-d H:i:s'),
             'hse_department_head' => $approval?->hseDepartmentHead?->name,
             'hse_department_head_signed_at' => $approval?->hse_department_head_signed_at?->format('Y-m-d H:i:s'),
+            'can_approve_period' => $ipalLogService->isMonthCompletable($year, $month),
+            'next_approval_role' => $this->resolveNextApprovalRole($approvalStatus),
+            'next_approval_label' => $this->resolveNextApprovalLabel($approvalStatus),
         ];
     }
 

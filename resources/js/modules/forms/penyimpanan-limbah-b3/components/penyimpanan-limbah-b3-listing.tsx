@@ -5,6 +5,7 @@ import * as React from 'react';
 import {
     b3StorageCreate,
     b3StorageIndex,
+    b3StorageApproveMonthly,
     b3StorageMonthlyShow,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
@@ -259,28 +260,57 @@ export function PenyimpananLimbahB3Listing({
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="px-4 text-right">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        render={
-                                                            <a
-                                                                href={b3StorageMonthlyShow.url(
-                                                                    {
-                                                                        year: row.year,
-                                                                        month: row.month,
-                                                                    },
-                                                                    {
-                                                                        query: {
-                                                                            user_id:
-                                                                                userId,
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {listing.capabilities
+                                                            .can_approve_b3_monthly &&
+                                                        row.can_approve_period &&
+                                                        row.next_approval_role !==
+                                                            null ? (
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                                                onClick={() => {
+                                                                    router.post(
+                                                                        b3StorageApproveMonthly.url(
+                                                                            {
+                                                                                year: row.year,
+                                                                                month: row.month,
+                                                                            },
+                                                                        ),
+                                                                        {
+                                                                            approval_role:
+                                                                                row.next_approval_role,
                                                                         },
-                                                                    },
-                                                                )}
-                                                            />
-                                                        }
-                                                    >
-                                                        Detail Bulan
-                                                    </Button>
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {row.next_approval_label}
+                                                            </Button>
+                                                        ) : null}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            render={
+                                                                <a
+                                                                    href={b3StorageMonthlyShow.url(
+                                                                        {
+                                                                            year: row.year,
+                                                                            month: row.month,
+                                                                        },
+                                                                        {
+                                                                            query: {
+                                                                                user_id:
+                                                                                    userId,
+                                                                            },
+                                                                        },
+                                                                    )}
+                                                                />
+                                                            }
+                                                        >
+                                                            Detail Bulan
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))

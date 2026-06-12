@@ -9,6 +9,7 @@ use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
+use App\Services\Ipal\IpalLogService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -18,7 +19,7 @@ class CatatanPengolahanLimbahAirPageService
      * @param  array{search: string, status: string, year: int, per_page: int}  $filters
      * @return array<string, mixed>
      */
-    public function buildListing(User $user, array $filters): array
+    public function buildListing(User $user, array $filters, IpalLogService $ipalLogService): array
     {
         $todayLog = $this->findDailyLog($user, now()->toDateString());
         $year = $filters['year'];
@@ -50,7 +51,7 @@ class CatatanPengolahanLimbahAirPageService
 
         $rows = collect($months)
             ->reverse()
-            ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month)))
+            ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month), $ipalLogService))
             ->filter(fn (array $row): bool => $this->matchesMonthlyFilters($row, $filters))
             ->values()
             ->all();
@@ -67,6 +68,9 @@ class CatatanPengolahanLimbahAirPageService
                 'action_label' => $this->resolveActionLabel($todayLog?->processLog?->status, $todayLog !== null),
             ],
             'filters' => $filters,
+            'capabilities' => [
+                'can_approve_process_monthly' => $user->can('ipal.logs.approve'),
+            ],
             'table' => [
                 'data' => $rows,
             ],
@@ -137,21 +141,32 @@ class CatatanPengolahanLimbahAirPageService
     /**
      * @return array<string, mixed>
      */
-    public function buildDailyDetail(IpalDailyLog $log): array
+    public function buildDailyDetail(IpalDailyLog $log, User $viewer): array
     {
         $log->loadMissing([
             'operator.department',
             'checklist.values:id,checklist_id,item_id,status,note',
             'processLog.values:id,process_log_id,item_id,value_text,value_number,note',
             'processLog.batches.values:id,batch_id,item_id,value_text,value_number',
+            'processLog.approval',
         ]);
 
-        return $this->buildEntryPayload(
+        $processStatus = $log->processLog?->status;
+        $isApprovedBySupervisor = $log->processLog?->approval?->supervisor_signed_at !== null;
+        $canApproveDailyProcess = $viewer->can('ipal.logs.approve')
+            && $processStatus === 'SUBMITTED'
+            && ! $isApprovedBySupervisor;
+
+        $payload = $this->buildEntryPayload(
             $log->operator,
             $log->tanggal?->format('Y-m-d') ?? now()->toDateString(),
             $log,
             true,
         );
+
+        $payload['capabilities']['approve_daily_process'] = $canApproveDailyProcess;
+
+        return $payload;
     }
 
     private function findDailyLog(User $user, string $date): ?IpalDailyLog
@@ -274,6 +289,9 @@ class CatatanPengolahanLimbahAirPageService
                     $batchItems,
                 ),
             ],
+            'capabilities' => [
+                'approve_daily_process' => false,
+            ],
         ];
     }
 
@@ -281,7 +299,7 @@ class CatatanPengolahanLimbahAirPageService
      * @param  Collection<int, IpalDailyLog>  $logs
      * @return array<string, mixed>
      */
-    private function mapMonthlyListingRow(int $year, int $month, Collection $logs, ?IpalChecklistApproval $approval): array
+    private function mapMonthlyListingRow(int $year, int $month, Collection $logs, ?IpalChecklistApproval $approval, IpalLogService $ipalLogService): array
     {
         $monthLogs = $logs->filter(fn (IpalDailyLog $log): bool => (int) $log->tanggal?->month === $month);
         $period = Carbon::create($year, $month, 1);
@@ -309,6 +327,7 @@ class CatatanPengolahanLimbahAirPageService
             'checklist_approval_status' => $this->isChecklistApprovalComplete($approval) ? 'APPROVED' : 'NOT_APPROVED',
             'checklist_approved_at' => $approval?->approved_at?->format('Y-m-d H:i:s'),
             'checklist_approved_by' => $approval?->supervisor?->name,
+            'can_approve_period' => $ipalLogService->isMonthCompletable($year, $month),
         ];
     }
 

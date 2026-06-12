@@ -57,6 +57,7 @@ export type CatatanPengolahanLimbahAirMonthlyRow = {
     checklist_approval_status: 'APPROVED' | 'NOT_APPROVED' | string;
     checklist_approved_at: string | null;
     checklist_approved_by: string | null;
+    can_approve_period: boolean;
 };
 
 export type CatatanPengolahanLimbahAirListingPayload = {
@@ -75,6 +76,9 @@ export type CatatanPengolahanLimbahAirListingPayload = {
         status: string;
         year: number;
         per_page: number;
+    };
+    capabilities: {
+        can_approve_process_monthly: boolean;
     };
     table: {
         data: CatatanPengolahanLimbahAirMonthlyRow[];
@@ -165,6 +169,9 @@ export type CatatanPengolahanLimbahAirEntryPayload = {
         sections: BatchSectionField[];
         groups: BatchGroup[];
     };
+    capabilities: {
+        approve_daily_process: boolean;
+    };
 };
 
 export type IpalMonthlyChecklistCell = {
@@ -252,6 +259,9 @@ export type B3StorageMonthlyListingRow = {
     environment_supervisor_signed_at: string | null;
     hse_department_head: string | null;
     hse_department_head_signed_at: string | null;
+    can_approve_period: boolean;
+    next_approval_role: 'ENVIRONMENT_SUPERVISOR' | 'HSE_DEPARTMENT_HEAD' | null;
+    next_approval_label: string | null;
 };
 
 export type B3StorageLogListingPayload = {
@@ -266,6 +276,7 @@ export type B3StorageLogListingPayload = {
     };
     capabilities: {
         create_log: boolean;
+        can_approve_b3_monthly: boolean;
     };
     table: {
         data: B3StorageMonthlyListingRow[];
@@ -283,6 +294,8 @@ export type B3StorageMonthlyReportRow = {
     waste_type_other: string | null;
     document_number: string;
     initiator_department: string | null;
+    initiator_user_id: number | null;
+    initiator_user_name: string | null;
     operator_name: string | null;
     photo_path: string | null;
     note: string | null;

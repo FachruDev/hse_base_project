@@ -196,9 +196,26 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                             (day) => (
                                                 <TableHead
                                                     key={day.date}
-                                                    className="w-9 min-w-9 px-1 text-center sm:w-10 sm:min-w-10"
+                                                    className={[
+                                                        'w-9 min-w-9 px-1 text-center sm:w-10 sm:min-w-10',
+                                                        isWeekend(day.date)
+                                                            ? 'bg-rose-50 dark:bg-rose-950/30'
+                                                            : '',
+                                                    ].join(' ')}
                                                 >
-                                                    {day.day}
+                                                    <span className="block font-bold leading-none">
+                                                        {day.day}
+                                                    </span>
+                                                    <span
+                                                        className={[
+                                                            'block text-[10px] font-normal leading-tight',
+                                                            isWeekend(day.date)
+                                                                ? 'text-rose-500'
+                                                                : 'text-muted-foreground',
+                                                        ].join(' ')}
+                                                    >
+                                                        {getDayName(day.date)}
+                                                    </span>
                                                 </TableHead>
                                             ),
                                         )}
@@ -217,7 +234,12 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                                 {row.cells.map((cell) => (
                                                     <TableCell
                                                         key={`${row.item_id}-${cell.date}`}
-                                                        className="px-1 text-center"
+                                                        className={[
+                                                            'px-1 text-center',
+                                                            isWeekend(cell.date)
+                                                                ? 'bg-rose-50/50 dark:bg-rose-950/10'
+                                                                : '',
+                                                        ].join(' ')}
                                                         title={[
                                                             cell.status_label,
                                                             ...cell.operators,
@@ -228,6 +250,7 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                                     >
                                                         <ChecklistCell
                                                             status={cell.status}
+                                                            notes={cell.notes}
                                                         />
                                                     </TableCell>
                                                 ))}
@@ -458,20 +481,55 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
     );
 }
 
-function ChecklistCell({ status }: { status: string | null }) {
-    if (status === 'OK') {
-        return <Check className="mx-auto size-4 text-emerald-600" strokeWidth={3} />;
-    }
+const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] as const;
 
-    if (status === 'NOT_OK') {
-        return <X className="mx-auto size-4 text-destructive" strokeWidth={3} />;
-    }
+function getDayName(date: string): string {
+    return DAY_NAMES[new Date(date).getDay()];
+}
 
-    if (status === 'NA') {
-        return <span className="text-xs font-medium text-muted-foreground">NA</span>;
-    }
+function isWeekend(date: string): boolean {
+    const dow = new Date(date).getDay();
+    return dow === 0 || dow === 6;
+}
 
-    return <span className="text-muted-foreground">-</span>;
+function ChecklistCell({
+    status,
+    notes,
+}: {
+    status: string | null;
+    notes: string[];
+}) {
+    const hasNotes = notes.length > 0;
+
+    return (
+        <span className="relative inline-flex items-center justify-center">
+            {status === 'OK' && (
+                <Check
+                    className="size-4 text-emerald-600"
+                    strokeWidth={3}
+                />
+            )}
+            {status === 'NOT_OK' && (
+                <X
+                    className="size-4 text-destructive"
+                    strokeWidth={3}
+                />
+            )}
+            {status === 'NA' && (
+                <span className="text-xs font-medium text-muted-foreground">
+                    NA
+                </span>
+            )}
+            {status === null && (
+                <span className="text-muted-foreground">-</span>
+            )}
+            {hasNotes && (
+                <span className="absolute -top-1 -right-2 text-[10px] leading-none text-amber-500">
+                    ⚠️
+                </span>
+            )}
+        </span>
+    );
 }
 
 function resolveStatusVariant(
