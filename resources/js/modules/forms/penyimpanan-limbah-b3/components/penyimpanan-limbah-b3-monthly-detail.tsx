@@ -194,11 +194,8 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                         <TableHead className="sticky left-0 z-10 w-12 min-w-12 bg-background px-3 text-center">
                                             No
                                         </TableHead>
-                                        <TableHead className="min-w-[110px]">
-                                            Masuk
-                                        </TableHead>
-                                        <TableHead className="min-w-[110px]">
-                                            Keluar
+                                        <TableHead className="min-w-[150px]">
+                                            Tipe Pergerakan
                                         </TableHead>
                                         {monthlyDetail.columns.waste_types.map(
                                             (column) => (
@@ -240,22 +237,33 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                                     {row.no}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {row.tanggal_masuk ?? '-'}
-                                                    {row.tanggal_masuk &&
-                                                    row.jam ? (
-                                                        <span className="block text-xs text-muted-foreground">
-                                                            {row.jam}
-                                                        </span>
-                                                    ) : null}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {row.tanggal_keluar ?? '-'}
-                                                    {row.tanggal_keluar &&
-                                                    row.jam ? (
-                                                        <span className="block text-xs text-muted-foreground">
-                                                            {row.jam}
-                                                        </span>
-                                                    ) : null}
+                                                    {row.tanggal_masuk ? (
+                                                        <div>
+                                                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                                MASUK
+                                                            </span>
+                                                            <span className="ml-1.5 text-sm">{row.tanggal_masuk}</span>
+                                                            {row.jam ? (
+                                                                <span className="block text-xs text-muted-foreground">
+                                                                    {row.jam}
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : row.tanggal_keluar ? (
+                                                        <div>
+                                                            <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                                                                KELUAR
+                                                            </span>
+                                                            <span className="ml-1.5 text-sm">{row.tanggal_keluar}</span>
+                                                            {row.jam ? (
+                                                                <span className="block text-xs text-muted-foreground">
+                                                                    {row.jam}
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : (
+                                                        '-'
+                                                    )}
                                                 </TableCell>
                                                 {monthlyDetail.columns.waste_types.map(
                                                     (column) => (
@@ -352,7 +360,7 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                 <TableFooter>
                                     <TableRow>
                                         <TableCell
-                                            colSpan={3}
+                                            colSpan={2}
                                             className="sticky left-0 z-10 bg-muted px-3 font-semibold"
                                         >
                                             Total

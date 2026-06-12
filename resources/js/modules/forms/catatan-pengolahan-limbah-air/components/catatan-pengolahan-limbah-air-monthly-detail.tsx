@@ -1,10 +1,12 @@
 import { router } from '@inertiajs/react';
 import {
     ArrowLeft,
+    Check,
     CheckCircle2,
     ClipboardCheck,
     Droplets,
     FlaskConical,
+    X,
 } from 'lucide-react';
 
 import {
@@ -458,15 +460,15 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 
 function ChecklistCell({ status }: { status: string | null }) {
     if (status === 'OK') {
-        return <span className="font-semibold text-emerald-600">B</span>;
+        return <Check className="mx-auto size-4 text-emerald-600" strokeWidth={3} />;
     }
 
     if (status === 'NOT_OK') {
-        return <span className="font-semibold text-destructive">TB</span>;
+        return <X className="mx-auto size-4 text-destructive" strokeWidth={3} />;
     }
 
     if (status === 'NA') {
-        return <span className="text-muted-foreground">NA</span>;
+        return <span className="text-xs font-medium text-muted-foreground">NA</span>;
     }
 
     return <span className="text-muted-foreground">-</span>;

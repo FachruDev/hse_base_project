@@ -38,8 +38,12 @@ class B3StoragePageService
             ->get()
             ->keyBy('month');
 
+        $currentYear = (int) now()->year;
+        $currentMonth = (int) now()->month;
+
         $rows = collect(range(1, 12))
             ->reverse()
+            ->filter(fn (int $month): bool => $year < $currentYear || ($year === $currentYear && $month <= $currentMonth))
             ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month)))
             ->filter(fn (array $row): bool => $this->matchesMonthlyFilters($row, $filters))
             ->values()

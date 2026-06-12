@@ -34,6 +34,19 @@ import { BatchMixingSection } from './batch-mixing-section';
 import type { ProcessFormState } from './entry-form-types';
 import { buildAvailableBatchNumbers } from './entry-form-types';
 
+function isDryingBedItem(name: string): boolean {
+    const lower = name.toLowerCase();
+    return lower.includes('berat') || lower.includes('lumpur') || lower.includes('kg');
+}
+
+function roundToDecimals(value: string, decimals: number): string {
+    const num = parseFloat(value);
+    if (isNaN(num)) {
+        return value;
+    }
+    return num.toFixed(decimals);
+}
+
 type CatatanProsesFormProps = {
     entryForm: CatatanPengolahanLimbahAirEntryPayload;
     userId: string;
@@ -375,6 +388,7 @@ export function CatatanProsesForm({
                                                                 'number' ? (
                                                                     <Input
                                                                         type="number"
+                                                                        step={isDryingBedItem(item.name) ? '0.1' : '0.01'}
                                                                         className="bg-background shadow-sm transition-all"
                                                                         placeholder="Masukkan angka..."
                                                                         value={
@@ -387,6 +401,28 @@ export function CatatanProsesForm({
                                                                         required={
                                                                             !readOnly
                                                                         }
+                                                                        onBlur={(event) => {
+                                                                            const decimals = isDryingBedItem(item.name) ? 1 : 2;
+                                                                            const rounded = roundToDecimals(event.target.value, decimals);
+                                                                            if (rounded !== event.target.value && rounded !== '') {
+                                                                                form.setData(
+                                                                                    'process',
+                                                                                    {
+                                                                                        ...form.data.process,
+                                                                                        values: form.data.process.values.map(
+                                                                                            (currentValue, currentIndex) =>
+                                                                                                currentIndex === valueIndex
+                                                                                                    ? {
+                                                                                                          ...currentValue,
+                                                                                                          value_number: rounded,
+                                                                                                          value_text: '',
+                                                                                                      }
+                                                                                                    : currentValue,
+                                                                                        ),
+                                                                                    },
+                                                                                );
+                                                                            }
+                                                                        }}
                                                                         onChange={(
                                                                             event,
                                                                         ) => {

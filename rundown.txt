@@ -1,0 +1,195 @@
+========================================================
+  HSE PROJECT — IMPROVEMENT RUNDOWN
+  Semua fase improvement dari Fase 1 sampai Fase 4
+========================================================
+
+────────────────────────────────────────────────────────
+  FASE 1 — UI & UX Fixes (Frontend + Backend ringan)
+────────────────────────────────────────────────────────
+
+✅ F1-01: Hapus tombol "Checklist Semua Berfungsi" & "Unchecklist Semua"
+         File: checklist-harian-form.tsx
+         - Dihapus import CheckCheck dari lucide-react
+         - Dihapus dua button bulk-action
+         - Dihapus helper function setChecklistAllStatus & clearChecklistAll
+
+✅ F1-02: Ganti label status "Ya / Tidak" (hanya di form input)
+         File: checklist-harian-form.tsx
+         UPDATE: Bukan dropdown lagi, diganti toggle button dua sisi:
+         - Kiri: "✕ Tidak" (merah saat aktif, hover merah muda)
+         - Kanan: "✓ Ya" (hijau saat aktif, hover hijau muda)
+         - Klik tombol aktif = kembali ke kosong (unselect)
+         (Database values OK / NOT_OK tidak berubah)
+
+✅ F1-03: PH input 2 digit desimal di Form Catatan Proses
+         File: catatan-proses-form.tsx
+         UPDATE: step="0.01" + onBlur rounding → dibatasi tepat 2 desimal
+         saat user selesai input (misal: 7.5 → 7.50, 7.123 → 7.12)
+
+✅ F1-04: Drying bed — berat lumpur jadi desimal
+         File: catatan-proses-form.tsx
+         UPDATE: Item yang namanya mengandung "berat"/"lumpur"/"kg"
+         pakai step="0.1" + onBlur rounding → dibatasi tepat 1 desimal
+         (misal: 4.2 kg, 5.6 kg)
+
+✅ F1-05: PH batch mixing 2 digit desimal
+         File: batch-mixing-section.tsx
+         UPDATE: step="0.01" + onBlur rounding → dibatasi tepat 2 desimal
+         saat user selesai input
+
+✅ F1-06: created_at tampilkan tanggal DAN jam di B3
+         File: penyimpanan-limbah-b3-monthly-detail.tsx
+         - Jam sekarang selalu ditampilkan jika ada (tidak lagi
+           kondisional terhadap tanggal_masuk/tanggal_keluar)
+         - Implementasi terintegrasi dengan F1-08
+
+✅ F1-07: Berat kg format desimal (misal 4,5 kg)
+         File: penyimpanan-limbah-b3-entry.tsx
+         - step="0.001" sudah ada di input weight_kg (sudah benar)
+         - formatWeight di monthly-detail sudah maximumFractionDigits: 3
+
+✅ F1-08: Rename "Masuk" & "Keluar" → "Tipe Pergerakan"
+         File: penyimpanan-limbah-b3-monthly-detail.tsx
+         - Dua kolom terpisah (Masuk + Keluar) digabung menjadi satu
+           kolom "Tipe Pergerakan"
+         - Tampilkan badge hijau "MASUK" atau badge merah "KELUAR"
+           diikuti tanggal dan jam di bawahnya
+
+✅ F1-09: Ganti "B" → ✅ hijau / "TB" → ✗ merah di matrix checklist
+         File: catatan-pengolahan-limbah-air-monthly-detail.tsx
+         - OK  → icon <Check> hijau (lucide-react)
+         - NOT_OK → icon <X> merah (lucide-react)
+         - NA  → text "NA" dengan styling text-xs font-medium
+
+✅ F1-10: Listing B3 tidak tampil bulan future
+         File: app/Services/Web/B3StoragePageService.php
+         - Filter: bulan > bulan sekarang pada tahun sekarang
+           tidak ditampilkan di listing bulanan
+
+
+────────────────────────────────────────────────────────
+  FASE 2 — Backend Logic (Perubahan logika, tanpa DB baru)
+────────────────────────────────────────────────────────
+
+[ ] F2-01: Tambah role "non_hse_operator"
+         Permission: hanya b3storage.logs.create
+         (untuk user dept lain yang isi form B3 via tablet)
+
+[ ] F2-02: Pindahkan proses "Masukan Udara" dari section Sedimentasi Kimia
+         → paling awal di section Aerasi (Lumpur Aktif)
+         (update order_no + section_id di DB via migration data)
+
+[ ] F2-03: Tambah item "Kondisi Ikan" di section Bio Indikator (paling bawah)
+         (insert item baru di database)
+
+[ ] F2-04: Form IPAL bisa di-edit di hari yang sama selama belum diperiksa supervisor
+         File: CatatanPengolahanLimbahAirPageService.php, IpalLogService.php
+
+[ ] F2-05: Superadmin bisa re-open log yang sudah diperiksa (kasus khusus)
+         Tambah endpoint PATCH /dashboard/forms/.../logs/{log}/reopen
+
+[ ] F2-06: Header kolom matrix: tanggal per hari kerja + marking hari libur
+         File: CatatanPengolahanLimbahAirPageService.php, monthly-detail.tsx
+
+[ ] F2-07: Tanda ⚠️ per sel jika ada catatan/attachment
+         → klik → drawer kanan tampilkan catatan & attachment
+         File: catatan-pengolahan-limbah-air-monthly-detail.tsx
+
+[ ] F2-08: Tombol "Di Periksa" di tabel catatan proses harian
+         Hanya role Supervisor/SPV, approve per hari
+         File: DashboardController.php, IpalLogService.php
+
+[ ] F2-09: Tombol Approve Dept. Head hanya muncul jika:
+         - Sudah 1 bulan penuh (hari ini > hari terakhir bulan tsb), ATAU
+         - Hari ini adalah hari kerja terakhir bulan tersebut
+
+[ ] F2-10: Tambah action button "Approve" di tabel listing IPAL (kondisi F2-09)
+         File: catatan-pengolahan-limbah-air-listing.tsx
+
+[ ] F2-11: Approve Dept. Head di listing IPAL mengikuti kondisi F2-09
+
+[ ] F2-12: Tambah action Approve per bulan di listing B3:
+         - Environment SPV bisa approve (jika belum ada approval SPV)
+         - HSE Dept Head bisa approve (hanya jika SPV sudah approve)
+         - Kondisi waktu: 1 bulan penuh atau hari kerja terakhir
+
+[ ] F2-13: Tambah tombol "Tambah Entri Limbah B3" di dalam halaman detail periode B3
+         File: penyimpanan-limbah-b3-monthly-detail.tsx
+
+[ ] F2-14: Semua jenis limbah jadi 1 kolom "Jenis Limbah", baris kosong → "—"
+         File: penyimpanan-limbah-b3-monthly-detail.tsx, B3StoragePageService.php
+
+[ ] F2-15: Delete master data jenis limbah: "Bahan Pengemas" & "Tumpahan B3"
+         (soft-delete atau hard-delete via migration)
+
+
+────────────────────────────────────────────────────────
+  FASE 3 — DB Migration + Upload Foto + Filter Range
+────────────────────────────────────────────────────────
+
+[ ] F3-01: Upload foto per item checklist (opsional, per baris, gambar saja)
+         DB: tabel baru ipal_checklist_value_attachments
+         Storage: Laravel local storage (disk: public)
+         UI: tombol upload per baris di checklist-harian-form.tsx
+
+[ ] F3-02: Upload foto per item catatan proses (opsional, per baris, gambar saja)
+         DB: tabel baru ipal_process_value_attachments
+         UI: tombol upload per baris di catatan-proses-form.tsx
+
+[ ] F3-03: Filter rentang bulan+tanggal di List IPAL
+         Misal: Jun 16 – Agt 16
+         → Klik detail → detail juga difilter ke range tersebut
+         File: catatan-pengolahan-limbah-air-listing.tsx, PageService
+
+[ ] F3-04: Filter rentang bulan+tanggal di List B3 (sama dengan F3-03)
+         File: penyimpanan-limbah-b3-listing.tsx, B3StoragePageService.php
+
+[ ] F3-05: Ganti semua item waktu proses batch mixing → Durasi (menit)
+         Update input_type di master data m_batch_items
+         UI: input angka integer (menit), bukan time picker
+
+[ ] F3-06: Tambah kolom initiator_user_id (nullable FK ke users) di b3_storage_logs
+         2 paraf per log:
+         - operator_id (HSE) = Petugas Operator TPS LB3
+         - initiator_user_id = Petugas Dept. Inisiator
+
+[ ] F3-07: Di detail periode B3: tambah row "Paraf Petugas Dept. Inisiator"
+         dan "Paraf Operator TPS LB3" dengan label "✅ Approved by Sistem"
+         File: penyimpanan-limbah-b3-monthly-detail.tsx, B3StoragePageService.php
+
+
+────────────────────────────────────────────────────────
+  FASE 4 — Tablet Flow B3 + Print PDF/Excel
+────────────────────────────────────────────────────────
+
+[ ] F4-01: Saat operator HSE di form B3: tampilkan modal/drawer input user_id dept lain
+         - Input: user_id (external_id) dari dept lain
+         - Validasi: user harus ada dan aktif di sistem
+         - Simpan sebagai initiator_user_id di log
+         File: penyimpanan-limbah-b3-entry.tsx, DashboardController.php
+
+[ ] F4-02: Setelah log tersimpan: row paraf otomatis terisi nama user
+         dengan label "✅ Approved by Sistem"
+         (operator HSE + dept inisiator)
+
+[ ] F4-03: Print PDF Checklist Harian (jika sudah submit)
+         Browser print via CSS @media print + warna primary codebase
+
+[ ] F4-04: Print PDF Catatan Proses (jika sudah submit)
+         → Include Form Batch Mixing dalam 1 file untuk audit
+
+[ ] F4-05: Print PDF Laporan IPAL Detail Periode (Bulanan)
+         - Halaman 1: Tabel laporan proses bulanan (matrix)
+         - Halaman 2: Daftar catatan (tanggal - nama proses - isi catatan) untuk audit
+         - TIDAK menyertakan gambar/attachment
+
+[ ] F4-06: Print PDF per log B3 individu (menyertakan catatan + bukti foto)
+
+[ ] F4-07: Print PDF Laporan Detail Periode B3 (menyertakan catatan + foto)
+
+[ ] F4-08: Export Excel untuk detail periode B3 (file bisa di-edit manual)
+
+
+========================================================
+  Legend: ✅ Selesai | [ ] Belum dikerjakan | ⚠️ Partial
+========================================================

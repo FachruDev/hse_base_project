@@ -11,6 +11,14 @@ import type { CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard
 import type { ProcessFormState } from './entry-form-types';
 import { buildAvailableBatchNumbers } from './entry-form-types';
 
+function roundToDecimals(value: string, decimals: number): string {
+    const num = parseFloat(value);
+    if (isNaN(num)) {
+        return value;
+    }
+    return num.toFixed(decimals);
+}
+
 type BatchMixingSectionProps = {
     entryForm: CatatanPengolahanLimbahAirEntryPayload;
     form: ReturnType<typeof useForm<ProcessFormState>>;
@@ -255,10 +263,31 @@ export function BatchMixingSection({ entryForm, form, readOnly, selectedBatchNo,
                                                                                             {batchItem.input_type === 'number' ? (
                                                                                                 <Input
                                                                                                     type="number"
+                                                                                                    step="0.01"
                                                                                                     className="bg-background shadow-sm transition-all focus-visible:ring-primary/50"
                                                                                                     value={value.value_number}
                                                                                                     readOnly={readOnly}
                                                                                                     required={!readOnly}
+                                                                                                    onBlur={(event) => {
+                                                                                                        const rounded = roundToDecimals(event.target.value, 2);
+                                                                                                        if (rounded !== event.target.value && rounded !== '') {
+                                                                                                            form.setData('batch', [
+                                                                                                                ...form.data.batch.map((existingBatch, existingBatchIndex) => {
+                                                                                                                    if (existingBatchIndex !== batchFormIndex) {
+                                                                                                                        return existingBatch;
+                                                                                                                    }
+                                                                                                                    return {
+                                                                                                                        ...existingBatch,
+                                                                                                                        values: existingBatch.values.map((existingValue, existingValueIndex) =>
+                                                                                                                            existingValueIndex === valueIndex
+                                                                                                                                ? { ...existingValue, value_number: rounded }
+                                                                                                                                : existingValue,
+                                                                                                                        ),
+                                                                                                                    };
+                                                                                                                }),
+                                                                                                            ]);
+                                                                                                        }
+                                                                                                    }}
                                                                                                     onChange={(event) => {
                                                                                                         form.setData('batch', [
                                                                                                             ...form.data.batch.map((existingBatch, existingBatchIndex) => {
@@ -274,7 +303,7 @@ export function BatchMixingSection({ entryForm, form, readOnly, selectedBatchNo,
                                                                                                                                 value_number: event.target.value,
                                                                                                                             }
                                                                                                                             : existingValue,
-                                                                                     ),
+                                                                                                                    ),
                                                                                                                 };
                                                                                                             }),
                                                                                                         ]);

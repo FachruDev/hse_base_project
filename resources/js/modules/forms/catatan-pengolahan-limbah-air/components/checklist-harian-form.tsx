@@ -1,12 +1,11 @@
 import { useForm } from '@inertiajs/react';
-import { CheckCheck, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import * as React from 'react';
 
 import { catatanPengolahanLimbahAirSaveChecklist } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import type { CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard/types';
@@ -48,27 +47,7 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
                         <CardDescription>{entryForm.checklist.template_name ?? 'Template checklist belum tersedia.'}</CardDescription>
                     </div>
                     <Badge variant="outline">Tanggal Pengisian: {entryForm.entry.tanggal}</Badge>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setChecklistAllStatus(form, 'OK')}
-                            disabled={readOnly || form.data.checklist.values.length === 0}
-                        >
-                            <CheckCheck className="size-4" />
-                            Checklist Semua Berfungsi
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => clearChecklistAll(form)}
-                            disabled={readOnly || form.data.checklist.values.length === 0}
-                        >
-                            Unchecklist Semua
-                        </Button>
-                    </div>
+
                 </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -87,32 +66,19 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
                                 <TableRow key={item.id}>
                                     <TableCell className="px-4 font-medium">{item.name}</TableCell>
                                     <TableCell>{item.standard_condition ?? '-'}</TableCell>
-                                    <TableCell className="min-w-[220px]">
-                                        <Select
-                                            items={[
-                                                { value: 'OK', label: 'Berfungsi' },
-                                                { value: 'NOT_OK', label: 'Tidak Berfungsi' },
-                                            ]}
+                                    <TableCell className="min-w-[200px]">
+                                        <YaTidakToggle
                                             value={form.data.checklist.values[index]?.status ?? ''}
-                                            onValueChange={(value) => {
-                                                const nextStatus = (value ?? '') as ChecklistStatus;
+                                            disabled={readOnly}
+                                            onChange={(nextStatus) => {
                                                 form.setData('checklist', {
                                                     ...form.data.checklist,
                                                     values: form.data.checklist.values.map((valueItem, valueIndex) =>
-                                                        valueIndex === index ? { ...valueItem, status: nextStatus } : valueItem,
+                                                        valueIndex === index ? { ...valueItem, status: nextStatus as ChecklistStatus } : valueItem,
                                                     ),
                                                 });
                                             }}
-                                            disabled={readOnly}
-                                        >
-                                            <SelectTrigger className="w-full min-w-[200px]">
-                                                <SelectValue placeholder="Pilih kondisi" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="OK">Berfungsi</SelectItem>
-                                                <SelectItem value="NOT_OK">Tidak Berfungsi</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        />
                                     </TableCell>
                                     <TableCell className="px-4">
                                         <Textarea
@@ -157,23 +123,52 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
     );
 }
 
-function setChecklistAllStatus(form: ReturnType<typeof useForm<ChecklistFormState>>, status: 'OK' | 'NOT_OK'): void {
-    form.setData('checklist', {
-        ...form.data.checklist,
-        values: form.data.checklist.values.map((value) => ({
-            ...value,
-            status,
-        })),
-    });
-}
+type YaTidakToggleProps = {
+    value: string;
+    disabled?: boolean;
+    onChange: (value: string) => void;
+};
 
-function clearChecklistAll(form: ReturnType<typeof useForm<ChecklistFormState>>): void {
-    form.setData('checklist', {
-        ...form.data.checklist,
-        values: form.data.checklist.values.map((value) => ({
-            ...value,
-            status: '',
-            note: '',
-        })),
-    });
+function YaTidakToggle({ value, disabled = false, onChange }: YaTidakToggleProps) {
+    return (
+        <div className="inline-flex overflow-hidden rounded-lg border border-border shadow-sm">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(value === 'NOT_OK' ? '' : 'NOT_OK')}
+                className={[
+                    'flex min-w-[80px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
+                    !disabled && 'cursor-pointer',
+                    disabled && 'cursor-not-allowed opacity-60',
+                    value === 'NOT_OK'
+                        ? 'bg-red-500 text-white shadow-inner'
+                        : 'bg-background text-muted-foreground hover:bg-red-50 hover:text-red-600',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                <span className="text-base leading-none">{value === 'NOT_OK' ? '✕' : '✕'}</span>
+                Tidak
+            </button>
+            <div className="w-px bg-border" />
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(value === 'OK' ? '' : 'OK')}
+                className={[
+                    'flex min-w-[80px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
+                    !disabled && 'cursor-pointer',
+                    disabled && 'cursor-not-allowed opacity-60',
+                    value === 'OK'
+                        ? 'bg-emerald-500 text-white shadow-inner'
+                        : 'bg-background text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                <span className="text-base leading-none">{value === 'OK' ? '✓' : '✓'}</span>
+                Ya
+            </button>
+        </div>
+    );
 }
