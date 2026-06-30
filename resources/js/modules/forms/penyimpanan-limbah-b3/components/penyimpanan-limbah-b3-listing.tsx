@@ -314,6 +314,7 @@ export function PenyimpananLimbahB3Listing({
                                                                         },
                                                                     );
                                                                 }}
+                                                            >
                                                                 <CheckCircle className="mr-2 size-4" />
                                                                 {row.next_approval_label}
                                                             </Button>

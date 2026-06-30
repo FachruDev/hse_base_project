@@ -8,6 +8,7 @@ use App\Models\Ipal\IpalChecklistValueAttachment;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Ipal\IpalProcessApproval;
 use App\Models\Ipal\IpalProcessLog;
+use App\Models\Ipal\IpalProcessValue;
 use App\Models\Ipal\IpalProcessValueAttachment;
 use App\Models\Master\BatchItem;
 use App\Models\Master\ChecklistItem;
