@@ -161,6 +161,26 @@ class DashboardController extends Controller
             ->with('success', "Berhasil meng-approve {$count} catatan proses bulan ini.");
     }
 
+    public function catatanPengolahanLimbahAirReopenMonthlyProcess(
+        IpalMonthlyProcessApprovalRequest $request,
+        IpalLogService $ipalLogService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('ipal.logs.reopen-monthly'), 403);
+        $superadmin = $this->authenticatedUser($request);
+
+        $count = $ipalLogService->reopenMonthlyProcess(
+            $request->month(),
+            $request->year(),
+        );
+
+        return redirect()
+            ->route('dashboard.forms.catatan-pengolahan-limbah-air.index', [
+                'user_id' => $superadmin->external_id,
+                'year' => $request->year(),
+            ])
+            ->with('success', "Berhasil membuka kembali {$count} approval catatan proses bulan ini.");
+    }
+
     public function catatanPengolahanLimbahAirSaveChecklist(
         SaveIpalChecklistRequest $request,
         IpalLogService $ipalLogService,

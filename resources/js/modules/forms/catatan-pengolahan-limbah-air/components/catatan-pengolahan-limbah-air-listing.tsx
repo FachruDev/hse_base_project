@@ -18,6 +18,7 @@ import {
     catatanPengolahanLimbahAirCreate,
     catatanPengolahanLimbahAirIndex,
     catatanPengolahanLimbahAirMonthlyShow,
+    catatanPengolahanLimbahAirReopenMonthlyProcess,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -358,6 +359,36 @@ export function CatatanPengolahanLimbahAirListing({
                                                         >
                                                             <CheckCircle className="mr-2 size-4" />
                                                             Approve Bulanan
+                                                        </Button>
+                                                    ) : null}
+                                                    {listing.capabilities
+                                                        .can_reopen_process_monthly &&
+                                                    row.process_approved_count >
+                                                        0 ? (
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                router.post(
+                                                                    catatanPengolahanLimbahAirReopenMonthlyProcess.url(
+                                                                        {
+                                                                            year: row.year,
+                                                                            month: row.month,
+                                                                        },
+                                                                        {
+                                                                            query: {
+                                                                                user_id:
+                                                                                    userId,
+                                                                            },
+                                                                        },
+                                                                    ),
+                                                                    {},
+                                                                );
+                                                            }}
+                                                        >
+                                                            <RotateCcw className="mr-2 size-4" />
+                                                            Buka Approval
                                                         </Button>
                                                     ) : null}
                                                     <Button

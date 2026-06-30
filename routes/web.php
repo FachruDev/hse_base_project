@@ -42,6 +42,10 @@ Route::middleware('external.user')->group(function (): void {
         [DashboardController::class, 'catatanPengolahanLimbahAirApproveMonthlyProcess'],
     )->name('dashboard.forms.catatan-pengolahan-limbah-air.monthly.process-approval');
     Route::post(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/monthly/{year}/{month}/process-approval/reopen',
+        [DashboardController::class, 'catatanPengolahanLimbahAirReopenMonthlyProcess'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.monthly.process-approval.reopen');
+    Route::post(
         '/dashboard/forms/catatan-pengolahan-limbah-air/checklist',
         [DashboardController::class, 'catatanPengolahanLimbahAirSaveChecklist'],
     )->name('dashboard.forms.catatan-pengolahan-limbah-air.checklist.store');

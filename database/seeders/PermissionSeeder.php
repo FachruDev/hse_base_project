@@ -60,6 +60,7 @@ class PermissionSeeder extends Seeder
                 'ipal.logs.view',
                 'ipal.logs.submit',
                 'ipal.logs.approve',
+                'ipal.logs.reopen-monthly',
             ],
             'configuration' => [
                 'config.weekend.view',

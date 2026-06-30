@@ -52,12 +52,13 @@ class IpalLogService
             ]);
 
             $checklistPayload = $payload['checklist'];
+            $checklistTemplateId = (int) $checklistPayload['template_id'];
             $checklist = $dailyLog->checklist()->create([
-                'template_id' => $checklistPayload['template_id'],
+                'template_id' => $checklistTemplateId,
             ]);
 
             $checklistItems = ChecklistItem::query()
-                ->where('template_id', $checklistPayload['template_id'])
+                ->where('template_id', $checklistTemplateId)
                 ->get(['id', 'name']);
 
             if ($checklistItems->isEmpty()) {
@@ -81,17 +82,21 @@ class IpalLogService
                     ]);
                 }
 
-                $checklistItemIds = $checklistItems->pluck('id')->all();
+                $checklistItemIds = $checklistItems->pluck('id')
+                    ->map(static fn ($id): int => (int) $id)
+                    ->all();
 
                 foreach ($checklistPayload['values'] as $value) {
-                    if (! in_array($value['item_id'], $checklistItemIds, true)) {
+                    $itemId = (int) $value['item_id'];
+
+                    if (! in_array($itemId, $checklistItemIds, true)) {
                         throw ValidationException::withMessages([
                             'checklist.values' => ['Checklist item tidak sesuai template checklist.'],
                         ]);
                     }
 
                     $checklist->values()->create([
-                        'item_id' => $value['item_id'],
+                        'item_id' => $itemId,
                         'status' => $value['status'],
                         'note' => $value['note'] ?? null,
                     ]);
@@ -193,20 +198,21 @@ class IpalLogService
             }
 
             $checklistPayload = $payload['checklist'];
+            $checklistTemplateId = (int) $checklistPayload['template_id'];
             $checklist = $dailyLog->checklist()->first();
 
             if ($checklist === null) {
                 $checklist = $dailyLog->checklist()->create([
-                    'template_id' => $checklistPayload['template_id'],
+                    'template_id' => $checklistTemplateId,
                 ]);
             } else {
                 $checklist->update([
-                    'template_id' => $checklistPayload['template_id'],
+                    'template_id' => $checklistTemplateId,
                 ]);
             }
 
             $checklistItems = ChecklistItem::query()
-                ->where('template_id', $checklistPayload['template_id'])
+                ->where('template_id', $checklistTemplateId)
                 ->where('is_active', true)
                 ->get(['id']);
 
@@ -216,19 +222,23 @@ class IpalLogService
                 ]);
             }
 
-            $checklistItemIds = $checklistItems->pluck('id')->all();
+            $checklistItemIds = $checklistItems->pluck('id')
+                ->map(static fn ($id): int => (int) $id)
+                ->all();
             $submittedValues = $checklistPayload['values'] ?? [];
             $valuesToCreate = [];
 
             foreach ($submittedValues as $value) {
-                if (! in_array($value['item_id'], $checklistItemIds, true)) {
+                $itemId = (int) $value['item_id'];
+
+                if (! in_array($itemId, $checklistItemIds, true)) {
                     throw ValidationException::withMessages([
                         'checklist.values' => ['Checklist item tidak sesuai template checklist.'],
                     ]);
                 }
 
                 $valuesToCreate[] = [
-                    'item_id' => $value['item_id'],
+                    'item_id' => $itemId,
                     'status' => $value['status'],
                     'note' => $value['note'] ?? null,
                 ];
@@ -467,6 +477,12 @@ class IpalLogService
      */
     public function approveMonthlyProcess(int $month, int $year, User $supervisor): int
     {
+        if (! $this->isMonthlyProcessApprovalDay($year, $month)) {
+            throw ValidationException::withMessages([
+                'period' => ['Approval bulanan catatan proses hanya dapat dilakukan pada hari kerja terakhir bulan berjalan.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($month, $year, $supervisor): int {
             $logs = IpalDailyLog::query()
                 ->with(['processLog.approval'])
@@ -499,6 +515,68 @@ class IpalLogService
 
             return $count;
         });
+    }
+
+    /**
+     * Re-open all APPROVED IPAL process logs for the given month/year.
+     * Clears supervisor signatures so Dept Head approval can be run again.
+     */
+    public function reopenMonthlyProcess(int $month, int $year): int
+    {
+        return DB::transaction(function () use ($month, $year): int {
+            $logs = IpalDailyLog::query()
+                ->with(['processLog.approval'])
+                ->whereYear('tanggal', $year)
+                ->whereMonth('tanggal', $month)
+                ->get();
+
+            $count = 0;
+
+            foreach ($logs as $dailyLog) {
+                $processLog = $dailyLog->processLog;
+
+                if ($processLog === null || $processLog->status !== 'APPROVED') {
+                    continue;
+                }
+
+                if ($processLog->approval !== null) {
+                    $processLog->approval()->update([
+                        'supervisor_id' => null,
+                        'supervisor_signed_at' => null,
+                    ]);
+                }
+
+                $processLog->update(['status' => 'SUBMITTED']);
+                $count++;
+            }
+
+            if ($count === 0) {
+                throw ValidationException::withMessages([
+                    'period' => ['Tidak ada catatan proses approved pada periode ini untuk dibuka kembali.'],
+                ]);
+            }
+
+            return $count;
+        });
+    }
+
+    public function isMonthlyProcessApprovalDay(int $year, int $month): bool
+    {
+        $today = now()->startOfDay();
+        $periodStart = Carbon::create($year, $month, 1)->startOfDay();
+        $periodEnd = $periodStart->copy()->endOfMonth()->startOfDay();
+
+        if ($today->lt($periodStart) || $today->gt($periodEnd)) {
+            return false;
+        }
+
+        $lastOperationalDay = $this->findLastOperationalDayOfMonth($year, $month);
+
+        if ($lastOperationalDay === null) {
+            return false;
+        }
+
+        return $today->isSameDay($lastOperationalDay);
     }
 
     /**

@@ -70,6 +70,7 @@ class CatatanPengolahanLimbahAirPageService
             'filters' => $filters,
             'capabilities' => [
                 'can_approve_process_monthly' => $user->can('ipal.logs.approve'),
+                'can_reopen_process_monthly' => $user->can('ipal.logs.reopen-monthly'),
             ],
             'table' => [
                 'data' => $rows,
@@ -335,7 +336,7 @@ class CatatanPengolahanLimbahAirPageService
             'checklist_approval_status' => $this->isChecklistApprovalComplete($approval) ? 'APPROVED' : 'NOT_APPROVED',
             'checklist_approved_at' => $approval?->approved_at?->format('Y-m-d H:i:s'),
             'checklist_approved_by' => $approval?->supervisor?->name,
-            'can_approve_period' => $ipalLogService->isMonthCompletable($year, $month),
+            'can_approve_period' => $ipalLogService->isMonthlyProcessApprovalDay($year, $month),
         ];
     }
 

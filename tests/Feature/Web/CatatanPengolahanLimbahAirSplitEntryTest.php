@@ -83,10 +83,10 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
         $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/checklist?user_id=operator.split.01', [
             'tanggal' => $date,
             'checklist' => [
-                'template_id' => $checklistTemplate->id,
+                'template_id' => (string) $checklistTemplate->id,
                 'values' => [
                     [
-                        'item_id' => $checklistItem->id,
+                        'item_id' => (string) $checklistItem->id,
                         'status' => 'OK',
                         'note' => 'Normal',
                     ],

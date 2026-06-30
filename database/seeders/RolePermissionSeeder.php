@@ -122,6 +122,7 @@ class RolePermissionSeeder extends Seeder
             'ipal.logs.view',
             'ipal.logs.submit',
             'ipal.logs.approve',
+            'ipal.logs.reopen-monthly',
             'config.weekend.view',
             'config.weekend.manage',
             'config.holiday.view',

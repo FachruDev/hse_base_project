@@ -81,6 +81,7 @@ export type CatatanPengolahanLimbahAirListingPayload = {
     };
     capabilities: {
         can_approve_process_monthly: boolean;
+        can_reopen_process_monthly: boolean;
     };
     table: {
         data: CatatanPengolahanLimbahAirMonthlyRow[];
