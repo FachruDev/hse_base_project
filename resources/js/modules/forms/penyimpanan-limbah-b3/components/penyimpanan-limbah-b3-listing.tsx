@@ -1,5 +1,17 @@
 import { router } from '@inertiajs/react';
-import { CalendarDays, Filter, Plus, RotateCcw, Search, CheckCircle, Eye } from 'lucide-react';
+import {
+    ArrowDownToLine,
+    ArrowUpFromLine,
+    CalendarDays,
+    CheckCircle,
+    Eye,
+    Filter,
+    Plus,
+    RotateCcw,
+    Scale,
+    Search,
+    type LucideIcon,
+} from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -112,6 +124,33 @@ export function PenyimpananLimbahB3Listing({
                         </div>
                     </CardHeader>
                 </Card>
+
+                <div className="grid gap-3 md:grid-cols-4">
+                    <SummaryCard
+                        icon={CalendarDays}
+                        tone="sky"
+                        label="Total Log"
+                        value={`${sumRows(listing.table.data, 'total_logs_count')} log`}
+                    />
+                    <SummaryCard
+                        icon={ArrowDownToLine}
+                        tone="emerald"
+                        label="Masuk"
+                        value={`${sumRows(listing.table.data, 'incoming_logs_count')} log`}
+                    />
+                    <SummaryCard
+                        icon={ArrowUpFromLine}
+                        tone="rose"
+                        label="Keluar"
+                        value={`${sumRows(listing.table.data, 'outgoing_logs_count')} log`}
+                    />
+                    <SummaryCard
+                        icon={Scale}
+                        tone="amber"
+                        label="Total Berat"
+                        value={`${formatWeight(sumRows(listing.table.data, 'total_weight_kg'))} kg`}
+                    />
+                </div>
 
                 <Card className="min-w-0 border-none shadow-sm ring-1 ring-border/60">
                     <CardHeader className="gap-4 border-b border-border/60 bg-muted/20">
@@ -408,4 +447,53 @@ function resolveStatusVariant(
     }
 
     return 'outline';
+}
+
+type SummaryTone = 'sky' | 'emerald' | 'rose' | 'amber';
+
+function SummaryCard({
+    icon: Icon,
+    tone,
+    label,
+    value,
+}: {
+    icon: LucideIcon;
+    tone: SummaryTone;
+    label: string;
+    value: string;
+}) {
+    const toneClass: Record<SummaryTone, string> = {
+        sky: 'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-900/40',
+        emerald:
+            'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40',
+        rose: 'bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-950/30 dark:text-rose-300 dark:ring-rose-900/40',
+        amber: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
+    };
+
+    return (
+        <Card className={`${toneClass[tone]} border-none shadow-sm ring-1`}>
+            <CardContent className="flex items-center justify-between gap-3 p-4">
+                <div>
+                    <p className="text-xs font-medium opacity-75 uppercase">
+                        {label}
+                    </p>
+                    <p className="text-lg font-semibold">{value}</p>
+                </div>
+                <span className="inline-flex size-9 items-center justify-center rounded-md bg-white/70 shadow-sm dark:bg-white/10">
+                    <Icon className="size-4" />
+                </span>
+            </CardContent>
+        </Card>
+    );
+}
+
+function sumRows(
+    rows: B3StorageLogListingPayload['table']['data'],
+    key: keyof B3StorageLogListingPayload['table']['data'][number],
+): number {
+    return rows.reduce((total, row) => {
+        const value = row[key];
+
+        return typeof value === 'number' ? total + value : total;
+    }, 0);
 }

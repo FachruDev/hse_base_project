@@ -10,6 +10,7 @@ import {
     Plus,
     RotateCcw,
     Search,
+    type LucideIcon,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -131,22 +132,26 @@ export function CatatanPengolahanLimbahAirListing({
 
                 <div className="grid gap-4 md:grid-cols-4">
                     <SummaryCard
-                        icon={<CalendarDays className="size-4" />}
+                        icon={CalendarDays}
+                        tone="sky"
                         label="Periode Ditampilkan"
                         value={`${listing.table.data.length} bulan`}
                     />
                     <SummaryCard
-                        icon={<ClipboardCheck className="size-4" />}
+                        icon={ClipboardCheck}
+                        tone="emerald"
                         label="Checklist Terisi"
                         value={`${sumRows(listing.table.data, 'checklist_days_count')} hari`}
                     />
                     <SummaryCard
-                        icon={<Droplets className="size-4" />}
+                        icon={Droplets}
+                        tone="amber"
                         label="Catatan Proses"
                         value={`${sumRows(listing.table.data, 'process_logs_count')} log`}
                     />
                     <SummaryCard
-                        icon={<CheckCircle2 className="size-4" />}
+                        icon={CheckCircle2}
+                        tone="violet"
                         label="Checklist Approved"
                         value={`${listing.table.data.filter((row) => row.checklist_approval_status === 'APPROVED').length} bulan`}
                     />
@@ -448,22 +453,36 @@ export function CatatanPengolahanLimbahAirListing({
 }
 
 type SummaryCardProps = {
-    icon: React.ReactNode;
+    icon: LucideIcon;
+    tone: SummaryTone;
     label: string;
     value: string;
 };
 
-function SummaryCard({ icon, label, value }: SummaryCardProps) {
+type SummaryTone = 'sky' | 'emerald' | 'amber' | 'violet';
+
+function SummaryCard({ icon: Icon, tone, label, value }: SummaryCardProps) {
+    const toneClass: Record<SummaryTone, string> = {
+        sky: 'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-900/40',
+        emerald:
+            'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40',
+        amber: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
+        violet:
+            'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
+    };
+
     return (
-        <Card className="border-none shadow-sm ring-1 ring-border/60">
-            <CardContent className="flex items-center gap-3 p-4">
-                <div className="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    {icon}
-                </div>
+        <Card className={`${toneClass[tone]} border-none shadow-sm ring-1`}>
+            <CardContent className="flex items-center justify-between gap-3 p-4">
                 <div>
-                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="text-xs font-medium opacity-75 uppercase">
+                        {label}
+                    </p>
                     <p className="text-lg font-semibold">{value}</p>
                 </div>
+                <span className="inline-flex size-9 items-center justify-center rounded-md bg-white/70 shadow-sm dark:bg-white/10">
+                    <Icon className="size-4" />
+                </span>
             </CardContent>
         </Card>
     );

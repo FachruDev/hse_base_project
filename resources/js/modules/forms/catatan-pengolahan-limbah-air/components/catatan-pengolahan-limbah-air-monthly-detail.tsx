@@ -8,6 +8,7 @@ import {
     FlaskConical,
     Paperclip,
     Printer,
+    type LucideIcon,
     X,
 } from 'lucide-react';
 import * as React from 'react';
@@ -201,14 +202,20 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                     <SummaryCard
                         label="Checklist Terisi"
                         value={`${monthlyDetail.summary.checklist_days_count} hari`}
+                        icon={ClipboardCheck}
+                        tone="sky"
                     />
                     <SummaryCard
                         label="Catatan Proses"
                         value={`${monthlyDetail.summary.process_logs_count} log`}
+                        icon={Droplets}
+                        tone="emerald"
                     />
                     <SummaryCard
                         label="Batch Mixing"
                         value={`${monthlyDetail.summary.batch_mixing_logs_count} log`}
+                        icon={FlaskConical}
+                        tone="amber"
                     />
                     <SummaryCard
                         label="Approval Checklist"
@@ -217,6 +224,8 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                 ? 'Approved'
                                 : 'Belum Approved'
                         }
+                        icon={CheckCircle2}
+                        tone="violet"
                     />
                 </div>
 
@@ -579,14 +588,42 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
     );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+type SummaryTone = 'sky' | 'emerald' | 'amber' | 'violet';
+
+function SummaryCard({
+    label,
+    value,
+    icon: Icon,
+    tone,
+}: {
+    label: string;
+    value: string;
+    icon: LucideIcon;
+    tone: SummaryTone;
+}) {
+    const toneClass: Record<SummaryTone, string> = {
+        sky: 'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-900/40',
+        emerald:
+            'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40',
+        amber: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
+        violet:
+            'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
+    };
+
     return (
-        <Card className="border-none shadow-sm ring-1 ring-border/60">
+        <Card className={`${toneClass[tone]} border-none shadow-sm ring-1`}>
             <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground uppercase">
-                    {label}
-                </p>
-                <p className="mt-2 text-lg font-semibold">{value}</p>
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-medium opacity-75 uppercase">
+                            {label}
+                        </p>
+                        <p className="mt-2 text-lg font-semibold">{value}</p>
+                    </div>
+                    <span className="inline-flex size-9 items-center justify-center rounded-md bg-white/70 shadow-sm dark:bg-white/10">
+                        <Icon className="size-4" />
+                    </span>
+                </div>
             </CardContent>
         </Card>
     );
