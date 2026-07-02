@@ -291,9 +291,7 @@ export function PenyimpananLimbahB3Listing({
                                                 </TableCell>
                                                 <TableCell className="px-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        {listing.capabilities
-                                                            .can_approve_b3_monthly &&
-                                                        row.can_approve_period &&
+                                                        {row.can_approve_monthly &&
                                                         row.next_approval_role !==
                                                             null ? (
                                                             <Button
@@ -307,10 +305,22 @@ export function PenyimpananLimbahB3Listing({
                                                                                 year: row.year,
                                                                                 month: row.month,
                                                                             },
+                                                                            {
+                                                                                query: {
+                                                                                    user_id:
+                                                                                        userId,
+                                                                                },
+                                                                            },
                                                                         ),
                                                                         {
                                                                             approval_role:
                                                                                 row.next_approval_role,
+                                                                            date_from:
+                                                                                dateFrom ||
+                                                                                undefined,
+                                                                            date_to:
+                                                                                dateTo ||
+                                                                                undefined,
                                                                         },
                                                                     );
                                                                 }}
@@ -318,6 +328,12 @@ export function PenyimpananLimbahB3Listing({
                                                                 <CheckCircle className="mr-2 size-4" />
                                                                 {row.next_approval_label}
                                                             </Button>
+                                                        ) : row.approval_blocked_label ? (
+                                                            <Badge variant="secondary">
+                                                                {
+                                                                    row.approval_blocked_label
+                                                                }
+                                                            </Badge>
                                                         ) : null}
                                                         <Button
                                                             variant="outline"
@@ -333,6 +349,12 @@ export function PenyimpananLimbahB3Listing({
                                                                             query: {
                                                                                 user_id:
                                                                                     userId,
+                                                                                date_from:
+                                                                                    dateFrom ||
+                                                                                    undefined,
+                                                                                date_to:
+                                                                                    dateTo ||
+                                                                                    undefined,
                                                                             },
                                                                         },
                                                                     )}
@@ -368,7 +390,8 @@ export function PenyimpananLimbahB3Listing({
 
 function formatWeight(value: number): string {
     return new Intl.NumberFormat('id-ID', {
-        maximumFractionDigits: 3,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     }).format(value);
 }
 

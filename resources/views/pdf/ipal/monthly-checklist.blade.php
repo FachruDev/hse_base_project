@@ -39,9 +39,30 @@
         .legend h2, .approval h2 { margin: 0 0 6px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .25px; }
         .legend p, .approval p { margin: 2px 0; }
         .signature-space { height: 30px; }
+        .audit-page { page-break-before: always; border: 1.4px solid #172033; min-height: 185mm; }
+        .audit-head { display: grid; grid-template-columns: 1fr 210px; border-bottom: 1.4px solid #172033; }
+        .audit-title, .audit-meta { padding: 10px 12px; }
+        .audit-title { border-right: 1.4px solid #172033; }
+        .audit-title h2 { margin: 0; font-size: 15px; letter-spacing: .35px; text-transform: uppercase; }
+        .audit-title p { margin: 4px 0 0; color: #475569; font-size: 10px; }
+        .audit-meta table { width: 100%; border-collapse: collapse; }
+        .audit-meta td { padding: 1px 0; border: 0; }
+        .audit-meta td:first-child { width: 78px; color: #64748b; }
+        .audit-content { padding: 10px 12px 12px; }
+        .audit-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .audit-table th, .audit-table td { border: 1px solid #cbd5e1; padding: 6px 7px; vertical-align: top; }
+        .audit-table th { background: #e8eef7; font-weight: 700; text-align: left; }
+        .audit-table .date { width: 95px; }
+        .audit-table .item-name { width: 180px; }
+        .audit-table .operator { width: 140px; }
+        .audit-table .note { white-space: normal; }
     </style>
 </head>
 <body>
+    @php
+        $checklistNoteRows = $monthlyDetail['checklist_note_rows'] ?? [];
+    @endphp
+
     <main class="document">
         <section class="masthead">
             <div class="brand">HSE</div>
@@ -141,5 +162,46 @@
             </div>
         </section>
     </main>
+
+    @if (count($checklistNoteRows) > 0)
+        <section class="audit-page">
+            <div class="audit-head">
+                <div class="audit-title">
+                    <h2>Lampiran Audit Catatan Checklist</h2>
+                    <p>Catatan checklist yang tercatat pada periode {{ $monthlyDetail['period']['label'] }}.</p>
+                </div>
+                <div class="audit-meta">
+                    <table>
+                        <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }}</td></tr>
+                        <tr><td>Total</td><td>: {{ count($checklistNoteRows) }} catatan</td></tr>
+                        <tr><td>Lampiran</td><td>: Tidak disertakan</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="audit-content">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th class="date">Tanggal</th>
+                            <th class="item-name">Nama proses / unit</th>
+                            <th class="operator">Operator</th>
+                            <th class="note">Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($checklistNoteRows as $noteRow)
+                            <tr>
+                                <td class="date">{{ $noteRow['date'] }}</td>
+                                <td class="item-name">{{ $noteRow['item_name'] }}</td>
+                                <td class="operator">{{ $noteRow['operator'] ?? '-' }}</td>
+                                <td class="note">{{ $noteRow['note'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @endif
 </body>
 </html>

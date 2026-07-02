@@ -30,6 +30,8 @@ class B3StorageMonthlyPeriodRequest extends FormRequest
         return [
             'month' => ['required', 'integer', 'between:1,12'],
             'year' => ['required', 'integer', 'between:2000,2100'],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 
@@ -41,5 +43,18 @@ class B3StorageMonthlyPeriodRequest extends FormRequest
     public function year(): int
     {
         return (int) $this->validated('year');
+    }
+
+    /**
+     * @return array{date_from: string, date_to: string}
+     */
+    public function filters(): array
+    {
+        $validated = $this->validated();
+
+        return [
+            'date_from' => (string) ($validated['date_from'] ?? ''),
+            'date_to' => (string) ($validated['date_to'] ?? ''),
+        ];
     }
 }

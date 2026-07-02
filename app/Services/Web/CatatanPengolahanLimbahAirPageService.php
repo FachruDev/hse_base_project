@@ -4,6 +4,7 @@ namespace App\Services\Web;
 
 use App\Models\Ipal\IpalChecklistApproval;
 use App\Models\Ipal\IpalDailyLog;
+use App\Models\Ipal\IpalProcessMonthlyApproval;
 use App\Models\Master\BatchItem;
 use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistTemplate;
@@ -40,6 +41,12 @@ class CatatanPengolahanLimbahAirPageService
             ->get()
             ->keyBy('month');
 
+        $processApprovals = IpalProcessMonthlyApproval::query()
+            ->with('supervisor:id,name,external_id')
+            ->where('year', $year)
+            ->get()
+            ->keyBy('month');
+
         $currentYear = (int) now()->year;
         $currentMonth = (int) now()->month;
 
@@ -52,7 +59,14 @@ class CatatanPengolahanLimbahAirPageService
 
         $rows = collect($months)
             ->reverse()
-            ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month), $ipalLogService))
+            ->map(fn (int $month): array => $this->mapMonthlyListingRow(
+                $year,
+                $month,
+                $logs,
+                $approvals->get($month),
+                $processApprovals->get($month),
+                $ipalLogService,
+            ))
             ->filter(fn (array $row): bool => $this->matchesMonthlyFilters($row, $filters))
             ->values()
             ->all();
@@ -82,7 +96,7 @@ class CatatanPengolahanLimbahAirPageService
     /**
      * @return array<string, mixed>
      */
-    public function buildMonthlyDetail(User $user, int $year, int $month): array
+    public function buildMonthlyDetail(User $user, int $year, int $month, IpalLogService $ipalLogService): array
     {
         $period = Carbon::create($year, $month, 1)->startOfMonth();
         $logs = IpalDailyLog::query()
@@ -90,6 +104,7 @@ class CatatanPengolahanLimbahAirPageService
                 'operator:id,name,external_id,department_id',
                 'operator.department:id,name',
                 'checklist.values.item:id,name,category,standard_condition,order_no',
+                'checklist.values.attachments',
                 'processLog.approval.operator:id,name,external_id',
                 'processLog.approval.supervisor:id,name,external_id',
                 'processLog.batches:id,process_log_id,batch_no',
@@ -119,11 +134,14 @@ class CatatanPengolahanLimbahAirPageService
                 'days' => $this->mapPeriodDays($period),
             ],
             'summary' => $this->mapMonthlySummary($logs, $approval),
-            'checklist_matrix' => $this->buildChecklistMatrix($period, $logs),
+            'checklist_matrix' => $this->buildChecklistMatrix($period, $logs, $user),
             'process_rows' => $this->mapMonthlyProcessRows($logs),
             'approval' => $this->mapChecklistApproval($approval),
             'capabilities' => [
-                'approve_checklist' => ($user->can('ipal.logs.approve') && ! $this->isChecklistApprovalComplete($approval)),
+                'approve_checklist' => ($user->can('ipal.logs.approve')
+                    && $ipalLogService->isMonthlyProcessApprovalDay($year, $month)
+                    && ! $this->isChecklistApprovalComplete($approval)),
+                'can_approve_period' => $ipalLogService->isMonthlyProcessApprovalDay($year, $month),
             ],
         ];
     }
@@ -314,9 +332,10 @@ class CatatanPengolahanLimbahAirPageService
     /**
      * @return array<string, mixed>
      */
-    public function buildMonthlyPdfDetail(User $user, int $year, int $month): array
+    public function buildMonthlyPdfDetail(User $user, int $year, int $month, IpalLogService $ipalLogService): array
     {
-        $detail = $this->buildMonthlyDetail($user, $year, $month);
+        $detail = $this->buildMonthlyDetail($user, $year, $month, $ipalLogService);
+        $detail['checklist_note_rows'] = $this->mapChecklistNoteRows($detail['checklist_matrix'] ?? []);
 
         $logs = IpalDailyLog::query()
             ->with([
@@ -336,11 +355,48 @@ class CatatanPengolahanLimbahAirPageService
     }
 
     /**
+     * @param  array<int, array<string, mixed>>  $matrix
+     * @return array<int, array{date: string, item_name: string, operator: string|null, note: string}>
+     */
+    private function mapChecklistNoteRows(array $matrix): array
+    {
+        return collect($matrix)
+            ->flatMap(function (array $row): array {
+                return collect($row['cells'] ?? [])
+                    ->flatMap(function (array $cell) use ($row): array {
+                        return collect($cell['details'] ?? [])
+                            ->filter(fn (array $detail): bool => is_string($detail['note'] ?? null) && trim((string) $detail['note']) !== '')
+                            ->map(fn (array $detail): array => [
+                                'date' => (string) ($cell['date'] ?? ''),
+                                'item_name' => (string) ($row['name'] ?? '-'),
+                                'operator' => $detail['operator'] ?? null,
+                                'note' => trim((string) $detail['note']),
+                            ])
+                            ->all();
+                    })
+                    ->all();
+            })
+            ->sortBy([
+                ['date', 'asc'],
+                ['item_name', 'asc'],
+                ['operator', 'asc'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * @param  Collection<int, IpalDailyLog>  $logs
      * @return array<string, mixed>
      */
-    private function mapMonthlyListingRow(int $year, int $month, Collection $logs, ?IpalChecklistApproval $approval, IpalLogService $ipalLogService): array
-    {
+    private function mapMonthlyListingRow(
+        int $year,
+        int $month,
+        Collection $logs,
+        ?IpalChecklistApproval $approval,
+        ?IpalProcessMonthlyApproval $processApproval,
+        IpalLogService $ipalLogService,
+    ): array {
         $monthLogs = $logs->filter(fn (IpalDailyLog $log): bool => (int) $log->tanggal?->month === $month);
         $period = Carbon::create($year, $month, 1);
 
@@ -367,6 +423,9 @@ class CatatanPengolahanLimbahAirPageService
             'checklist_approval_status' => $this->isChecklistApprovalComplete($approval) ? 'APPROVED' : 'NOT_APPROVED',
             'checklist_approved_at' => $approval?->approved_at?->format('Y-m-d H:i:s'),
             'checklist_approved_by' => $approval?->supervisor?->name,
+            'process_approval_status' => $this->isProcessMonthlyApprovalComplete($processApproval) ? 'APPROVED' : 'NOT_APPROVED',
+            'process_approved_at' => $processApproval?->approved_at?->format('Y-m-d H:i:s'),
+            'process_approved_by' => $processApproval?->supervisor?->name,
             'can_approve_period' => $ipalLogService->isMonthlyProcessApprovalDay($year, $month),
         ];
     }
@@ -410,7 +469,7 @@ class CatatanPengolahanLimbahAirPageService
         return match ($filters['status']) {
             'DRAFT' => $row['process_draft_count'] > 0,
             'SUBMITTED' => $row['process_pending_count'] > 0,
-            'APPROVED' => $row['process_approved_count'] > 0,
+            'APPROVED' => $row['process_approval_status'] === 'APPROVED',
             default => true,
         };
     }
@@ -451,7 +510,7 @@ class CatatanPengolahanLimbahAirPageService
      * @param  Collection<int, IpalDailyLog>  $logs
      * @return array<int, array<string, mixed>>
      */
-    private function buildChecklistMatrix(Carbon $period, Collection $logs): array
+    private function buildChecklistMatrix(Carbon $period, Collection $logs, User $viewer): array
     {
         $template = ChecklistTemplate::query()
             ->where('is_active', true)
@@ -468,18 +527,25 @@ class CatatanPengolahanLimbahAirPageService
             return [];
         }
 
-        $values = $logs->flatMap(function (IpalDailyLog $log): array {
+        $values = $logs->flatMap(function (IpalDailyLog $log) use ($viewer): array {
             if ($log->checklist === null) {
                 return [];
             }
 
-            return $log->checklist->values->map(fn ($value): array => [
-                'date' => $log->tanggal?->format('Y-m-d'),
-                'operator' => $log->operator?->name,
-                'item_id' => $value->item_id,
-                'status' => $value->status,
-                'note' => $value->note,
-            ])->all();
+            return $log->checklist->values->map(function ($value) use ($log, $viewer): array {
+                $attachment = $value->attachments->first();
+
+                return [
+                    'date' => $log->tanggal?->format('Y-m-d'),
+                    'operator' => $log->operator?->name,
+                    'item_id' => $value->item_id,
+                    'status' => $value->status,
+                    'status_label' => $this->resolveChecklistStatusLabel($value->status),
+                    'note' => $value->note,
+                    'attachment_url' => $attachment !== null ? $this->buildChecklistAttachmentUrl($attachment->id, $viewer) : null,
+                    'attachment_original_name' => $attachment?->original_name,
+                ];
+            })->all();
         });
 
         return $template->items->map(function ($item) use ($period, $values): array {
@@ -504,6 +570,17 @@ class CatatanPengolahanLimbahAirPageService
                             'notes' => $cellValues
                                 ->filter(fn (array $value): bool => is_string($value['note']) && trim($value['note']) !== '')
                                 ->map(fn (array $value): string => trim(($value['operator'] ? $value['operator'].': ' : '').$value['note']))
+                                ->values()
+                                ->all(),
+                            'details' => $cellValues
+                                ->map(fn (array $value): array => [
+                                    'operator' => $value['operator'],
+                                    'status' => $value['status'],
+                                    'status_label' => $value['status_label'],
+                                    'note' => $value['note'],
+                                    'attachment_url' => $value['attachment_url'],
+                                    'attachment_original_name' => $value['attachment_original_name'],
+                                ])
                                 ->values()
                                 ->all(),
                         ];
@@ -734,6 +811,11 @@ class CatatanPengolahanLimbahAirPageService
     private function isChecklistApprovalComplete(?IpalChecklistApproval $approval): bool
     {
         return $approval instanceof IpalChecklistApproval && $approval->approved_at !== null;
+    }
+
+    private function isProcessMonthlyApprovalComplete(?IpalProcessMonthlyApproval $approval): bool
+    {
+        return $approval instanceof IpalProcessMonthlyApproval && $approval->approved_at !== null;
     }
 
     private function isChecklistPeriodApproved(string $date): bool

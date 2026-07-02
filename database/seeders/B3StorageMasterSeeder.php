@@ -28,10 +28,8 @@ class B3StorageMasterSeeder extends Seeder
         $items = [
             'Produk/Bahan Awal Padat',
             'Produk/Bahan Awal Cair',
-            'Bahan Pengemas',
             'Chemical Lab',
             'Campuran/Used Rags',
-            'Tumpahan B3',
             'Lampu TL Bekas',
             'Oli Bekas',
             'Lumpur IPAL',

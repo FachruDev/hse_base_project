@@ -24,10 +24,12 @@ use App\Services\Ipal\IpalLogService;
 use App\Services\Web\B3StoragePageService;
 use App\Services\Web\CatatanPengolahanLimbahAirPageService;
 use App\Services\Web\DashboardService;
+use App\Support\Excel\SimpleXlsx;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -65,12 +67,14 @@ class DashboardController extends Controller
     public function catatanPengolahanLimbahAirMonthlyShow(
         IpalMonthlyPeriodRequest $request,
         CatatanPengolahanLimbahAirPageService $pageService,
+        IpalLogService $ipalLogService,
     ): Response {
         return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/monthly', [
             'monthlyDetail' => $pageService->buildMonthlyDetail(
                 $this->authenticatedUser($request),
                 $request->year(),
                 $request->month(),
+                $ipalLogService,
             ),
         ]);
     }
@@ -78,11 +82,13 @@ class DashboardController extends Controller
     public function catatanPengolahanLimbahAirMonthlyChecklistPdf(
         IpalMonthlyPeriodRequest $request,
         CatatanPengolahanLimbahAirPageService $pageService,
+        IpalLogService $ipalLogService,
     ): Responsable {
         $detail = $pageService->buildMonthlyPdfDetail(
             $this->authenticatedUser($request),
             $request->year(),
             $request->month(),
+            $ipalLogService,
         );
 
         return Pdf::view('pdf.ipal.monthly-checklist', [
@@ -97,11 +103,13 @@ class DashboardController extends Controller
     public function catatanPengolahanLimbahAirMonthlyBatchMixingPdf(
         IpalMonthlyPeriodRequest $request,
         CatatanPengolahanLimbahAirPageService $pageService,
+        IpalLogService $ipalLogService,
     ): Responsable {
         $detail = $pageService->buildMonthlyPdfDetail(
             $this->authenticatedUser($request),
             $request->year(),
             $request->month(),
+            $ipalLogService,
         );
 
         return Pdf::view('pdf.ipal.monthly-batch-mixing', [
@@ -234,7 +242,7 @@ class DashboardController extends Controller
                 'user_id' => $supervisor->external_id,
                 'year' => $request->year(),
             ])
-            ->with('success', "Berhasil meng-approve {$count} catatan proses bulan ini.");
+            ->with('success', "Approval bulanan catatan proses berhasil disimpan. {$count} catatan proses pending ikut di-approve.");
     }
 
     public function catatanPengolahanLimbahAirReopenMonthlyProcess(
@@ -314,8 +322,83 @@ class DashboardController extends Controller
                 $request->year(),
                 $request->month(),
                 $b3StorageService,
+                $request->filters(),
             ),
         ]);
+    }
+
+    public function b3StorageMonthlyPdf(
+        B3StorageMonthlyPeriodRequest $request,
+        B3StoragePageService $pageService,
+        B3StorageService $b3StorageService,
+    ): Responsable {
+        abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
+
+        $detail = $pageService->buildMonthlyDetail(
+            $this->authenticatedUser($request),
+            $request->year(),
+            $request->month(),
+            $b3StorageService,
+            $request->filters(),
+        );
+
+        return Pdf::view('pdf.b3-storage.monthly-detail', [
+            'monthlyDetail' => $detail,
+        ])
+            ->landscape()
+            ->format('a4')
+            ->margins(8, 8, 10, 8)
+            ->name("penyimpanan-limbah-b3-{$request->year()}-{$request->month()}.pdf");
+    }
+
+    public function b3StorageMonthlyExcel(
+        B3StorageMonthlyPeriodRequest $request,
+        B3StoragePageService $pageService,
+        B3StorageService $b3StorageService,
+        SimpleXlsx $simpleXlsx,
+    ): SymfonyResponse {
+        abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
+
+        $detail = $pageService->buildMonthlyDetail(
+            $this->authenticatedUser($request),
+            $request->year(),
+            $request->month(),
+            $b3StorageService,
+            $request->filters(),
+        );
+
+        $directory = storage_path('app/exports');
+        File::ensureDirectoryExists($directory);
+
+        $filename = "penyimpanan-limbah-b3-{$request->year()}-{$request->month()}.xlsx";
+        $path = $directory.DIRECTORY_SEPARATOR.uniqid('b3-storage-', true).'.xlsx';
+
+        $simpleXlsx->store($pageService->buildMonthlyExcelRows($detail), $path);
+
+        return response()
+            ->download($path, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])
+            ->deleteFileAfterSend();
+    }
+
+    public function b3StorageLogPdf(
+        Request $request,
+        B3StorageLog $log,
+        B3StoragePageService $pageService,
+        B3StorageService $b3StorageService,
+    ): Responsable {
+        abort_unless($request->user()?->can('b3storage.logs.view'), 403);
+
+        $this->authenticatedUser($request);
+        $detail = $pageService->buildLogPdfDetail($b3StorageService->detail($log));
+
+        return Pdf::view('pdf.b3-storage.log-detail', [
+            'log' => $detail,
+        ])
+            ->format('a4')
+            ->margins(10, 10, 12, 10)
+            ->name("penyimpanan-limbah-b3-log-{$log->id}.pdf");
     }
 
     public function b3StorageApproveMonthly(
@@ -332,6 +415,7 @@ class DashboardController extends Controller
                 'year' => $request->year(),
                 'month' => $request->month(),
                 'user_id' => $user->external_id,
+                ...array_filter($request->filters(), static fn (string $value): bool => $value !== ''),
             ])
             ->with('success', 'Approval bulanan limbah B3 berhasil disimpan.');
     }

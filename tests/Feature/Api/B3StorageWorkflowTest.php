@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class B3StorageWorkflowTest extends TestCase
@@ -35,6 +36,17 @@ class B3StorageWorkflowTest extends TestCase
             'name' => 'HSE Dept Head',
             'is_active' => true,
         ]);
+
+        Role::query()->create([
+            'name' => 'supervisor',
+            'guard_name' => 'web',
+        ]);
+        Role::query()->create([
+            'name' => 'hse_dept_head',
+            'guard_name' => 'web',
+        ]);
+        $environmentSupervisor->assignRole('supervisor');
+        $hseDepartmentHead->assignRole('hse_dept_head');
 
         $wasteType = B3StorageWasteType::query()->create([
             'name' => 'Produk/Bahan Awal Padat',

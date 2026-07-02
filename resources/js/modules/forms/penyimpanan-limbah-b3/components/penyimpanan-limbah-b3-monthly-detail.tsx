@@ -1,11 +1,23 @@
 import { router } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, FileImage, FileSpreadsheet, Plus, Printer, Scale } from 'lucide-react';
-
+import {
+    ArrowLeft,
+    CheckCircle2,
+    Eye,
+    FileImage,
+    FileSpreadsheet,
+    Plus,
+    Printer,
+    Scale,
+} from 'lucide-react';
+import * as React from 'react';
 
 import {
     b3StorageApproveMonthly,
     b3StorageCreate,
     b3StorageIndex,
+    b3StorageLogPdf,
+    b3StorageMonthlyExcel,
+    b3StorageMonthlyPdf,
     b3StoragePhoto,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -19,6 +31,13 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerHeader,
+    DrawerTitle,
+} from '@/components/ui/drawer';
+import {
     Table,
     TableBody,
     TableCell,
@@ -27,7 +46,10 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { B3StorageMonthlyDetailPayload } from '@/modules/dashboard/types';
+import type {
+    B3StorageMonthlyDetailPayload,
+    B3StorageMonthlyReportRow,
+} from '@/modules/dashboard/types';
 
 type PenyimpananLimbahB3MonthlyDetailProps = {
     flash: {
@@ -43,6 +65,9 @@ export function PenyimpananLimbahB3MonthlyDetail({
     monthlyDetail,
     userId,
 }: PenyimpananLimbahB3MonthlyDetailProps) {
+    const [selectedRow, setSelectedRow] =
+        React.useState<B3StorageMonthlyReportRow | null>(null);
+
     const approveMonthly = () => {
         if (monthlyDetail.capabilities.next_approval_role === null) {
             return;
@@ -58,76 +83,13 @@ export function PenyimpananLimbahB3MonthlyDetail({
             ),
             {
                 approval_role: monthlyDetail.capabilities.next_approval_role,
+                date_from: monthlyDetail.filters.date_from || undefined,
+                date_to: monthlyDetail.filters.date_to || undefined,
             },
             {
                 preserveScroll: true,
             },
         );
-    };
-
-    const exportToExcel = () => {
-        const wasteTypeCols = monthlyDetail.columns.waste_types.map((wt) => wt.name);
-        const hasOther = monthlyDetail.columns.has_other_column;
-
-        const headers = [
-            'No',
-            'Tipe Pergerakan',
-            'Tanggal',
-            'Jam',
-            ...wasteTypeCols,
-            ...(hasOther ? ['Yang Lain'] : []),
-            'No. Dokumen',
-            'Dept. Inisiator',
-            'Operator TPS LB3',
-            'Catatan',
-        ];
-
-        const rows = monthlyDetail.rows.map((row) => [
-            row.no,
-            row.tanggal_masuk ? 'MASUK' : row.tanggal_keluar ? 'KELUAR' : '-',
-            row.tanggal_masuk ?? row.tanggal_keluar ?? '-',
-            row.jam ?? '-',
-            ...monthlyDetail.columns.waste_types.map((wt) =>
-                row.weights_by_waste_type[String(wt.id)] ?? '-',
-            ),
-            ...(hasOther ? [row.weight_other ?? '-'] : []),
-            row.document_number,
-            row.initiator_department ?? '-',
-            row.operator_name ?? '-',
-            row.note ?? '-',
-        ]);
-
-        const totalRow = [
-            'TOTAL',
-            '',
-            '',
-            '',
-            ...monthlyDetail.columns.waste_types.map((wt) =>
-                monthlyDetail.totals.by_waste_type[String(wt.id)] ?? 0,
-            ),
-            ...(hasOther ? [monthlyDetail.totals.other] : []),
-            '',
-            '',
-            '',
-            '',
-        ];
-
-        const csvContent = [headers, ...rows, totalRow]
-            .map((row) =>
-                row
-                    .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
-                    .join(';'),
-            )
-            .join('\n');
-
-        const bom = '\uFEFF';
-        const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `B3_${monthlyDetail.period.label.replace(/\s/g, '_')}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
     };
 
     return (
@@ -158,6 +120,14 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                                     user_id: userId,
                                                     year: monthlyDetail.period
                                                         .year,
+                                                    date_from:
+                                                        monthlyDetail.filters
+                                                            .date_from ||
+                                                        undefined,
+                                                    date_to:
+                                                        monthlyDetail.filters
+                                                            .date_to ||
+                                                        undefined,
                                                 },
                                             })}
                                         />
@@ -167,19 +137,71 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                     Kembali ke Listing
                                 </Button>
                                 <Button
-                                    type="button"
                                     variant="outline"
                                     className="no-print"
-                                    onClick={() => window.print()}
+                                    render={
+                                        <a
+                                            href={b3StorageMonthlyPdf.url(
+                                                {
+                                                    year: monthlyDetail.period
+                                                        .year,
+                                                    month: monthlyDetail.period
+                                                        .month,
+                                                },
+                                                {
+                                                    query: {
+                                                        user_id: userId,
+                                                        date_from:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_from ||
+                                                            undefined,
+                                                        date_to:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_to ||
+                                                            undefined,
+                                                    },
+                                                },
+                                            )}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        />
+                                    }
                                 >
                                     <Printer className="size-4" />
                                     Print PDF
                                 </Button>
                                 <Button
-                                    type="button"
                                     variant="outline"
                                     className="no-print"
-                                    onClick={exportToExcel}
+                                    render={
+                                        <a
+                                            href={b3StorageMonthlyExcel.url(
+                                                {
+                                                    year: monthlyDetail.period
+                                                        .year,
+                                                    month: monthlyDetail.period
+                                                        .month,
+                                                },
+                                                {
+                                                    query: {
+                                                        user_id: userId,
+                                                        date_from:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_from ||
+                                                            undefined,
+                                                        date_to:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_to ||
+                                                            undefined,
+                                                    },
+                                                },
+                                            )}
+                                        />
+                                    }
                                 >
                                     <FileSpreadsheet className="size-4" />
                                     Export Excel
@@ -207,6 +229,14 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                                 .next_approval_label
                                         }
                                     </Button>
+                                ) : monthlyDetail.capabilities
+                                      .approval_blocked_reason ? (
+                                    <Badge variant="secondary">
+                                        {
+                                            monthlyDetail.capabilities
+                                                .approval_blocked_reason
+                                        }
+                                    </Badge>
                                 ) : null}
                             </div>
                         </div>
@@ -260,7 +290,11 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                 </CardTitle>
                                 <CardDescription>
                                     Rekap berat limbah per jenis dan dokumen pada
-                                    periode {monthlyDetail.period.label}.
+                                    periode {monthlyDetail.period.label}
+                                    {monthlyDetail.period.date_from !==
+                                        monthlyDetail.period.date_to
+                                        ? ` (${monthlyDetail.period.date_from} s/d ${monthlyDetail.period.date_to})`
+                                        : ''}.
                                 </CardDescription>
                             </div>
                             <div className="text-sm text-muted-foreground lg:text-right">
@@ -287,7 +321,7 @@ export function PenyimpananLimbahB3MonthlyDetail({
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain">
-                            <Table className="min-w-[1280px]">
+                            <Table className="min-w-[1180px]">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="sticky left-0 z-10 w-12 min-w-12 bg-background px-3 text-center">
@@ -296,21 +330,18 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                         <TableHead className="min-w-[150px]">
                                             Tipe Pergerakan
                                         </TableHead>
-                                        {monthlyDetail.columns.waste_types.map(
-                                            (column) => (
-                                                <TableHead
-                                                    key={column.id}
-                                                    className="min-w-[120px] text-center whitespace-normal"
-                                                >
-                                                    {column.name}
-                                                </TableHead>
-                                            ),
-                                        )}
-                                        {monthlyDetail.columns.has_other_column ? (
-                                            <TableHead className="min-w-[120px] text-center">
-                                                Yang Lain
-                                            </TableHead>
-                                        ) : null}
+                                        <TableHead className="min-w-[120px]">
+                                            Tanggal
+                                        </TableHead>
+                                        <TableHead className="min-w-[80px]">
+                                            Jam
+                                        </TableHead>
+                                        <TableHead className="min-w-[220px]">
+                                            Jenis Limbah
+                                        </TableHead>
+                                        <TableHead className="min-w-[110px] text-right">
+                                            Berat (Kg)
+                                        </TableHead>
                                         <TableHead className="min-w-[160px]">
                                             No. Dokumen
                                         </TableHead>
@@ -326,6 +357,12 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                         <TableHead className="min-w-[180px]">
                                             Catatan
                                         </TableHead>
+                                        <TableHead className="min-w-[160px]">
+                                            Dibuat
+                                        </TableHead>
+                                        <TableHead className="min-w-[90px] text-center">
+                                            Detail
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -336,65 +373,29 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                                     {row.no}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {row.tanggal_masuk ? (
-                                                        <div>
-                                                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                                MASUK
-                                                            </span>
-                                                            <span className="ml-1.5 text-sm">{row.tanggal_masuk}</span>
-                                                            {row.jam ? (
-                                                                <span className="block text-xs text-muted-foreground">
-                                                                    {row.jam}
-                                                                </span>
-                                                            ) : null}
-                                                        </div>
-                                                    ) : row.tanggal_keluar ? (
-                                                        <div>
-                                                            <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
-                                                                KELUAR
-                                                            </span>
-                                                            <span className="ml-1.5 text-sm">{row.tanggal_keluar}</span>
-                                                            {row.jam ? (
-                                                                <span className="block text-xs text-muted-foreground">
-                                                                    {row.jam}
-                                                                </span>
-                                                            ) : null}
-                                                        </div>
-                                                    ) : (
-                                                        '-'
-                                                    )}
-                                                </TableCell>
-                                                {monthlyDetail.columns.waste_types.map(
-                                                    (column) => (
-                                                        <TableCell
-                                                            key={`${row.id}-${column.id}`}
-                                                            className="text-center"
-                                                        >
-                                                            {formatNullableWeight(
-                                                                row
-                                                                    .weights_by_waste_type[
-                                                                    String(
-                                                                        column.id,
-                                                                    )
-                                                                ],
-                                                            )}
-                                                        </TableCell>
-                                                    ),
-                                                )}
-                                                {monthlyDetail.columns
-                                                    .has_other_column ? (
-                                                    <TableCell
-                                                        className="text-center"
-                                                        title={
-                                                            row.waste_type_other ??
-                                                            undefined
+                                                    <span
+                                                        className={
+                                                            row.movement_type ===
+                                                            'MASUK'
+                                                                ? 'inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                : 'inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
                                                         }
                                                     >
-                                                        {formatNullableWeight(
-                                                            row.weight_other,
-                                                        )}
-                                                    </TableCell>
-                                                ) : null}
+                                                        {row.movement_type}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {row.movement_date ?? '-'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {row.jam ?? '-'}
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    {row.waste_type_name ?? '-'}
+                                                </TableCell>
+                                                <TableCell className="text-right font-medium">
+                                                    {formatWeight(row.weight_kg)}
+                                                </TableCell>
                                                 <TableCell>
                                                     {row.document_number}
                                                 </TableCell>
@@ -438,16 +439,28 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                                 <TableCell className="whitespace-normal">
                                                     {row.note ?? '-'}
                                                 </TableCell>
+                                                <TableCell>
+                                                    {row.created_at ?? '-'}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon-sm"
+                                                        aria-label={`Lihat detail ${row.document_number}`}
+                                                        onClick={() =>
+                                                            setSelectedRow(row)
+                                                        }
+                                                    >
+                                                        <Eye className="size-4" />
+                                                    </Button>
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={
-                                                    10 +
-                                                    monthlyDetail.columns
-                                                        .waste_types.length
-                                                }
+                                                colSpan={12}
                                                 className="px-4 py-10 text-center text-muted-foreground"
                                             >
                                                 Belum ada log B3 pada periode
@@ -459,35 +472,18 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                 <TableFooter>
                                     <TableRow>
                                         <TableCell
-                                            colSpan={2}
+                                            colSpan={5}
                                             className="sticky left-0 z-10 bg-muted px-3 font-semibold"
                                         >
                                             Total
                                         </TableCell>
-                                        {monthlyDetail.columns.waste_types.map(
-                                            (column) => (
-                                                <TableCell
-                                                    key={`total-${column.id}`}
-                                                    className="text-center font-semibold"
-                                                >
-                                                    {formatWeight(
-                                                        monthlyDetail.totals
-                                                            .by_waste_type[
-                                                            String(column.id)
-                                                        ] ?? 0,
-                                                    )}
-                                                </TableCell>
-                                            ),
-                                        )}
-                                        {monthlyDetail.columns.has_other_column ? (
-                                            <TableCell className="text-center font-semibold">
-                                                {formatWeight(
-                                                    monthlyDetail.totals.other,
-                                                )}
-                                            </TableCell>
-                                        ) : null}
+                                        <TableCell className="text-right font-semibold">
+                                            {formatWeight(
+                                                monthlyDetail.totals.overall,
+                                            )}
+                                        </TableCell>
                                         <TableCell
-                                            colSpan={5}
+                                            colSpan={6}
                                             className="font-semibold"
                                         >
                                             Overall:{' '}
@@ -501,17 +497,13 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                 <TableBody>
                                     <TableRow className="bg-muted/30">
                                         <TableCell
-                                            colSpan={
-                                                3 +
-                                                monthlyDetail.columns.waste_types.length +
-                                                (monthlyDetail.columns.has_other_column ? 1 : 0)
-                                            }
+                                            colSpan={6}
                                             className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                                         >
                                             Tanda Tangan &amp; Paraf
                                         </TableCell>
                                         <TableCell
-                                            colSpan={5}
+                                            colSpan={6}
                                             className="bg-muted/40"
                                         />
                                     </TableRow>
@@ -523,16 +515,12 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                             Petugas Operator TPS LB3
                                         </TableCell>
                                         <TableCell
-                                            colSpan={
-                                                1 +
-                                                monthlyDetail.columns.waste_types.length +
-                                                (monthlyDetail.columns.has_other_column ? 1 : 0)
-                                            }
+                                            colSpan={4}
                                             className="py-3 text-sm font-medium"
                                         >
                                             {monthlyDetail.rows[0]?.operator_name ?? '-'}
                                         </TableCell>
-                                        <TableCell colSpan={4} className="py-3">
+                                        <TableCell colSpan={6} className="py-3">
                                             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                                 ✅ Tercatat
                                             </span>
@@ -546,16 +534,12 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                             Petugas Dept. Inisiator
                                         </TableCell>
                                         <TableCell
-                                            colSpan={
-                                                1 +
-                                                monthlyDetail.columns.waste_types.length +
-                                                (monthlyDetail.columns.has_other_column ? 1 : 0)
-                                            }
+                                            colSpan={4}
                                             className="py-3 text-sm font-medium"
                                         >
                                             {monthlyDetail.rows.find((r) => r.initiator_user_name != null)?.initiator_user_name ?? '-'}
                                         </TableCell>
-                                        <TableCell colSpan={4} className="py-3">
+                                        <TableCell colSpan={6} className="py-3">
                                             {monthlyDetail.rows.some((r) => r.initiator_user_name != null) ? (
                                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                                     ✅ Tercatat
@@ -573,6 +557,142 @@ export function PenyimpananLimbahB3MonthlyDetail({
                     </CardContent>
                 </Card>
             </div>
+
+            <B3StorageLogDetailDrawer
+                row={selectedRow}
+                userId={userId}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedRow(null);
+                    }
+                }}
+            />
+        </div>
+    );
+}
+
+function B3StorageLogDetailDrawer({
+    row,
+    userId,
+    onOpenChange,
+}: {
+    row: B3StorageMonthlyReportRow | null;
+    userId: string;
+    onOpenChange: (open: boolean) => void;
+}) {
+    return (
+        <Drawer
+            direction="right"
+            open={row !== null}
+            onOpenChange={onOpenChange}
+        >
+            <DrawerContent className="overflow-hidden sm:max-w-lg">
+                <DrawerHeader className="border-b border-border/70">
+                    <DrawerTitle>Detail Limbah B3</DrawerTitle>
+                    <DrawerDescription>
+                        {row?.document_number ?? 'Detail form penyimpanan limbah B3'}
+                    </DrawerDescription>
+                </DrawerHeader>
+
+                {row ? (
+                    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4">
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                variant="outline"
+                                render={
+                                    <a
+                                        href={b3StorageLogPdf.url(
+                                            { log: row.id },
+                                            { query: { user_id: userId } },
+                                        )}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    />
+                                }
+                            >
+                                <Printer className="size-4" />
+                                PDF Form
+                            </Button>
+                            {row.photo_path ? (
+                                <Button
+                                    variant="outline"
+                                    render={
+                                        <a
+                                            href={b3StoragePhoto.url(
+                                                { log: row.id },
+                                                { query: { user_id: userId } },
+                                            )}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        />
+                                    }
+                                >
+                                    <FileImage className="size-4" />
+                                    Lihat Foto
+                                </Button>
+                            ) : null}
+                        </div>
+
+                        <div className="grid gap-2">
+                            <DetailField
+                                label="Tipe Pergerakan"
+                                value={row.movement_type}
+                            />
+                            <DetailField
+                                label="Tanggal"
+                                value={row.movement_date}
+                            />
+                            <DetailField label="Jam" value={row.jam} />
+                            <DetailField
+                                label="Jenis Limbah"
+                                value={row.waste_type_name}
+                            />
+                            <DetailField
+                                label="Berat (Kg)"
+                                value={`${formatWeight(row.weight_kg)} kg`}
+                            />
+                            <DetailField
+                                label="No. Dokumen"
+                                value={row.document_number}
+                            />
+                            <DetailField
+                                label="Dept. Inisiator"
+                                value={row.initiator_department}
+                            />
+                            <DetailField
+                                label="Petugas Dept. Inisiator"
+                                value={row.initiator_user_name}
+                            />
+                            <DetailField
+                                label="Operator TPS LB3"
+                                value={row.operator_name}
+                            />
+                            <DetailField label="Catatan" value={row.note} />
+                            <DetailField
+                                label="Dibuat Pada"
+                                value={row.created_at}
+                            />
+                        </div>
+                    </div>
+                ) : null}
+            </DrawerContent>
+        </Drawer>
+    );
+}
+
+function DetailField({
+    label,
+    value,
+}: {
+    label: string;
+    value: string | number | null | undefined;
+}) {
+    return (
+        <div className="rounded-md border border-border/70 p-3">
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="mt-1 text-sm font-medium whitespace-pre-wrap">
+                {value ?? '-'}
+            </p>
         </div>
     );
 }
@@ -590,16 +710,9 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
     );
 }
 
-function formatNullableWeight(value: string | number | null): string {
-    if (value === null || value === '') {
-        return '-';
-    }
-
-    return formatWeight(value);
-}
-
 function formatWeight(value: string | number): string {
     return new Intl.NumberFormat('id-ID', {
-        maximumFractionDigits: 3,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     }).format(Number(value));
 }

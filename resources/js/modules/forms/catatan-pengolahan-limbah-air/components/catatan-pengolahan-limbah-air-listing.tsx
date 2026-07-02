@@ -68,7 +68,7 @@ export function CatatanPengolahanLimbahAirListing({
         { value: 'ALL', label: 'Semua status' },
         { value: 'DRAFT', label: 'Ada draft' },
         { value: 'SUBMITTED', label: 'Menunggu approval' },
-        { value: 'APPROVED', label: 'Approved' },
+        { value: 'APPROVED', label: 'Proses bulanan approved' },
     ];
 
     const submitFilters = (
@@ -317,6 +317,9 @@ export function CatatanPengolahanLimbahAirListing({
                                                         }{' '}
                                                         approved
                                                     </Badge>
+                                                    <ProcessApprovalBadge
+                                                        row={row}
+                                                    />
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -333,8 +336,11 @@ export function CatatanPengolahanLimbahAirListing({
                                                     {listing.capabilities
                                                         .can_approve_process_monthly &&
                                                     row.can_approve_period &&
-                                                    row.process_pending_count >
-                                                        0 ? (
+                                                    row.process_logs_count > 0 &&
+                                                    row.process_draft_count ===
+                                                        0 &&
+                                                    row.process_approval_status !==
+                                                        'APPROVED' ? (
                                                         <Button
                                                             type="button"
                                                             size="sm"
@@ -358,13 +364,14 @@ export function CatatanPengolahanLimbahAirListing({
                                                             }}
                                                         >
                                                             <CheckCircle className="mr-2 size-4" />
-                                                            Approve Bulanan
+                                                            Approve Proses
+                                                            Bulanan
                                                         </Button>
                                                     ) : null}
                                                     {listing.capabilities
                                                         .can_reopen_process_monthly &&
-                                                    row.process_approved_count >
-                                                        0 ? (
+                                                    row.process_approval_status ===
+                                                        'APPROVED' ? (
                                                         <Button
                                                             type="button"
                                                             size="sm"
@@ -389,6 +396,7 @@ export function CatatanPengolahanLimbahAirListing({
                                                         >
                                                             <RotateCcw className="mr-2 size-4" />
                                                             Buka Approval
+                                                            Proses
                                                         </Button>
                                                     ) : null}
                                                     <Button
@@ -480,6 +488,22 @@ function ChecklistApprovalBadge({
     }
 
     return <Badge variant="secondary">Belum Approved</Badge>;
+}
+
+function ProcessApprovalBadge({
+    row,
+}: {
+    row: CatatanPengolahanLimbahAirMonthlyRow;
+}) {
+    if (row.process_approval_status === 'APPROVED') {
+        return (
+            <Badge variant="default" title={row.process_approved_by ?? undefined}>
+                Bulanan approved
+            </Badge>
+        );
+    }
+
+    return <Badge variant="secondary">Belum approve bulanan</Badge>;
 }
 
 function sumRows(

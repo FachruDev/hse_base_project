@@ -28,6 +28,8 @@ class B3StoragePageService
                 'operator:id,name,external_id',
             ])
             ->whereYear('movement_date', $year)
+            ->when($filters['date_from'] !== '', fn ($query) => $query->whereDate('movement_date', '>=', $filters['date_from']))
+            ->when($filters['date_to'] !== '', fn ($query) => $query->whereDate('movement_date', '<=', $filters['date_to']))
             ->get();
 
         $approvals = B3StorageMonthlyApproval::query()
@@ -42,10 +44,12 @@ class B3StoragePageService
         $currentYear = (int) now()->year;
         $currentMonth = (int) now()->month;
 
-        $rows = collect(range(1, 12))
+        $startMonth = ($year === 2026) ? 6 : 1;
+        $endMonth = ($year === $currentYear) ? $currentMonth : 12;
+
+        $rows = collect($year >= 2026 && $year <= $currentYear && $startMonth <= $endMonth ? range($startMonth, $endMonth) : [])
             ->reverse()
-            ->filter(fn (int $month): bool => $year < $currentYear || ($year === $currentYear && $month <= $currentMonth))
-            ->map(fn (int $month): array => $this->mapMonthlyListingRow($year, $month, $logs, $approvals->get($month), $ipalLogService))
+            ->map(fn (int $month): array => $this->mapMonthlyListingRow($user, $year, $month, $logs, $approvals->get($month), $ipalLogService))
             ->filter(fn (array $row): bool => $this->matchesMonthlyFilters($row, $filters))
             ->values()
             ->all();
@@ -121,11 +125,21 @@ class B3StoragePageService
     /**
      * @return array<string, mixed>
      */
-    public function buildMonthlyDetail(User $user, int $year, int $month, B3StorageService $b3StorageService): array
+    /**
+     * @param  array{date_from: string, date_to: string}  $filters
+     * @return array<string, mixed>
+     */
+    public function buildMonthlyDetail(User $user, int $year, int $month, B3StorageService $b3StorageService, array $filters = []): array
     {
-        $report = $b3StorageService->monthlyReport($month, $year);
+        $filters = [
+            'date_from' => (string) ($filters['date_from'] ?? ''),
+            'date_to' => (string) ($filters['date_to'] ?? ''),
+        ];
+        $report = $b3StorageService->monthlyReport($month, $year, $filters);
         $approvalStatus = (string) $report['approval']['status'];
-        $canApprove = $user->can('b3storage.monthly-approval.approve') && $approvalStatus !== 'APPROVED';
+        $nextApprovalRole = $this->resolveNextApprovalRole($approvalStatus);
+        $canApproveRole = $nextApprovalRole !== null && $this->canApproveRole($user, $nextApprovalRole);
+        $canApprove = $user->can('b3storage.monthly-approval.approve') && $approvalStatus !== 'APPROVED' && $canApproveRole;
 
         return [
             'module' => [
@@ -135,11 +149,98 @@ class B3StoragePageService
             ...$report,
             'summary' => $this->mapMonthlyDetailSummary($report),
             'approval' => $this->mapMonthlyApprovalPayload($report['approval']),
+            'filters' => $filters,
             'capabilities' => [
                 'approve_monthly' => $canApprove,
-                'next_approval_role' => $canApprove ? $this->resolveNextApprovalRole($approvalStatus) : null,
-                'next_approval_label' => $canApprove ? $this->resolveNextApprovalLabel($approvalStatus) : null,
+                'next_approval_role' => $nextApprovalRole,
+                'next_approval_label' => $this->resolveNextApprovalLabel($approvalStatus),
+                'approval_blocked_reason' => $canApprove ? null : $this->resolveApprovalBlockedReason($user, $approvalStatus, $nextApprovalRole),
             ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $monthlyDetail
+     * @return array<int, array<int, float|int|string|null>>
+     */
+    public function buildMonthlyExcelRows(array $monthlyDetail): array
+    {
+        $rows = [[
+            'No',
+            'Tipe Pergerakan',
+            'Tanggal',
+            'Jam',
+            'Jenis Limbah',
+            'Berat (Kg)',
+            'No. Dokumen',
+            'Dept. Inisiator',
+            'User Dept. Inisiator',
+            'Operator TPS LB3',
+            'Catatan',
+            'Dibuat',
+        ]];
+
+        foreach ($monthlyDetail['rows'] as $row) {
+            $rows[] = [
+                $row['no'],
+                $row['movement_type'] ?? '-',
+                $row['movement_date'] ?? '-',
+                $row['jam'] ?? '-',
+                $row['waste_type_name'] ?? '-',
+                (float) ($row['weight_kg'] ?? 0),
+                $row['document_number'] ?? '-',
+                $row['initiator_department'] ?? '-',
+                $row['initiator_user_name'] ?? '-',
+                $row['operator_name'] ?? '-',
+                $row['note'] ?? '-',
+                $row['created_at'] ?? '-',
+            ];
+        }
+
+        $rows[] = [
+            'TOTAL',
+            '',
+            '',
+            '',
+            '',
+            (float) ($monthlyDetail['totals']['overall'] ?? 0),
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+        ];
+
+        return $rows;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildLogPdfDetail(B3StorageLog $log): array
+    {
+        $log->loadMissing([
+            'wasteType:id,name',
+            'initiatorDepartment:id,name',
+            'initiatorUser:id,name',
+            'operator:id,external_id,name',
+        ]);
+
+        return [
+            'id' => $log->id,
+            'movement_type' => $log->movement_type,
+            'movement_date' => $log->movement_date?->toDateString(),
+            'movement_time' => $log->movement_time,
+            'waste_type_name' => $log->wasteType?->name ?? $log->waste_type_other ?? '-',
+            'weight_kg' => $log->weight_kg,
+            'document_number' => $log->document_number,
+            'initiator_department' => $log->initiatorDepartment?->name ?? $log->initiator_department_other,
+            'initiator_user_name' => $log->initiatorUser?->name,
+            'operator_name' => $log->operator?->name,
+            'operator_external_id' => $log->operator?->external_id,
+            'note' => $log->note,
+            'created_at' => $log->created_at?->format('Y-m-d H:i:s'),
         ];
     }
 
@@ -148,6 +249,7 @@ class B3StoragePageService
      * @return array<string, mixed>
      */
     private function mapMonthlyListingRow(
+        User $user,
         int $year,
         int $month,
         Collection $logs,
@@ -157,6 +259,9 @@ class B3StoragePageService
         $monthLogs = $logs->filter(fn (B3StorageLog $log): bool => (int) $log->movement_date?->month === $month);
         $period = Carbon::create($year, $month, 1);
         $approvalStatus = $this->resolveApprovalStatus($approval);
+        $nextApprovalRole = $this->resolveNextApprovalRole($approvalStatus);
+        $canApprovePeriod = $ipalLogService->isMonthCompletable($year, $month);
+        $canApproveForUser = $nextApprovalRole !== null && $this->canApproveRole($user, $nextApprovalRole);
 
         return [
             'month' => $month,
@@ -180,9 +285,11 @@ class B3StoragePageService
             'environment_supervisor_signed_at' => $approval?->environment_supervisor_signed_at?->format('Y-m-d H:i:s'),
             'hse_department_head' => $approval?->hseDepartmentHead?->name,
             'hse_department_head_signed_at' => $approval?->hse_department_head_signed_at?->format('Y-m-d H:i:s'),
-            'can_approve_period' => $ipalLogService->isMonthCompletable($year, $month),
-            'next_approval_role' => $this->resolveNextApprovalRole($approvalStatus),
+            'can_approve_period' => $canApprovePeriod,
+            'can_approve_monthly' => $user->can('b3storage.monthly-approval.approve') && $canApprovePeriod && $canApproveForUser && $monthLogs->isNotEmpty(),
+            'next_approval_role' => $nextApprovalRole,
             'next_approval_label' => $this->resolveNextApprovalLabel($approvalStatus),
+            'approval_blocked_label' => $this->resolveListingApprovalBlockedLabel($user, $approvalStatus, $nextApprovalRole, $canApprovePeriod, $monthLogs->isNotEmpty()),
         ];
     }
 
@@ -311,6 +418,57 @@ class B3StoragePageService
             'PARTIALLY_APPROVED' => 'Approve HSE Dept Head',
             default => null,
         };
+    }
+
+    private function canApproveRole(User $user, string $approvalRole): bool
+    {
+        if ($user->hasAnyRole(['superadmin', 'admin'])) {
+            return true;
+        }
+
+        return match ($approvalRole) {
+            'ENVIRONMENT_SUPERVISOR' => $user->hasRole('supervisor'),
+            'HSE_DEPARTMENT_HEAD' => $user->hasRole('hse_dept_head'),
+            default => false,
+        };
+    }
+
+    private function resolveApprovalBlockedReason(User $user, string $status, ?string $nextApprovalRole): ?string
+    {
+        if ($status === 'APPROVED') {
+            return null;
+        }
+
+        if ($nextApprovalRole === 'ENVIRONMENT_SUPERVISOR' && $user->hasRole('hse_dept_head')) {
+            return 'Menunggu approve Environment SPV.';
+        }
+
+        if ($nextApprovalRole === 'HSE_DEPARTMENT_HEAD' && $user->hasRole('supervisor')) {
+            return 'Menunggu approve HSE Dept Head.';
+        }
+
+        if ($nextApprovalRole !== null && ! $this->canApproveRole($user, $nextApprovalRole)) {
+            return 'User ini tidak sesuai role approval tahap ini.';
+        }
+
+        return null;
+    }
+
+    private function resolveListingApprovalBlockedLabel(User $user, string $status, ?string $nextApprovalRole, bool $canApprovePeriod, bool $hasLogs): ?string
+    {
+        if ($status === 'APPROVED') {
+            return null;
+        }
+
+        if (! $hasLogs) {
+            return 'Belum ada log B3';
+        }
+
+        if (! $canApprovePeriod) {
+            return 'Belum masuk periode approval';
+        }
+
+        return $this->resolveApprovalBlockedReason($user, $status, $nextApprovalRole);
     }
 
     private function formatDateTime(mixed $value): ?string

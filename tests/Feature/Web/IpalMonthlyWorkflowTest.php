@@ -171,7 +171,11 @@ class IpalMonthlyWorkflowTest extends TestCase
         Pdf::assertRespondedWithPdf(fn (PdfBuilder $pdf): bool => $pdf->viewName === 'pdf.ipal.monthly-checklist'
             && $pdf->downloadName === 'checklist-ipal-2026-6.pdf'
             && $pdf->orientation === 'Landscape'
-            && ($pdf->viewData['monthlyDetail']['period']['month'] ?? null) === 6);
+            && ($pdf->viewData['monthlyDetail']['period']['month'] ?? null) === 6
+            && count($pdf->viewData['monthlyDetail']['checklist_note_rows'] ?? []) === 2
+            && ($pdf->viewData['monthlyDetail']['checklist_note_rows'][0]['date'] ?? null) === '2026-06-03'
+            && ($pdf->viewData['monthlyDetail']['checklist_note_rows'][0]['item_name'] ?? null) === 'Water meter inlet'
+            && ($pdf->viewData['monthlyDetail']['checklist_note_rows'][0]['note'] ?? null) === 'Normal');
 
         $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/batch-mixing.pdf?user_id=operator.monthly.a')
             ->assertOk();
@@ -228,6 +232,7 @@ class IpalMonthlyWorkflowTest extends TestCase
             ->firstWhere('month', 6);
 
         $this->assertFalse($juneListingRow['can_approve_period']);
+        $this->assertSame('NOT_APPROVED', $juneListingRow['process_approval_status']);
 
         $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/process-approval?user_id=hse.head')
             ->assertSessionHasErrors(['period']);
@@ -245,13 +250,24 @@ class IpalMonthlyWorkflowTest extends TestCase
             'process_log_id' => $dailyLog->processLog->id,
             'supervisor_id' => $hseHead->id,
         ]);
+        $this->assertDatabaseHas('ipal_process_monthly_approvals', [
+            'month' => 6,
+            'year' => 2026,
+            'supervisor_id' => $hseHead->id,
+        ]);
 
-        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air?user_id=superadmin&year=2026')
+        $superadminListingResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air?user_id=superadmin&year=2026');
+        $superadminListingResponse
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('listing.capabilities.can_reopen_process_monthly', true)
                 ->etc()
             );
+
+        $approvedJuneListingRow = collect($superadminListingResponse->inertiaProps('listing.table.data'))
+            ->firstWhere('month', 6);
+
+        $this->assertSame('APPROVED', $approvedJuneListingRow['process_approval_status']);
 
         $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/process-approval/reopen?user_id=hse.head')
             ->assertForbidden();
@@ -269,8 +285,130 @@ class IpalMonthlyWorkflowTest extends TestCase
             'supervisor_id' => null,
             'supervisor_signed_at' => null,
         ]);
+        $this->assertDatabaseMissing('ipal_process_monthly_approvals', [
+            'month' => 6,
+            'year' => 2026,
+        ]);
 
         $this->assertTrue($superadmin->can('ipal.logs.reopen-monthly'));
+    }
+
+    public function test_monthly_checklist_approval_is_limited_to_last_working_day(): void
+    {
+        Inertia::disableSsr();
+        Carbon::setTestNow('2026-06-29 10:00:00');
+
+        [, , $hseHead] = $this->createUsers();
+
+        $detailResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=hse.head');
+
+        $detailResponse->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('monthlyDetail.capabilities.can_approve_period', false)
+                ->where('monthlyDetail.capabilities.approve_checklist', false)
+                ->etc()
+            );
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/checklist-approval?user_id=hse.head')
+            ->assertSessionHasErrors(['period']);
+
+        Carbon::setTestNow('2026-06-30 10:00:00');
+
+        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=hse.head')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('monthlyDetail.capabilities.can_approve_period', true)
+                ->where('monthlyDetail.capabilities.approve_checklist', true)
+                ->etc()
+            );
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/checklist-approval?user_id=hse.head')
+            ->assertRedirect('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=hse.head');
+
+        $this->assertDatabaseHas('ipal_checklist_approvals', [
+            'month' => 6,
+            'year' => 2026,
+            'supervisor_id' => $hseHead->id,
+        ]);
+    }
+
+    public function test_daily_process_approval_does_not_mark_monthly_process_approval(): void
+    {
+        Inertia::disableSsr();
+        Carbon::setTestNow('2026-06-30 10:00:00');
+
+        [$operatorA] = $this->createUsers();
+        [, , $processTemplate] = $this->createMasterData();
+        $dailyLog = $this->createSubmittedProcessLog($operatorA, $processTemplate, '2026-06-03');
+        $this->createSuperadminWithMonthlyReopenPermission();
+
+        $this->patch("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$dailyLog->id}/approve?user_id=hse.head")
+            ->assertRedirect("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$dailyLog->id}?user_id=hse.head");
+
+        $listingResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air?user_id=superadmin&year=2026');
+        $juneListingRow = collect($listingResponse->inertiaProps('listing.table.data'))
+            ->firstWhere('month', 6);
+
+        $this->assertSame(1, $juneListingRow['process_approved_count']);
+        $this->assertSame('NOT_APPROVED', $juneListingRow['process_approval_status']);
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/process-approval/reopen?user_id=superadmin')
+            ->assertSessionHasErrors(['period']);
+    }
+
+    public function test_superadmin_can_reopen_checked_daily_process_to_draft_for_editing(): void
+    {
+        Inertia::disableSsr();
+        Carbon::setTestNow('2026-06-30 10:00:00');
+
+        [$operatorA, , $hseHead] = $this->createUsers();
+        [, , $processTemplate] = $this->createMasterData();
+        $dailyLog = $this->createSubmittedProcessLog($operatorA, $processTemplate, '2026-06-03');
+        $superadmin = $this->createSuperadminWithDailyReopenPermission();
+
+        $this->patch("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$dailyLog->id}/approve?user_id=hse.head")
+            ->assertRedirect("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$dailyLog->id}?user_id=hse.head");
+
+        $this->assertDatabaseHas('ipal_process_logs', [
+            'log_id' => $dailyLog->id,
+            'status' => 'APPROVED',
+        ]);
+        $this->assertDatabaseHas('ipal_process_approvals', [
+            'process_log_id' => $dailyLog->processLog->id,
+            'supervisor_id' => $hseHead->id,
+        ]);
+
+        $this->get("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$dailyLog->id}?user_id=superadmin.daily")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entryForm.capabilities.reopen_daily_process', true)
+                ->where('entryForm.process.read_only', true)
+                ->etc()
+            );
+
+        $this->patch("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$dailyLog->id}/reopen?user_id=superadmin.daily")
+            ->assertRedirect("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$dailyLog->id}?user_id=superadmin.daily");
+
+        $this->assertDatabaseHas('ipal_process_logs', [
+            'log_id' => $dailyLog->id,
+            'status' => 'DRAFT',
+        ]);
+        $this->assertDatabaseHas('ipal_process_approvals', [
+            'process_log_id' => $dailyLog->processLog->id,
+            'supervisor_id' => null,
+            'supervisor_signed_at' => null,
+        ]);
+
+        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/create?user_id=operator.monthly.a&tanggal=2026-06-03')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entryForm.entry.mode', 'draft')
+                ->where('entryForm.entry.read_only', false)
+                ->where('entryForm.process.read_only', false)
+                ->etc()
+            );
+
+        $this->assertTrue($superadmin->can('ipal.logs.reopen'));
     }
 
     protected function tearDown(): void
@@ -323,6 +461,23 @@ class IpalMonthlyWorkflowTest extends TestCase
             'guard_name' => 'web',
         ]);
         $superadmin->givePermissionTo('ipal.logs.reopen-monthly');
+
+        return $superadmin;
+    }
+
+    private function createSuperadminWithDailyReopenPermission(): User
+    {
+        $superadmin = User::factory()->create([
+            'external_id' => 'superadmin.daily',
+            'name' => 'Superadmin Daily',
+            'is_active' => true,
+        ]);
+
+        Permission::query()->firstOrCreate([
+            'name' => 'ipal.logs.reopen',
+            'guard_name' => 'web',
+        ]);
+        $superadmin->givePermissionTo('ipal.logs.reopen');
 
         return $superadmin;
     }

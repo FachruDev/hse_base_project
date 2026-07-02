@@ -369,6 +369,17 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
         $this->get($operatorChecklistUrl)->assertOk();
         $this->get($operatorProcessUrl)->assertOk();
 
+        $monthlyResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/4?user_id=operator.attachment.01');
+        $monthlyResponse->assertOk();
+
+        $checklistCell = collect($monthlyResponse->inertiaProps('monthlyDetail.checklist_matrix.0.cells'))
+            ->firstWhere('date', $date);
+
+        $this->assertSame('OK', $checklistCell['status']);
+        $this->assertSame('checklist.jpg', $checklistCell['details'][0]['attachment_original_name']);
+        $this->assertStringContainsString('user_id=operator.attachment.01', $checklistCell['details'][0]['attachment_url']);
+        $this->get($checklistCell['details'][0]['attachment_url'])->assertOk();
+
         $logId = IpalDailyLog::query()
             ->whereDate('tanggal', $date)
             ->where('operator_id', $operator->id)

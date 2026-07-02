@@ -81,6 +81,14 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/penyimpanan-limbah-b3/monthly/{year}/{month}',
         [DashboardController::class, 'b3StorageMonthlyShow'],
     )->name('dashboard.forms.penyimpanan-limbah-b3.monthly.show');
+    Route::get(
+        '/dashboard/forms/penyimpanan-limbah-b3/monthly/{year}/{month}/pdf',
+        [DashboardController::class, 'b3StorageMonthlyPdf'],
+    )->name('dashboard.forms.penyimpanan-limbah-b3.monthly.pdf');
+    Route::get(
+        '/dashboard/forms/penyimpanan-limbah-b3/monthly/{year}/{month}/excel',
+        [DashboardController::class, 'b3StorageMonthlyExcel'],
+    )->name('dashboard.forms.penyimpanan-limbah-b3.monthly.excel');
     Route::post(
         '/dashboard/forms/penyimpanan-limbah-b3/monthly/{year}/{month}/approval',
         [DashboardController::class, 'b3StorageApproveMonthly'],
@@ -93,6 +101,10 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/penyimpanan-limbah-b3/{log}/photo',
         [DashboardController::class, 'b3StoragePhoto'],
     )->name('dashboard.forms.penyimpanan-limbah-b3.photo');
+    Route::get(
+        '/dashboard/forms/penyimpanan-limbah-b3/{log}/pdf',
+        [DashboardController::class, 'b3StorageLogPdf'],
+    )->name('dashboard.forms.penyimpanan-limbah-b3.pdf');
 
     Route::get('/dashboard/master-data/{module}', [MasterDataController::class, 'index'])
         ->name('dashboard.master-data.index');

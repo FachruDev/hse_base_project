@@ -86,8 +86,23 @@ class B3StorageService
     /**
      * @return array<string, mixed>
      */
-    public function monthlyReport(int $month, int $year): array
+    /**
+     * @param  array{date_from?: string, date_to?: string}  $filters
+     * @return array<string, mixed>
+     */
+    public function monthlyReport(int $month, int $year, array $filters = []): array
     {
+        $periodStart = Carbon::create($year, $month, 1)->startOfMonth();
+        $periodEnd = $periodStart->copy()->endOfMonth();
+        $dateFrom = isset($filters['date_from']) && $filters['date_from'] !== ''
+            ? Carbon::parse($filters['date_from'])->startOfDay()
+            : null;
+        $dateTo = isset($filters['date_to']) && $filters['date_to'] !== ''
+            ? Carbon::parse($filters['date_to'])->endOfDay()
+            : null;
+        $effectiveStart = $dateFrom !== null && $dateFrom->gt($periodStart) ? $dateFrom : $periodStart;
+        $effectiveEnd = $dateTo !== null && $dateTo->lt($periodEnd) ? $dateTo : $periodEnd;
+
         $wasteTypes = B3StorageWasteType::query()
             ->where('is_active', true)
             ->orderBy('order_no')
@@ -106,6 +121,9 @@ class B3StorageService
             ->with(['wasteType:id,name', 'initiatorDepartment:id,name', 'operator:id,external_id,name', 'initiatorUser:id,name'])
             ->whereMonth('movement_date', $month)
             ->whereYear('movement_date', $year)
+            ->when($effectiveStart->lte($effectiveEnd), fn ($query) => $query->whereDate('movement_date', '>=', $effectiveStart->toDateString()))
+            ->when($effectiveStart->lte($effectiveEnd), fn ($query) => $query->whereDate('movement_date', '<=', $effectiveEnd->toDateString()))
+            ->when($effectiveStart->gt($effectiveEnd), fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('movement_date')
             ->orderBy('id')
             ->get();
@@ -135,9 +153,13 @@ class B3StorageService
             $rows[] = [
                 'no' => $index + 1,
                 'id' => $log->id,
+                'movement_type' => $log->movement_type,
+                'movement_date' => $log->movement_date?->toDateString(),
                 'tanggal_masuk' => $log->movement_type === 'MASUK' ? $log->movement_date?->toDateString() : null,
                 'tanggal_keluar' => $log->movement_type === 'KELUAR' ? $log->movement_date?->toDateString() : null,
                 'jam' => $log->movement_time,
+                'waste_type_name' => $log->wasteType?->name ?? $log->waste_type_other ?? '-',
+                'weight_kg' => $log->weight_kg,
                 'weights_by_waste_type' => $weightsByWasteType,
                 'weight_other' => $otherWeight,
                 'waste_type_other' => $log->waste_type_other,
@@ -148,6 +170,7 @@ class B3StorageService
                 'operator_name' => $log->operator?->name,
                 'photo_path' => $log->photo_path,
                 'note' => $log->note,
+                'created_at' => $log->created_at?->format('Y-m-d H:i:s'),
             ];
         }
 
@@ -164,7 +187,9 @@ class B3StorageService
             'period' => [
                 'month' => $month,
                 'year' => $year,
-                'label' => Carbon::create($year, $month, 1)->translatedFormat('F Y'),
+                'label' => $periodStart->translatedFormat('F Y'),
+                'date_from' => $effectiveStart->lte($periodEnd) ? $effectiveStart->toDateString() : $periodStart->toDateString(),
+                'date_to' => $effectiveEnd->gte($periodStart) ? $effectiveEnd->toDateString() : $periodEnd->toDateString(),
             ],
             'columns' => [
                 'waste_types' => $wasteTypeColumns,
@@ -204,6 +229,23 @@ class B3StorageService
             $approvalRole = $payload['approval_role'];
             $note = $payload['note'] ?? null;
 
+            if (! $this->canApproveRole($signedUser, (string) $approvalRole)) {
+                throw ValidationException::withMessages([
+                    'approval_role' => ['User ini tidak sesuai role approval tahap ini.'],
+                ]);
+            }
+
+            $hasLogs = B3StorageLog::query()
+                ->whereMonth('movement_date', $month)
+                ->whereYear('movement_date', $year)
+                ->exists();
+
+            if (! $hasLogs) {
+                throw ValidationException::withMessages([
+                    'period' => ['Tidak ada log penyimpanan limbah B3 pada periode ini untuk di-approve.'],
+                ]);
+            }
+
             $approval = B3StorageMonthlyApproval::query()->firstOrCreate(
                 ['month' => $month, 'year' => $year],
             );
@@ -235,6 +277,19 @@ class B3StorageService
                 'hseDepartmentHead:id,external_id,name',
             ]);
         });
+    }
+
+    private function canApproveRole(User $user, string $approvalRole): bool
+    {
+        if ($user->hasAnyRole(['superadmin', 'admin'])) {
+            return true;
+        }
+
+        return match ($approvalRole) {
+            'ENVIRONMENT_SUPERVISOR' => $user->hasRole('supervisor'),
+            'HSE_DEPARTMENT_HEAD' => $user->hasRole('hse_dept_head'),
+            default => false,
+        };
     }
 
     /**

@@ -6,9 +6,11 @@ import {
     ClipboardCheck,
     Droplets,
     FlaskConical,
+    Paperclip,
     Printer,
     X,
 } from 'lucide-react';
+import * as React from 'react';
 
 
 import {
@@ -29,6 +31,13 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerHeader,
+    DrawerTitle,
+} from '@/components/ui/drawer';
+import {
     Table,
     TableBody,
     TableCell,
@@ -37,6 +46,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import type { IpalMonthlyDetailPayload } from '@/modules/dashboard/types';
+
+type SelectedChecklistCell = {
+    itemName: string;
+    standardCondition: string | null;
+    cell: IpalMonthlyDetailPayload['checklist_matrix'][number]['cells'][number];
+};
 
 type CatatanPengolahanLimbahAirMonthlyDetailProps = {
     flash: {
@@ -52,6 +67,9 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
     monthlyDetail,
     userId,
 }: CatatanPengolahanLimbahAirMonthlyDetailProps) {
+    const [selectedChecklistCell, setSelectedChecklistCell] =
+        React.useState<SelectedChecklistCell | null>(null);
+
     const approveChecklist = () => {
         router.post(
             catatanPengolahanLimbahAirApproveMonthlyChecklist.url(
@@ -279,29 +297,66 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                                 <TableCell className="sticky left-0 z-10 bg-background px-3 font-medium whitespace-normal sm:px-4">
                                                     {row.name}
                                                 </TableCell>
-                                                {row.cells.map((cell) => (
-                                                    <TableCell
-                                                        key={`${row.item_id}-${cell.date}`}
-                                                        className={[
-                                                            'px-1 text-center',
-                                                            isWeekend(cell.date)
-                                                                ? 'bg-rose-50/50 dark:bg-rose-950/10'
-                                                                : '',
-                                                        ].join(' ')}
-                                                        title={[
-                                                            cell.status_label,
-                                                            ...cell.operators,
-                                                            ...cell.notes,
-                                                        ]
-                                                            .filter(Boolean)
-                                                            .join(' | ')}
-                                                    >
-                                                        <ChecklistCell
-                                                            status={cell.status}
-                                                            notes={cell.notes}
-                                                        />
-                                                    </TableCell>
-                                                ))}
+                                                {row.cells.map((cell) => {
+                                                    const hasCellDetails =
+                                                        cell.notes.length > 0 ||
+                                                        cell.details.some(
+                                                            (detail) =>
+                                                                detail.attachment_url !==
+                                                                null,
+                                                        );
+
+                                                    return (
+                                                        <TableCell
+                                                            key={`${row.item_id}-${cell.date}`}
+                                                            className={[
+                                                                'px-1 text-center',
+                                                                isWeekend(
+                                                                    cell.date,
+                                                                )
+                                                                    ? 'bg-rose-50/50 dark:bg-rose-950/10'
+                                                                    : '',
+                                                            ].join(' ')}
+                                                            title={[
+                                                                cell.status_label,
+                                                                ...cell.operators,
+                                                                ...cell.notes,
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(' | ')}
+                                                        >
+                                                            <ChecklistCell
+                                                                status={
+                                                                    cell.status
+                                                                }
+                                                                hasNotes={
+                                                                    cell.notes
+                                                                        .length >
+                                                                    0
+                                                                }
+                                                                hasAttachments={cell.details.some(
+                                                                    (detail) =>
+                                                                        detail.attachment_url !==
+                                                                        null,
+                                                                )}
+                                                                onOpen={
+                                                                    hasCellDetails
+                                                                        ? () =>
+                                                                              setSelectedChecklistCell(
+                                                                                  {
+                                                                                      itemName:
+                                                                                          row.name,
+                                                                                      standardCondition:
+                                                                                          row.standard_condition,
+                                                                                      cell,
+                                                                                  },
+                                                                              )
+                                                                        : undefined
+                                                                }
+                                                            />
+                                                        </TableCell>
+                                                    );
+                                                })}
                                                 <TableCell className="px-3 text-sm whitespace-normal text-muted-foreground sm:px-4">
                                                     {row.standard_condition ??
                                                         '-'}
@@ -512,6 +567,14 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                     </CardContent>
                 </Card>
             </div>
+            <ChecklistDetailDrawer
+                selected={selectedChecklistCell}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedChecklistCell(null);
+                    }
+                }}
+            />
         </div>
     );
 }
@@ -542,41 +605,171 @@ function isWeekend(date: string): boolean {
 
 function ChecklistCell({
     status,
-    notes,
+    hasNotes,
+    hasAttachments,
+    onOpen,
 }: {
     status: string | null;
-    notes: string[];
+    hasNotes: boolean;
+    hasAttachments: boolean;
+    onOpen?: () => void;
 }) {
-    const hasNotes = notes.length > 0;
-
-    return (
-        <span className="relative inline-flex items-center justify-center">
+    const content = (
+        <>
             {status === 'OK' && (
-                <Check
-                    className="size-4 text-emerald-600"
-                    strokeWidth={3}
-                />
+                <Check className="size-4 text-emerald-600" strokeWidth={3} />
             )}
             {status === 'NOT_OK' && (
-                <X
-                    className="size-4 text-destructive"
-                    strokeWidth={3}
-                />
+                <X className="size-4 text-destructive" strokeWidth={3} />
             )}
             {status === 'NA' && (
                 <span className="text-xs font-medium text-muted-foreground">
                     NA
                 </span>
             )}
-            {status === null && (
-                <span className="text-muted-foreground">-</span>
-            )}
-            {hasNotes && (
-                <span className="absolute -top-1 -right-2 text-[10px] leading-none text-amber-500">
-                    ⚠️
+            {status === null && <span className="text-muted-foreground">-</span>}
+            {(hasNotes || hasAttachments) && (
+                <span className="absolute -top-1 -right-2 inline-flex size-3 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold leading-none text-white">
+                    !
                 </span>
             )}
+        </>
+    );
+
+    if (onOpen) {
+        return (
+            <button
+                type="button"
+                className="relative inline-flex size-7 items-center justify-center rounded-md transition-colors hover:bg-amber-100 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none dark:hover:bg-amber-950/40"
+                onClick={onOpen}
+                aria-label="Lihat detail checklist"
+            >
+                {content}
+            </button>
+        );
+    }
+
+    return (
+        <span className="relative inline-flex size-7 items-center justify-center">
+            {content}
         </span>
+    );
+}
+
+function ChecklistDetailDrawer({
+    selected,
+    onOpenChange,
+}: {
+    selected: SelectedChecklistCell | null;
+    onOpenChange: (open: boolean) => void;
+}) {
+    return (
+        <Drawer
+            direction="right"
+            open={selected !== null}
+            onOpenChange={onOpenChange}
+        >
+            <DrawerContent className="overflow-hidden sm:max-w-md">
+                <DrawerHeader className="border-b border-border/70">
+                    <DrawerTitle>Detail Checklist</DrawerTitle>
+                    <DrawerDescription>
+                        {selected
+                            ? `${selected.itemName} - ${selected.cell.date}`
+                            : 'Detail catatan dan lampiran checklist.'}
+                    </DrawerDescription>
+                </DrawerHeader>
+
+                {selected ? (
+                    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+                        <div className="rounded-lg border border-border/70 p-3">
+                            <p className="text-xs font-medium text-muted-foreground uppercase">
+                                Kondisi standar
+                            </p>
+                            <p className="mt-1 text-sm">
+                                {selected.standardCondition ?? '-'}
+                            </p>
+                        </div>
+
+                        <div className="space-y-3">
+                            {selected.cell.details.length > 0 ? (
+                                selected.cell.details.map((detail, index) => (
+                                    <div
+                                        key={`${detail.operator ?? 'operator'}-${index}`}
+                                        className="rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="font-medium">
+                                                    {detail.operator ?? '-'}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {detail.status_label ??
+                                                        detail.status ??
+                                                        '-'}
+                                                </p>
+                                            </div>
+                                            <Badge variant="outline">
+                                                {detail.status ?? '-'}
+                                            </Badge>
+                                        </div>
+
+                                        <div className="mt-3 space-y-2">
+                                            <div>
+                                                <p className="text-xs font-medium text-muted-foreground uppercase">
+                                                    Catatan
+                                                </p>
+                                                <p className="mt-1 text-sm">
+                                                    {detail.note &&
+                                                    detail.note.trim() !== ''
+                                                        ? detail.note
+                                                        : '-'}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs font-medium text-muted-foreground uppercase">
+                                                    Lampiran
+                                                </p>
+                                                {detail.attachment_url ? (
+                                                    <Button
+                                                        nativeButton={false}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="mt-2"
+                                                        render={
+                                                            <a
+                                                                href={
+                                                                    detail.attachment_url
+                                                                }
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                            />
+                                                        }
+                                                    >
+                                                        <Paperclip className="size-4" />
+                                                        {detail.attachment_original_name ??
+                                                            'Lihat lampiran'}
+                                                    </Button>
+                                                ) : (
+                                                    <p className="mt-1 text-sm text-muted-foreground">
+                                                        Tidak ada lampiran.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                                    Tidak ada catatan atau lampiran pada cell
+                                    ini.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : null}
+            </DrawerContent>
+        </Drawer>
     );
 }
 

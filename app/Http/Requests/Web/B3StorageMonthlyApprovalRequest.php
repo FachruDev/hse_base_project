@@ -32,6 +32,8 @@ class B3StorageMonthlyApprovalRequest extends FormRequest
             'year' => ['required', 'integer', 'between:2000,2100'],
             'approval_role' => ['required', 'in:ENVIRONMENT_SUPERVISOR,HSE_DEPARTMENT_HEAD'],
             'note' => ['nullable', 'string'],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 
@@ -58,5 +60,18 @@ class B3StorageMonthlyApprovalRequest extends FormRequest
     public function year(): int
     {
         return (int) $this->validated('year');
+    }
+
+    /**
+     * @return array{date_from: string, date_to: string}
+     */
+    public function filters(): array
+    {
+        $validated = $this->validated();
+
+        return [
+            'date_from' => (string) ($validated['date_from'] ?? ''),
+            'date_to' => (string) ($validated['date_to'] ?? ''),
+        ];
     }
 }

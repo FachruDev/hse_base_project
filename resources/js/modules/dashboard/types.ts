@@ -57,6 +57,9 @@ export type CatatanPengolahanLimbahAirMonthlyRow = {
     checklist_approval_status: 'APPROVED' | 'NOT_APPROVED' | string;
     checklist_approved_at: string | null;
     checklist_approved_by: string | null;
+    process_approval_status: 'APPROVED' | 'NOT_APPROVED' | string;
+    process_approved_at: string | null;
+    process_approved_by: string | null;
     can_approve_period: boolean;
 };
 
@@ -189,6 +192,14 @@ export type IpalMonthlyChecklistCell = {
     status_label: string | null;
     operators: string[];
     notes: string[];
+    details: Array<{
+        operator: string | null;
+        status: string | null;
+        status_label: string | null;
+        note: string | null;
+        attachment_url: string | null;
+        attachment_original_name: string | null;
+    }>;
 };
 
 export type IpalMonthlyChecklistRow = {
@@ -248,6 +259,7 @@ export type IpalMonthlyDetailPayload = {
     };
     capabilities: {
         approve_checklist: boolean;
+        can_approve_period: boolean;
     };
 };
 
@@ -268,8 +280,10 @@ export type B3StorageMonthlyListingRow = {
     hse_department_head: string | null;
     hse_department_head_signed_at: string | null;
     can_approve_period: boolean;
+    can_approve_monthly: boolean;
     next_approval_role: 'ENVIRONMENT_SUPERVISOR' | 'HSE_DEPARTMENT_HEAD' | null;
     next_approval_label: string | null;
+    approval_blocked_label: string | null;
 };
 
 export type B3StorageLogListingPayload = {
@@ -296,9 +310,13 @@ export type B3StorageLogListingPayload = {
 export type B3StorageMonthlyReportRow = {
     no: number;
     id: number;
+    movement_type: 'MASUK' | 'KELUAR';
+    movement_date: string | null;
     tanggal_masuk: string | null;
     tanggal_keluar: string | null;
     jam: string | null;
+    waste_type_name: string | null;
+    weight_kg: string | number;
     weights_by_waste_type: Record<string, string | number | null>;
     weight_other: string | number | null;
     waste_type_other: string | null;
@@ -309,6 +327,7 @@ export type B3StorageMonthlyReportRow = {
     operator_name: string | null;
     photo_path: string | null;
     note: string | null;
+    created_at: string | null;
 };
 
 export type B3StorageMonthlyDetailPayload = {
@@ -320,6 +339,12 @@ export type B3StorageMonthlyDetailPayload = {
         month: number;
         year: number;
         label: string;
+        date_from: string;
+        date_to: string;
+    };
+    filters: {
+        date_from: string;
+        date_to: string;
     };
     summary: {
         total_logs_count: number;
@@ -361,6 +386,7 @@ export type B3StorageMonthlyDetailPayload = {
         approve_monthly: boolean;
         next_approval_role: 'ENVIRONMENT_SUPERVISOR' | 'HSE_DEPARTMENT_HEAD' | null;
         next_approval_label: string | null;
+        approval_blocked_reason: string | null;
     };
 };
 

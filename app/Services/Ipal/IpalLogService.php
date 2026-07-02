@@ -8,6 +8,7 @@ use App\Models\Ipal\IpalChecklistValueAttachment;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Ipal\IpalProcessApproval;
 use App\Models\Ipal\IpalProcessLog;
+use App\Models\Ipal\IpalProcessMonthlyApproval;
 use App\Models\Ipal\IpalProcessValue;
 use App\Models\Ipal\IpalProcessValueAttachment;
 use App\Models\Master\BatchItem;
@@ -286,6 +287,18 @@ class IpalLogService
 
     public function approveMonthlyChecklist(int $month, int $year, User $supervisor): IpalChecklistApproval
     {
+        if (! $this->isMonthlyProcessApprovalDay($year, $month)) {
+            throw ValidationException::withMessages([
+                'period' => ['Approval bulanan checklist hanya dapat dilakukan pada hari kerja terakhir bulan berjalan.'],
+            ]);
+        }
+
+        if ($this->isChecklistPeriodApproved(Carbon::create($year, $month, 1))) {
+            throw ValidationException::withMessages([
+                'period' => ['Checklist bulanan periode ini sudah di-approve.'],
+            ]);
+        }
+
         $approval = IpalChecklistApproval::query()->updateOrCreate(
             [
                 'month' => $month,
@@ -443,7 +456,7 @@ class IpalLogService
 
     /**
      * Re-open a daily log that was already approved by supervisor.
-     * Resets process log status to SUBMITTED and clears supervisor signature.
+     * Resets process log status to DRAFT and clears supervisor signature.
      * Intended for Superadmin use only.
      */
     public function reopen(IpalDailyLog $dailyLog): IpalProcessLog
@@ -465,7 +478,7 @@ class IpalLogService
             }
 
             $processLog->update([
-                'status' => 'SUBMITTED',
+                'status' => 'DRAFT',
             ]);
 
             return $processLog->fresh();
@@ -485,11 +498,39 @@ class IpalLogService
         }
 
         return DB::transaction(function () use ($month, $year, $supervisor): int {
+            $monthlyApproval = IpalProcessMonthlyApproval::query()
+                ->where('month', $month)
+                ->where('year', $year)
+                ->whereNotNull('approved_at')
+                ->first();
+
+            if ($monthlyApproval !== null) {
+                throw ValidationException::withMessages([
+                    'period' => ['Catatan proses bulanan periode ini sudah di-approve.'],
+                ]);
+            }
+
             $logs = IpalDailyLog::query()
                 ->with(['processLog.approval'])
                 ->whereYear('tanggal', $year)
                 ->whereMonth('tanggal', $month)
                 ->get();
+
+            $processLogs = $logs
+                ->map(fn (IpalDailyLog $dailyLog): ?IpalProcessLog => $dailyLog->processLog)
+                ->filter();
+
+            if ($processLogs->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'period' => ['Tidak ada catatan proses pada periode ini untuk di-approve.'],
+                ]);
+            }
+
+            if ($processLogs->contains(fn (IpalProcessLog $processLog): bool => $processLog->status === 'DRAFT')) {
+                throw ValidationException::withMessages([
+                    'period' => ['Masih ada catatan proses draft pada periode ini.'],
+                ]);
+            }
 
             $count = 0;
             $now = now();
@@ -514,6 +555,17 @@ class IpalLogService
                 $count++;
             }
 
+            IpalProcessMonthlyApproval::query()->updateOrCreate(
+                [
+                    'month' => $month,
+                    'year' => $year,
+                ],
+                [
+                    'supervisor_id' => $supervisor->id,
+                    'approved_at' => $now,
+                ],
+            );
+
             return $count;
         });
     }
@@ -525,6 +577,18 @@ class IpalLogService
     public function reopenMonthlyProcess(int $month, int $year): int
     {
         return DB::transaction(function () use ($month, $year): int {
+            $monthlyApproval = IpalProcessMonthlyApproval::query()
+                ->where('month', $month)
+                ->where('year', $year)
+                ->whereNotNull('approved_at')
+                ->first();
+
+            if ($monthlyApproval === null) {
+                throw ValidationException::withMessages([
+                    'period' => ['Approval bulanan catatan proses periode ini belum ada untuk dibuka kembali.'],
+                ]);
+            }
+
             $logs = IpalDailyLog::query()
                 ->with(['processLog.approval'])
                 ->whereYear('tanggal', $year)
@@ -556,6 +620,8 @@ class IpalLogService
                     'period' => ['Tidak ada catatan proses approved pada periode ini untuk dibuka kembali.'],
                 ]);
             }
+
+            $monthlyApproval->delete();
 
             return $count;
         });

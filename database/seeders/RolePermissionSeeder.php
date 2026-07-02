@@ -44,6 +44,12 @@ class RolePermissionSeeder extends Seeder
                 'b3storage.monthly-report.view',
                 'b3storage.monthly-approval.approve',
             ],
+            'hse_dept_head' => [
+                'b3storage.master.view',
+                'b3storage.logs.view',
+                'b3storage.monthly-report.view',
+                'b3storage.monthly-approval.approve',
+            ],
             'operator' => [
                 'master.checklist.view',
                 'master.process.view',
