@@ -242,6 +242,7 @@ export function PenyimpananLimbahB3Listing({
                                     {listing.table.data.length > 0 ? (
                                         listing.table.data.map((row) => (
                                             <TableRow
+                                                className='transition-colors odd:bg-primary/10 hover:bg-primary/15'
                                                 key={`${row.year}-${row.month}`}
                                             >
                                                 <TableCell className="px-4 font-medium">

@@ -483,7 +483,7 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                             <TableBody>
                                 {monthlyDetail.process_rows.length > 0 ? (
                                     monthlyDetail.process_rows.map((row) => (
-                                        <TableRow key={row.id}>
+                                        <TableRow className='transition-colors odd:bg-primary/10 hover:bg-primary/15' key={row.id}>
                                             <TableCell className="px-4 font-medium">
                                                 {row.tanggal ?? '-'}
                                             </TableCell>

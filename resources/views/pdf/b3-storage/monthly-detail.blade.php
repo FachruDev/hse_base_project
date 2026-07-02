@@ -29,6 +29,9 @@
 @php
     $period = $monthlyDetail['period'];
     $formatWeight = static fn ($value): string => number_format((float) $value, 2, ',', '.');
+    $formatTime = static fn ($value): string => is_string($value) && preg_match('/^(\d{2}):(\d{2})/', $value, $matches)
+        ? $matches[1].':'.$matches[2]
+        : ($value ?: '-');
 @endphp
 
 <section class="header">
@@ -73,10 +76,10 @@
                 <td class="center">{{ $row['movement_type'] ?? ($row['tanggal_masuk'] ? 'MASUK' : 'KELUAR') }}</td>
                 <td>
                     {{ $row['movement_date'] ?? $row['tanggal_masuk'] ?? $row['tanggal_keluar'] ?? '-' }}<br>
-                    <span class="muted">{{ $row['jam'] ?? '-' }}</span>
+                    <span class="muted">{{ $formatTime($row['jam'] ?? null) }}</span>
                 </td>
                 <td>{{ $row['waste_type_name'] ?? $row['waste_type_other'] ?? '-' }}</td>
-                <td class="right">{{ $formatWeight($row['weight_kg'] ?? 0) }}</td>
+                <td class="center">{{ $formatWeight($row['weight_kg'] ?? 0) }}</td>
                 <td>
                     {{ $row['initiator_department'] ?? '-' }}
                     @if ($row['initiator_user_name'] ?? null)

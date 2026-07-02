@@ -95,7 +95,7 @@ export function ChecklistHarianForm({ entryForm, userId }: ChecklistHarianFormPr
                                 const currentFile = form.data.checklist.values[index]?.attachment;
 
                                 return (
-                                    <TableRow key={item.id}>
+                                    <TableRow key={item.id} className='transition-colors odd:bg-primary/10 hover:bg-primary/15'>
                                         <TableCell className="px-4 font-medium">{item.name}</TableCell>
                                         <TableCell>{item.standard_condition ?? '-'}</TableCell>
                                         <TableCell className="min-w-[200px]">

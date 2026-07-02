@@ -111,6 +111,25 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                 <CardDescription>
                                     {monthlyDetail.module.subtitle}
                                 </CardDescription>
+                                {monthlyDetail.capabilities.approve_monthly &&
+                                monthlyDetail.capabilities
+                                    .next_approval_label ? (
+                                    <Button type="button" onClick={approveMonthly}>
+                                        <CheckCircle2 className="size-4" />
+                                        {
+                                            monthlyDetail.capabilities
+                                                .next_approval_label
+                                        }
+                                    </Button>
+                                ) : monthlyDetail.capabilities
+                                      .approval_blocked_reason ? (
+                                    <Badge variant="secondary">
+                                        {
+                                            monthlyDetail.capabilities
+                                                .approval_blocked_reason
+                                        }
+                                    </Badge>
+                                ) : null}
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
                                 <Button
@@ -222,25 +241,6 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                     <Plus className="size-4" />
                                     Tambah Entri
                                 </Button>
-                                {monthlyDetail.capabilities.approve_monthly &&
-                                monthlyDetail.capabilities
-                                    .next_approval_label ? (
-                                    <Button type="button" onClick={approveMonthly}>
-                                        <CheckCircle2 className="size-4" />
-                                        {
-                                            monthlyDetail.capabilities
-                                                .next_approval_label
-                                        }
-                                    </Button>
-                                ) : monthlyDetail.capabilities
-                                      .approval_blocked_reason ? (
-                                    <Badge variant="secondary">
-                                        {
-                                            monthlyDetail.capabilities
-                                                .approval_blocked_reason
-                                        }
-                                    </Badge>
-                                ) : null}
                             </div>
                         </div>
                     </CardHeader>
@@ -334,31 +334,31 @@ export function PenyimpananLimbahB3MonthlyDetail({
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain">
-                            <Table className="min-w-[980px]">
+                            <Table className="w-full table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="sticky left-0 z-10 min-w-[170px] bg-background px-3">
+                                        <TableHead className="sticky left-0 z-10 w-[17%] bg-background px-3 py-3">
                                             No / No. Dokumen
                                         </TableHead>
-                                        <TableHead className="min-w-[140px]">
+                                        <TableHead className="w-[13%] px-3 py-3">
                                             Tipe Pergerakan
                                         </TableHead>
-                                        <TableHead className="min-w-[150px]">
+                                        <TableHead className="w-[14%] px-3 py-3">
                                             Tanggal &amp; Waktu
                                         </TableHead>
-                                        <TableHead className="min-w-[220px]">
+                                        <TableHead className="w-[17%] px-3 py-3">
                                             Jenis Limbah
                                         </TableHead>
-                                        <TableHead className="min-w-[110px] text-right">
+                                        <TableHead className="w-[10%] px-3 py-3 text-right">
                                             Berat
                                         </TableHead>
-                                        <TableHead className="min-w-[190px]">
+                                        <TableHead className="w-[16%] px-3 py-3">
                                             Dept. Inisiator
                                         </TableHead>
-                                        <TableHead className="min-w-[160px]">
+                                        <TableHead className="w-[10%] px-3 py-3">
                                             Operator
                                         </TableHead>
-                                        <TableHead className="min-w-[90px] text-right">
+                                        <TableHead className="w-[72px] px-3 py-3 text-right">
                                             Action
                                         </TableHead>
                                     </TableRow>
@@ -366,18 +366,18 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                 <TableBody>
                                     {monthlyDetail.rows.length > 0 ? (
                                         monthlyDetail.rows.map((row) => (
-                                            <TableRow key={row.id}>
-                                                <TableCell className="sticky left-0 z-10 bg-background px-3">
+                                            <TableRow className='transition-colors odd:bg-primary/10 hover:bg-primary/15' key={row.id}>
+                                                <TableCell className="sticky left-0 z-10 bg-background px-3 py-3 align-top">
                                                     <div className="space-y-1">
                                                         <p className="text-xs font-semibold text-muted-foreground">
                                                             #{row.no}
                                                         </p>
-                                                        <p className="font-medium">
+                                                        <p className="break-words font-medium">
                                                             {row.document_number}
                                                         </p>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className="px-3 py-3 align-top">
                                                     <span
                                                         className={
                                                             row.movement_type ===
@@ -389,38 +389,38 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                                         {row.movement_type}
                                                     </span>
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className="px-3 py-3 align-top">
                                                     <div className="space-y-0.5">
                                                         <p className="font-medium">
                                                             {row.movement_date ?? '-'}
                                                         </p>
                                                         <p className="text-xs text-muted-foreground">
-                                                            {row.jam ?? '-'}
+                                                            {formatTime(row.jam)}
                                                         </p>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="whitespace-normal">
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
                                                     {row.waste_type_name ?? '-'}
                                                 </TableCell>
-                                                <TableCell className="text-right font-medium">
+                                                <TableCell className="px-3 py-3 text-right align-top font-medium">
                                                     {formatWeight(row.weight_kg)} kg
                                                 </TableCell>
-                                                <TableCell className="whitespace-normal">
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
                                                     <div className="space-y-0.5">
-                                                        <p className="font-medium">
+                                                        <p className="break-words font-medium">
                                                             {row.initiator_department ?? '-'}
                                                         </p>
                                                         {row.initiator_user_name ? (
-                                                            <p className="text-xs text-muted-foreground">
+                                                            <p className="break-words text-xs text-muted-foreground">
                                                                 ({row.initiator_user_name})
                                                             </p>
                                                         ) : null}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="whitespace-normal">
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
                                                     {row.operator_name ?? '-'}
                                                 </TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="px-3 py-3 text-right align-top">
                                                     <Button
                                                         type="button"
                                                         variant="outline"
@@ -537,7 +537,7 @@ function B3StorageLogDetailDrawer({
                                 label="Tanggal"
                                 value={row.movement_date}
                             />
-                            <DetailField label="Jam" value={row.jam} />
+                            <DetailField label="Jam" value={formatTime(row.jam)} />
                             <DetailField
                                 label="Jenis Limbah"
                                 value={row.waste_type_name}
@@ -568,6 +568,22 @@ function B3StorageLogDetailDrawer({
                                 value={row.created_at}
                             />
                         </div>
+
+                        <div className="grid gap-2 border-t border-border/70 pt-4">
+                            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                Paraf / Tanda Tangan
+                            </p>
+                            <SignatureField
+                                label="Petugas Dept. Inisiator"
+                                name={row.initiator_user_name}
+                                fallback="Belum tercatat"
+                            />
+                            <SignatureField
+                                label="Operator TPS LB3"
+                                name={row.operator_name}
+                                fallback="Belum tercatat"
+                            />
+                        </div>
                     </div>
                 ) : null}
             </DrawerContent>
@@ -588,6 +604,25 @@ function DetailField({
             <p className="mt-1 text-sm font-medium whitespace-pre-wrap">
                 {value ?? '-'}
             </p>
+        </div>
+    );
+}
+
+function SignatureField({
+    label,
+    name,
+    fallback,
+}: {
+    label: string;
+    name: string | null | undefined;
+    fallback: string;
+}) {
+    return (
+        <div className="rounded-md border border-border/70 p-3">
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <div className="mt-3 flex min-h-16 items-end justify-center border-b border-dashed border-border/80 pb-2 text-center">
+                <span className="text-sm font-semibold">{name ?? fallback}</span>
+            </div>
         </div>
     );
 }
@@ -639,4 +674,27 @@ function formatWeight(value: string | number): string {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(Number(value));
+}
+
+function formatTime(value: string | null | undefined): string {
+    if (!value) {
+        return '-';
+    }
+
+    const match = value.match(/^(\d{2}):(\d{2})/);
+
+    if (match) {
+        return `${match[1]}:${match[2]}`;
+    }
+
+    const date = new Date(value);
+
+    if (!Number.isNaN(date.getTime())) {
+        return new Intl.DateTimeFormat('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(date);
+    }
+
+    return value;
 }
