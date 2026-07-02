@@ -50,25 +50,41 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
             'order_no' => 1,
         ]);
 
-        $processNumberItem = ProcessItem::query()->create([
+        $processDecimalItem = ProcessItem::query()->create([
             'section_id' => $processSection->id,
             'name' => 'pH',
             'standard_condition' => '6-9',
-            'input_type' => 'number',
+            'input_type' => 'decimal_2',
             'order_no' => 1,
         ]);
 
-        $processTextItem = ProcessItem::query()->create([
+        $processOptionItem = ProcessItem::query()->create([
             'section_id' => $processSection->id,
             'name' => 'Warna',
             'standard_condition' => 'Jernih',
-            'input_type' => 'text',
+            'input_type' => 'option',
             'order_no' => 2,
         ]);
 
-        $batchNumberItem = BatchItem::query()->create([
-            'name' => 'pH',
+        $processManualOptionItem = ProcessItem::query()->create([
+            'section_id' => $processSection->id,
+            'name' => 'Efluent',
+            'standard_condition' => 'Warna putih pekat',
+            'input_type' => 'option_with_manual',
+            'order_no' => 3,
+        ]);
+
+        $processLegacyNumberItem = ProcessItem::query()->create([
+            'section_id' => $processSection->id,
+            'name' => 'Water Meter',
+            'standard_condition' => 'Terbaca',
             'input_type' => 'number',
+            'order_no' => 4,
+        ]);
+
+        $batchDurationItem = BatchItem::query()->create([
+            'name' => 'Durasi (menit)',
+            'input_type' => 'duration_minutes',
             'order_no' => 1,
         ]);
 
@@ -113,16 +129,26 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
             'action' => 'SUBMIT',
             'has_mixing' => true,
             'process' => [
-                'template_id' => $processTemplate->id,
+                'template_id' => (string) $processTemplate->id,
                 'values' => [
                     [
-                        'item_id' => $processNumberItem->id,
+                        'item_id' => $processDecimalItem->id,
                         'value_number' => 7.1,
                         'note' => 'Stabil',
                     ],
                     [
-                        'item_id' => $processTextItem->id,
-                        'value_text' => 'jernih',
+                        'item_id' => $processOptionItem->id,
+                        'value_text' => 'Standar',
+                        'note' => null,
+                    ],
+                    [
+                        'item_id' => $processManualOptionItem->id,
+                        'value_text' => 'Agak keruh',
+                        'note' => 'Manual',
+                    ],
+                    [
+                        'item_id' => $processLegacyNumberItem->id,
+                        'value_number' => 123.45,
                         'note' => null,
                     ],
                 ],
@@ -132,8 +158,8 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
                     'batch_no' => 1,
                     'values' => [
                         [
-                            'item_id' => $batchNumberItem->id,
-                            'value_number' => 6.9,
+                            'item_id' => $batchDurationItem->id,
+                            'value_number' => 45,
                         ],
                         [
                             'item_id' => $batchTextItem->id,
@@ -156,5 +182,86 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
             'process_log_id' => $processLogId,
             'batch_no' => 1,
         ]);
+
+        $this->assertDatabaseHas('ipal_process_values', [
+            'item_id' => $processDecimalItem->id,
+            'value_text' => null,
+        ]);
+
+        $this->assertDatabaseHas('ipal_process_values', [
+            'item_id' => $processOptionItem->id,
+            'value_text' => 'Standar',
+            'value_number' => null,
+        ]);
+
+        $this->assertDatabaseHas('ipal_process_values', [
+            'item_id' => $processManualOptionItem->id,
+            'value_text' => 'Agak keruh',
+            'value_number' => null,
+        ]);
+
+        $this->assertDatabaseHas('ipal_batch_values', [
+            'item_id' => $batchDurationItem->id,
+            'value_text' => null,
+        ]);
+    }
+
+    public function test_process_draft_does_not_require_each_value_to_be_filled_by_form_request(): void
+    {
+        User::factory()->create([
+            'external_id' => 'operator.draft.01',
+            'is_active' => true,
+        ]);
+
+        $checklistTemplate = ChecklistTemplate::query()->create([
+            'name' => 'Checklist Draft',
+            'is_active' => true,
+        ]);
+
+        ChecklistItem::query()->create([
+            'template_id' => $checklistTemplate->id,
+            'name' => 'Pompa Transfer 1',
+            'category' => null,
+            'standard_condition' => 'Berfungsi',
+            'order_no' => 1,
+            'is_active' => true,
+        ]);
+
+        $processTemplate = ProcessTemplate::query()->create([
+            'name' => 'Draft Process',
+            'is_active' => true,
+        ]);
+
+        $processSection = ProcessSection::query()->create([
+            'template_id' => $processTemplate->id,
+            'name' => 'Ekualisasi',
+            'order_no' => 1,
+        ]);
+
+        $processItem = ProcessItem::query()->create([
+            'section_id' => $processSection->id,
+            'name' => 'pH',
+            'standard_condition' => '6-9',
+            'input_type' => 'decimal_2',
+            'order_no' => 1,
+        ]);
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/process?user_id=operator.draft.01', [
+            'tanggal' => '2026-04-29',
+            'action' => 'DRAFT',
+            'has_mixing' => false,
+            'process' => [
+                'template_id' => (string) $processTemplate->id,
+                'values' => [
+                    [
+                        'item_id' => $processItem->id,
+                        'value_text' => '',
+                        'value_number' => '',
+                        'note' => null,
+                    ],
+                ],
+            ],
+            'batch' => [],
+        ])->assertRedirect()->assertSessionHasNoErrors();
     }
 }

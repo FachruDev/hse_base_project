@@ -15,6 +15,8 @@ import {
     catatanPengolahanLimbahAirApproveMonthlyChecklist,
     catatanPengolahanLimbahAirIndex,
     catatanPengolahanLimbahAirLogShow,
+    catatanPengolahanLimbahAirMonthlyBatchMixingPdf,
+    catatanPengolahanLimbahAirMonthlyChecklistPdf,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -106,13 +108,46 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                     Kembali ke Listing
                                 </Button>
                                 <Button
-                                    type="button"
+                                    nativeButton={false}
                                     variant="outline"
                                     className="no-print"
-                                    onClick={() => window.print()}
+                                    render={
+                                        <a
+                                            href={catatanPengolahanLimbahAirMonthlyChecklistPdf.url(
+                                                {
+                                                    year: monthlyDetail.period.year,
+                                                    month: monthlyDetail.period.month,
+                                                },
+                                                { query: { user_id: userId } },
+                                            )}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        />
+                                    }
                                 >
                                     <Printer className="size-4" />
-                                    Print PDF
+                                    Checklist PDF
+                                </Button>
+                                <Button
+                                    nativeButton={false}
+                                    variant="outline"
+                                    className="no-print"
+                                    render={
+                                        <a
+                                            href={catatanPengolahanLimbahAirMonthlyBatchMixingPdf.url(
+                                                {
+                                                    year: monthlyDetail.period.year,
+                                                    month: monthlyDetail.period.month,
+                                                },
+                                                { query: { user_id: userId } },
+                                            )}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        />
+                                    }
+                                >
+                                    <Printer className="size-4" />
+                                    Batch Mixing PDF
                                 </Button>
                                 {monthlyDetail.capabilities
                                     .approve_checklist ? (

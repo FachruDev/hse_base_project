@@ -16,7 +16,9 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "spatie/browsershot": "^5.4",
         "spatie/laravel-data": "^4.23",
+        "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^7.4",
         "spatie/laravel-query-builder": "^7.3"
     },

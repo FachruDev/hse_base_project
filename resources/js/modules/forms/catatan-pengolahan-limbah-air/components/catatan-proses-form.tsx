@@ -36,19 +36,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import type { CatatanPengolahanLimbahAirEntryPayload, ProcessField } from '@/modules/dashboard/types';
+import type { CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard/types';
+import { ActualValueInput } from './actual-value-input';
 import { BatchMixingSection } from './batch-mixing-section';
 import type { ProcessFormState } from './entry-form-types';
 import { buildAvailableBatchNumbers } from './entry-form-types';
 import { RowPhoto } from './row-photo';
-
-function roundToDecimals(value: string, decimals: number): string {
-    const num = parseFloat(value);
-    if (isNaN(num)) {
-        return value;
-    }
-    return num.toFixed(decimals);
-}
 
 type CatatanProsesFormProps = {
     entryForm: CatatanPengolahanLimbahAirEntryPayload;
@@ -164,6 +157,9 @@ export function CatatanProsesForm({
     };
 
     const filteredSections = submitFilters(processQuery);
+    const isSubmittedWaitingSupervisor =
+        entryForm.entry.status === 'SUBMITTED' &&
+        !entryForm.capabilities.approve_daily_process;
 
     const saveProcess = (action: 'DRAFT' | 'SUBMIT') => {
         form.transform((data) => ({
@@ -239,7 +235,14 @@ export function CatatanProsesForm({
                     Gagal menyimpan: {Object.values(form.errors)[0]}
                 </div>
             ) : null}
-            <CardContent className="space-y-8 p-5 sm:p-6">
+            <CardContent
+                className={[
+                    'space-y-8 p-5 sm:p-6',
+                    entryForm.capabilities.approve_daily_process
+                        ? 'pb-28 sm:pb-32'
+                        : '',
+                ].join(' ')}
+            >
                 <form
                     className="space-y-8"
                     onSubmit={(event) => {
@@ -252,61 +255,6 @@ export function CatatanProsesForm({
                             Daftar Unit & Uraian Proses
                         </p>
                         <div className="flex items-center gap-2">
-                            {!readOnly && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        // Find all option_standard and option_with_manual and set them to "Standar"
-                                        const newValues = [
-                                            ...form.data.process.values,
-                                        ];
-                                        entryForm.process.sections.forEach(
-                                            (section) => {
-                                                section.items.forEach(
-                                                    (item) => {
-                                                        if (
-                                                            item.input_type ===
-                                                                'option_standard' ||
-                                                            item.input_type ===
-                                                                'option_with_manual'
-                                                        ) {
-                                                            const valIndex =
-                                                                newValues.findIndex(
-                                                                    (v) =>
-                                                                        v.item_id ===
-                                                                        item.id,
-                                                                );
-
-                                                            if (
-                                                                valIndex !== -1
-                                                            ) {
-                                                                newValues[
-                                                                    valIndex
-                                                                ] = {
-                                                                    ...newValues[
-                                                                        valIndex
-                                                                    ],
-                                                                    value_text:
-                                                                        'Standar',
-                                                                };
-                                                            }
-                                                        }
-                                                    },
-                                                );
-                                            },
-                                        );
-                                        form.setData('process', {
-                                            ...form.data.process,
-                                            values: newValues,
-                                        });
-                                    }}
-                                    className="h-8 bg-primary px-3 text-xs text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95"
-                                >
-                                    Isi Semua Standar
-                                </Button>
-                            )}
                             <Button
                                 type="button"
                                 variant="outline"
@@ -332,6 +280,12 @@ export function CatatanProsesForm({
                             </Button>
                         </div>
                     </div>
+
+                    {isSubmittedWaitingSupervisor ? (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
+                            Sudah submit, menunggu pemeriksaan supervisor.
+                        </div>
+                    ) : null}
 
                     <div className="space-y-6">
                         {filteredSections.map((section) => {
@@ -414,222 +368,30 @@ export function CatatanProsesForm({
                                                                     '-'}
                                                             </TableCell>
                                                             <TableCell className="min-w-[240px] pt-4 align-top">
-                                                                {item.input_type ===
-                                                                'number' ? (
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        className="bg-background shadow-sm transition-all"
-                                                                        placeholder="Masukkan angka..."
-                                                                        value={
-                                                                            value?.value_number ??
-                                                                            ''
-                                                                        }
-                                                                        readOnly={
-                                                                            readOnly
-                                                                        }
-                                                                        required={
-                                                                            !readOnly
-                                                                        }
-                                                                        onBlur={(event) => {
-                                                                            const rounded = roundToDecimals(event.target.value, 2);
-                                                                            if (rounded !== event.target.value && rounded !== '') {
-                                                                                form.setData(
-                                                                                    'process',
-                                                                                    {
-                                                                                        ...form.data.process,
-                                                                                        values: form.data.process.values.map(
-                                                                                            (currentValue, currentIndex) =>
-                                                                                                currentIndex === valueIndex
-                                                                                                    ? {
-                                                                                                          ...currentValue,
-                                                                                                          value_number: rounded,
-                                                                                                          value_text: '',
-                                                                                                      }
-                                                                                                    : currentValue,
-                                                                                        ),
-                                                                                    },
-                                                                                );
-                                                                            }
-                                                                        }}
-                                                                        onChange={(
-                                                                            event,
-                                                                        ) => {
-                                                                            form.setData(
-                                                                                'process',
-                                                                                {
-                                                                                    ...form
-                                                                                        .data
-                                                                                        .process,
-                                                                                    values: form.data.process.values.map(
-                                                                                        (
-                                                                                            currentValue,
-                                                                                            currentIndex,
-                                                                                        ) =>
-                                                                                            currentIndex ===
-                                                                                            valueIndex
-                                                                                                ? {
-                                                                                                      ...currentValue,
-                                                                                                      value_number:
-                                                                                                          event
-                                                                                                              .target
-                                                                                                              .value,
-                                                                                                      value_text:
-                                                                                                          '',
-                                                                                                  }
-                                                                                                : currentValue,
-                                                                                    ),
-                                                                                },
-                                                                            );
-                                                                        }}
-                                                                    />
-                                                                ) : item.input_type ===
-                                                                  'option_standard' ? (
-                                                                    <StandarToggle
-                                                                        value={value?.value_text ?? ''}
-                                                                        disabled={readOnly}
-                                                                        onChange={(nextValue) => {
-                                                                            form.setData(
-                                                                                'process',
-                                                                                {
-                                                                                    ...form.data.process,
-                                                                                    values: form.data.process.values.map(
-                                                                                        (
-                                                                                            currentValue,
-                                                                                            currentIndex,
-                                                                                        ) =>
-                                                                                            currentIndex === valueIndex
-                                                                                                ? {
-                                                                                                      ...currentValue,
-                                                                                                      value_text: nextValue,
-                                                                                                      value_number: '',
-                                                                                                  }
-                                                                                                : currentValue,
-                                                                                    ),
-                                                                                },
-                                                                            );
-                                                                        }}
-                                                                    />
-                                                                ) : item.input_type ===
-                                                                  'option_with_manual' ? (
-                                                                    <div className="space-y-2">
-                                                                        <StandarWithManualToggle
-                                                                            value={
-                                                                                value?.value_text === 'Standar'
-                                                                                    ? 'Standar'
-                                                                                    : value?.value_text
-                                                                                      ? 'Lainnya'
-                                                                                      : ''
-                                                                            }
-                                                                            disabled={readOnly}
-                                                                            onChange={(nextMode) => {
-                                                                                const newText =
-                                                                                    nextMode === 'Lainnya'
-                                                                                        ? ' '
-                                                                                        : nextMode;
-                                                                                form.setData(
-                                                                                    'process',
-                                                                                    {
-                                                                                        ...form.data.process,
-                                                                                        values: form.data.process.values.map(
-                                                                                            (
-                                                                                                currentValue,
-                                                                                                currentIndex,
-                                                                                            ) =>
-                                                                                                currentIndex === valueIndex
-                                                                                                    ? {
-                                                                                                          ...currentValue,
-                                                                                                          value_text: newText,
-                                                                                                          value_number: '',
-                                                                                                      }
-                                                                                                    : currentValue,
-                                                                                        ),
-                                                                                    },
-                                                                                );
-                                                                            }}
-                                                                        />
-                                                                        {value?.value_text &&
-                                                                            value.value_text !== 'Standar' && (
-                                                                                <Input
-                                                                                    className="animate-in bg-background shadow-sm transition-all fade-in slide-in-from-top-2"
-                                                                                    placeholder="Masukkan kondisi aktual..."
-                                                                                    value={
-                                                                                        value.value_text === ' '
-                                                                                            ? ''
-                                                                                            : value.value_text
-                                                                                    }
-                                                                                    readOnly={readOnly}
-                                                                                    required={!readOnly}
-                                                                                    onChange={(event) => {
-                                                                                        form.setData(
-                                                                                            'process',
-                                                                                            {
-                                                                                                ...form.data.process,
-                                                                                                values: form.data.process.values.map(
-                                                                                                    (
-                                                                                                        currentValue,
-                                                                                                        currentIndex,
-                                                                                                    ) =>
-                                                                                                        currentIndex === valueIndex
-                                                                                                            ? {
-                                                                                                                  ...currentValue,
-                                                                                                                  value_text: event.target.value,
-                                                                                                                  value_number: '',
-                                                                                                              }
-                                                                                                            : currentValue,
-                                                                                                ),
-                                                                                            },
-                                                                                        );
-                                                                                    }}
-                                                                                />
-                                                                            )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <Input
-                                                                        className="bg-background shadow-sm transition-all"
-                                                                        placeholder="Masukkan data..."
-                                                                        value={
-                                                                            value?.value_text ??
-                                                                            ''
-                                                                        }
-                                                                        readOnly={
-                                                                            readOnly
-                                                                        }
-                                                                        required={
-                                                                            !readOnly
-                                                                        }
-                                                                        onChange={(
-                                                                            event,
-                                                                        ) => {
-                                                                            form.setData(
-                                                                                'process',
-                                                                                {
-                                                                                    ...form
-                                                                                        .data
-                                                                                        .process,
-                                                                                    values: form.data.process.values.map(
-                                                                                        (
-                                                                                            currentValue,
-                                                                                            currentIndex,
-                                                                                        ) =>
-                                                                                            currentIndex ===
-                                                                                            valueIndex
-                                                                                                ? {
-                                                                                                      ...currentValue,
-                                                                                                      value_text:
-                                                                                                          event
-                                                                                                              .target
-                                                                                                              .value,
-                                                                                                      value_number:
-                                                                                                          '',
-                                                                                                  }
-                                                                                                : currentValue,
-                                                                                    ),
-                                                                                },
-                                                                            );
-                                                                        }}
-                                                                    />
-                                                                )}
+                                                                <ActualValueInput
+                                                                    inputType={item.input_type}
+                                                                    valueText={value?.value_text ?? ''}
+                                                                    valueNumber={value?.value_number ?? ''}
+                                                                    readOnly={readOnly}
+                                                                    required={!readOnly}
+                                                                    onChange={(nextValue) => {
+                                                                        form.setData(
+                                                                            'process',
+                                                                            {
+                                                                                ...form.data.process,
+                                                                                values: form.data.process.values.map(
+                                                                                    (currentValue, currentIndex) =>
+                                                                                        currentIndex === valueIndex
+                                                                                            ? {
+                                                                                                  ...currentValue,
+                                                                                                  ...nextValue,
+                                                                                              }
+                                                                                            : currentValue,
+                                                                                ),
+                                                                            },
+                                                                        );
+                                                                    }}
+                                                                />
                                                             </TableCell>
                                                             <TableCell className="px-5 pt-4 align-top">
                                                                 <Textarea
@@ -807,15 +569,19 @@ export function CatatanProsesForm({
                             </Button>
                         </div>
                     ) : null}
-                    {/* SUPERVISOR APPROVE BUTTON (F2-08) */}
                     {entryForm.capabilities.approve_daily_process && entryForm.entry.log_id ? (
-                        <div className="mt-4 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20">
-                            <p className="mr-auto text-sm text-emerald-700 dark:text-emerald-300">
-                                Catatan proses ini menunggu pemeriksaan supervisor.
-                            </p>
+                        <div className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-xl border border-emerald-200 bg-background/95 p-4 shadow-2xl ring-1 ring-emerald-100 backdrop-blur sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[420px] dark:border-emerald-800 dark:ring-emerald-900/50">
+                            <div>
+                                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                    Menunggu pemeriksaan supervisor
+                                </p>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                    Catatan proses ini sudah disubmit operator.
+                                </p>
+                            </div>
                             <Button
                                 type="button"
-                                className="bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+                                className="w-full bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
                                 onClick={() => {
                                     if (entryForm.entry.log_id === null) {
                                         return;
@@ -831,7 +597,7 @@ export function CatatanProsesForm({
                                 }}
                             >
                                 <CheckCircle2 className="mr-2 size-4" />
-                                ✓ Di Periksa
+                                Di Periksa
                             </Button>
                         </div>
                     ) : null}
@@ -867,105 +633,5 @@ export function CatatanProsesForm({
                 </form>
             </CardContent>
         </Card>
-    );
-}
-
-type StandarToggleProps = {
-    value: string;
-    disabled?: boolean;
-    onChange: (value: string) => void;
-};
-
-function StandarToggle({ value, disabled = false, onChange }: StandarToggleProps) {
-    return (
-        <div className="inline-flex overflow-hidden rounded-lg border border-border shadow-sm">
-            <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onChange(value === 'Tidak Standar' ? '' : 'Tidak Standar')}
-                className={[
-                    'flex min-w-[110px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
-                    !disabled && 'cursor-pointer',
-                    disabled && 'cursor-not-allowed opacity-60',
-                    value === 'Tidak Standar'
-                        ? 'bg-red-500 text-white shadow-inner'
-                        : 'bg-background text-muted-foreground hover:bg-red-50 hover:text-red-600',
-                ]
-                    .filter(Boolean)
-                    .join(' ')}
-            >
-                <span className="text-base leading-none">✕</span>
-                Tidak Standar
-            </button>
-            <div className="w-px bg-border" />
-            <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onChange(value === 'Standar' ? '' : 'Standar')}
-                className={[
-                    'flex min-w-[90px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
-                    !disabled && 'cursor-pointer',
-                    disabled && 'cursor-not-allowed opacity-60',
-                    value === 'Standar'
-                        ? 'bg-emerald-500 text-white shadow-inner'
-                        : 'bg-background text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600',
-                ]
-                    .filter(Boolean)
-                    .join(' ')}
-            >
-                <span className="text-base leading-none">✓</span>
-                Standar
-            </button>
-        </div>
-    );
-}
-
-type StandarWithManualToggleProps = {
-    value: string;
-    disabled?: boolean;
-    onChange: (value: string) => void;
-};
-
-function StandarWithManualToggle({ value, disabled = false, onChange }: StandarWithManualToggleProps) {
-    return (
-        <div className="inline-flex overflow-hidden rounded-lg border border-border shadow-sm">
-            <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onChange(value === 'Lainnya' ? '' : 'Lainnya')}
-                className={[
-                    'flex min-w-[100px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
-                    !disabled && 'cursor-pointer',
-                    disabled && 'cursor-not-allowed opacity-60',
-                    value === 'Lainnya'
-                        ? 'bg-amber-500 text-white shadow-inner'
-                        : 'bg-background text-muted-foreground hover:bg-amber-50 hover:text-amber-600',
-                ]
-                    .filter(Boolean)
-                    .join(' ')}
-            >
-                <span className="text-base leading-none">✎</span>
-                Yang lain...
-            </button>
-            <div className="w-px bg-border" />
-            <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onChange(value === 'Standar' ? '' : 'Standar')}
-                className={[
-                    'flex min-w-[90px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
-                    !disabled && 'cursor-pointer',
-                    disabled && 'cursor-not-allowed opacity-60',
-                    value === 'Standar'
-                        ? 'bg-emerald-500 text-white shadow-inner'
-                        : 'bg-background text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600',
-                ]
-                    .filter(Boolean)
-                    .join(' ')}
-            >
-                <span className="text-base leading-none">✓</span>
-                Standar
-            </button>
-        </div>
     );
 }

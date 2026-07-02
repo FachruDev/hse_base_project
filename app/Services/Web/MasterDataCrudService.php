@@ -10,10 +10,12 @@ use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessItem;
 use App\Models\Master\ProcessSection;
 use App\Models\Master\ProcessTemplate;
+use App\Support\Ipal\InputType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class MasterDataCrudService
@@ -572,7 +574,7 @@ class MasterDataCrudService
                     'section_id' => ['required', 'integer', 'exists:m_process_sections,id'],
                     'name' => ['required', 'string', 'max:255'],
                     'standard_condition' => ['nullable', 'string'],
-                    'input_type' => ['required', 'in:number,text,select'],
+                    'input_type' => ['required', Rule::in(InputType::allowedForMaster())],
                     'order_no' => ['required', 'integer', 'min:1'],
                 ],
                 'columns' => [
@@ -667,7 +669,7 @@ class MasterDataCrudService
                 ],
                 'rules' => [
                     'name' => ['required', 'string', 'max:255'],
-                    'input_type' => ['required', 'in:number,text,select'],
+                    'input_type' => ['required', Rule::in(InputType::allowedForMaster())],
                     'order_no' => ['required', 'integer', 'min:1'],
                 ],
                 'columns' => [
@@ -888,11 +890,7 @@ class MasterDataCrudService
      */
     private function inputTypeOptions(): array
     {
-        return [
-            ['label' => 'Number', 'value' => 'number'],
-            ['label' => 'Text', 'value' => 'text'],
-            ['label' => 'Select', 'value' => 'select'],
-        ];
+        return InputType::optionsForMaster();
     }
 
     /**

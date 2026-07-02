@@ -92,6 +92,7 @@ class CatatanPengolahanLimbahAirPageService
                 'processLog.approval.operator:id,name,external_id',
                 'processLog.approval.supervisor:id,name,external_id',
                 'processLog.batches:id,process_log_id,batch_no',
+                'processLog.batches.values.item.section:id,name,order_no',
             ])
             ->whereYear('tanggal', $year)
             ->whereMonth('tanggal', $month)
@@ -233,11 +234,10 @@ class CatatanPengolahanLimbahAirPageService
         $batchItems = $batchSections->flatMap->items->values();
 
         $processStatus = $log?->processLog?->status;
-        $isLogFromToday = $log !== null && $log->tanggal?->isToday();
         $isApprovedBySupervisor = $log?->processLog?->approval?->supervisor_signed_at !== null;
         $processReadOnly = $forceReadOnly
-            || $processStatus === 'APPROVED'
-            || ($processStatus === 'SUBMITTED' && (! $isLogFromToday || $isApprovedBySupervisor));
+            || in_array($processStatus, ['APPROVED', 'SUBMITTED'], true)
+            || $isApprovedBySupervisor;
         $checklistReadOnly = $processReadOnly || $this->isChecklistPeriodApproved($date);
 
         return [
@@ -300,8 +300,33 @@ class CatatanPengolahanLimbahAirPageService
             ],
             'capabilities' => [
                 'approve_daily_process' => false,
+                'reopen_daily_process' => false,
             ],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildMonthlyPdfDetail(User $user, int $year, int $month): array
+    {
+        $detail = $this->buildMonthlyDetail($user, $year, $month);
+
+        $logs = IpalDailyLog::query()
+            ->with([
+                'operator:id,name,external_id,department_id',
+                'operator.department:id,name',
+                'processLog.batches.values.item.section:id,name,order_no',
+            ])
+            ->whereYear('tanggal', $year)
+            ->whereMonth('tanggal', $month)
+            ->orderBy('tanggal')
+            ->orderBy('id')
+            ->get();
+
+        $detail['batch_rows'] = $this->mapMonthlyBatchRows($logs);
+
+        return $detail;
     }
 
     /**
@@ -506,6 +531,53 @@ class CatatanPengolahanLimbahAirPageService
     }
 
     /**
+     * @param  Collection<int, IpalDailyLog>  $logs
+     * @return array<int, array<string, mixed>>
+     */
+    private function mapMonthlyBatchRows(Collection $logs): array
+    {
+        return $logs
+            ->filter(fn (IpalDailyLog $log): bool => ($log->processLog?->batches->count() ?? 0) > 0)
+            ->map(fn (IpalDailyLog $log): array => [
+                'tanggal' => $log->tanggal?->format('Y-m-d'),
+                'operator' => [
+                    'name' => $log->operator?->name,
+                    'external_id' => $log->operator?->external_id,
+                    'department_name' => $log->operator?->department?->name,
+                ],
+                'batches' => $log->processLog?->batches
+                    ->sortBy('batch_no')
+                    ->map(fn ($batch): array => [
+                        'batch_no' => $batch->batch_no,
+                        'sections' => $batch->values
+                            ->filter(fn ($value): bool => $value->item !== null)
+                            ->sortBy(fn ($value): string => sprintf(
+                                '%04d-%04d-%08d',
+                                $value->item?->section?->order_no ?? 999,
+                                $value->item?->order_no ?? 999,
+                                $value->item?->id ?? 0,
+                            ))
+                            ->groupBy(fn ($value): string => (string) ($value->item?->section_id ?? 0))
+                            ->map(fn (Collection $values): array => [
+                                'name' => $values->first()?->item?->section?->name ?? 'Batch',
+                                'values' => $values->map(fn ($value): array => [
+                                    'name' => $value->item?->name,
+                                    'input_type' => $value->item?->input_type,
+                                    'value_text' => $value->value_text,
+                                    'value_number' => $value->value_number,
+                                ])->values()->all(),
+                            ])
+                            ->values()
+                            ->all(),
+                    ])
+                    ->values()
+                    ->all() ?? [],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function mapChecklistApproval(?IpalChecklistApproval $approval): array
@@ -676,7 +748,7 @@ class CatatanPengolahanLimbahAirPageService
             return 'lihat';
         }
 
-        if ($status === 'SUBMITTED' && $isApprovedBySupervisor) {
+        if ($status === 'SUBMITTED') {
             return 'lihat';
         }
 

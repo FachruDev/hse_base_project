@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -83,6 +85,15 @@ class IpalMonthlyWorkflowTest extends TestCase
             ],
         ])->assertRedirect('/dashboard/forms/catatan-pengolahan-limbah-air/create?user_id=operator.monthly.a&tanggal=2026-06-03');
 
+        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/create?user_id=operator.monthly.a&tanggal=2026-06-03')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entryForm.entry.mode', 'lihat')
+                ->where('entryForm.entry.read_only', true)
+                ->where('entryForm.process.read_only', true)
+                ->etc()
+            );
+
         $listingResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air?user_id=operator.monthly.a&year=2026');
         $listingResponse->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -142,6 +153,33 @@ class IpalMonthlyWorkflowTest extends TestCase
                 ->where('entryForm.entry.read_only', true)
                 ->etc()
             );
+
+        $this->get("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$logId}?user_id=hse.head")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('dashboard/forms/catatan-pengolahan-limbah-air/show')
+                ->where('entryForm.capabilities.approve_daily_process', true)
+                ->where('entryForm.process.read_only', true)
+                ->etc()
+            );
+
+        Pdf::fake();
+
+        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/checklist.pdf?user_id=operator.monthly.a')
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(fn (PdfBuilder $pdf): bool => $pdf->viewName === 'pdf.ipal.monthly-checklist'
+            && $pdf->downloadName === 'checklist-ipal-2026-6.pdf'
+            && $pdf->orientation === 'Landscape'
+            && ($pdf->viewData['monthlyDetail']['period']['month'] ?? null) === 6);
+
+        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/batch-mixing.pdf?user_id=operator.monthly.a')
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(fn (PdfBuilder $pdf): bool => $pdf->viewName === 'pdf.ipal.monthly-batch-mixing'
+            && $pdf->downloadName === 'batch-mixing-ipal-2026-6.pdf'
+            && $pdf->orientation === 'Landscape'
+            && count($pdf->viewData['monthlyDetail']['batch_rows'] ?? []) === 1);
 
         $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/checklist-approval?user_id=hse.head')
             ->assertRedirect('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=hse.head');

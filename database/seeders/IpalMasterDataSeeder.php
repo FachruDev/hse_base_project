@@ -83,60 +83,60 @@ class IpalMasterDataSeeder extends Seeder
 
         $sections = [
             'Penampungan Awal' => [
-                ['name' => 'Debit inlet pada flow meter', 'standard_condition' => 'Berjalan', 'input_type' => 'option_standard'],
-                ['name' => 'Penyaringan sampah kasar', 'standard_condition' => 'Saringan bersih tidak tersumbat', 'input_type' => 'option_standard'],
+                ['name' => 'Debit inlet pada flow meter', 'standard_condition' => 'Berjalan', 'input_type' => 'option'],
+                ['name' => 'Penyaringan sampah kasar', 'standard_condition' => 'Saringan bersih tidak tersumbat', 'input_type' => 'option'],
             ],
             'Perangkap Lemak/Minyak' => [
-                ['name' => 'Kondisi endapan lemak/minyak', 'standard_condition' => 'Warna muda', 'input_type' => 'option_standard'],
+                ['name' => 'Kondisi endapan lemak/minyak', 'standard_condition' => 'Warna muda', 'input_type' => 'option'],
                 ['name' => 'Efluent', 'standard_condition' => 'Warna putih pekat', 'input_type' => 'option_with_manual'],
             ],
             'Ekualisasi' => [
-                ['name' => 'Kepekatan air limbah', 'standard_condition' => 'Pekat', 'input_type' => 'option_standard'],
-                ['name' => 'Warna air limbah', 'standard_condition' => 'Muda', 'input_type' => 'option_standard'],
-                ['name' => 'pH', 'standard_condition' => 'pH 4 - 10', 'input_type' => 'number'],
+                ['name' => 'Kepekatan air limbah', 'standard_condition' => 'Pekat', 'input_type' => 'option'],
+                ['name' => 'Warna air limbah', 'standard_condition' => 'Muda', 'input_type' => 'option'],
+                ['name' => 'pH', 'standard_condition' => 'pH 4 - 10', 'input_type' => 'decimal_2'],
             ],
             'Sedimentasi Kimia' => [
-                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option_standard'],
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
-                ['name' => 'Monitoring pH', 'standard_condition' => 'pH 6 - 9', 'input_type' => 'number'],
+                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option'],
+                ['name' => 'Monitoring pH', 'standard_condition' => 'pH 6 - 9', 'input_type' => 'decimal_2'],
             ],
             'Aerasi (Lumpur Aktif)' => [
-                ['name' => 'Masukan udara', 'standard_condition' => 'Berfungsi, udara merata', 'input_type' => 'option_standard'],
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
-                ['name' => 'Lumpur (SV 30)', 'standard_condition' => '20% - 50%, warna coklat terang', 'input_type' => 'option_standard'],
-                ['name' => 'Busa', 'standard_condition' => 'Putih tipis', 'input_type' => 'option_standard'],
+                ['name' => 'Masukan udara', 'standard_condition' => 'Berfungsi, udara merata', 'input_type' => 'option'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option'],
+                ['name' => 'Lumpur (SV 30)', 'standard_condition' => '20% - 50%, warna coklat terang', 'input_type' => 'option'],
+                ['name' => 'Busa', 'standard_condition' => 'Putih tipis', 'input_type' => 'option'],
             ],
             'Clarifier' => [
-                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option_standard'],
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
-                ['name' => 'Pengembalian lumpur', 'standard_condition' => 'Segar, warna coklat terang', 'input_type' => 'option_standard'],
+                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option'],
+                ['name' => 'Pengembalian lumpur', 'standard_condition' => 'Segar, warna coklat terang', 'input_type' => 'option'],
             ],
             'Stabilisasi' => [
-                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option_standard'],
-                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option_standard'],
-                ['name' => 'pH', 'standard_condition' => 'pH 6 - 9', 'input_type' => 'number'],
+                ['name' => 'Transparansi', 'standard_condition' => 'Jernih', 'input_type' => 'option'],
+                ['name' => 'Warna', 'standard_condition' => 'Muda terang', 'input_type' => 'option'],
+                ['name' => 'pH', 'standard_condition' => 'pH 6 - 9', 'input_type' => 'decimal_2'],
             ],
             'Filtrasi' => [
-                ['name' => 'Kondisi media & karbon aktif filter', 'standard_condition' => 'Effluent jernih', 'input_type' => 'option_standard'],
+                ['name' => 'Kondisi media & karbon aktif filter', 'standard_condition' => 'Effluent jernih', 'input_type' => 'option'],
             ],
             'Outlet / Titik Sampling' => [
-                ['name' => 'Kran', 'standard_condition' => 'Bersih, tidak tersumbat', 'input_type' => 'option_standard'],
-                ['name' => 'Angka pada water meter', 'standard_condition' => 'Terbaca', 'input_type' => 'number'],
-                ['name' => 'Kondisi visual air outlet', 'standard_condition' => 'Tidak berwarna, tidak berbusa', 'input_type' => 'option_standard'],
+                ['name' => 'Kran', 'standard_condition' => 'Bersih, tidak tersumbat', 'input_type' => 'option'],
+                ['name' => 'Angka pada water meter', 'standard_condition' => 'Terbaca', 'input_type' => 'decimal_2'],
+                ['name' => 'Kondisi visual air outlet', 'standard_condition' => 'Tidak berwarna, tidak berbusa', 'input_type' => 'option'],
             ],
             'Bio Indikator' => [
-                ['name' => 'Air', 'standard_condition' => 'Jernih, tidak berbusa', 'input_type' => 'option_standard'],
-                ['name' => 'Jumlah ikan', 'standard_condition' => 'Sesuai standar', 'input_type' => 'number'],
-                ['name' => 'Kondisi Ikan', 'standard_condition' => 'Aktif, tidak ada yang mati', 'input_type' => 'option_standard'],
+                ['name' => 'Air', 'standard_condition' => 'Jernih, tidak berbusa', 'input_type' => 'option'],
+                ['name' => 'Jumlah ikan', 'standard_condition' => 'Sesuai standar', 'input_type' => 'decimal_2'],
+                ['name' => 'Kondisi Ikan', 'standard_condition' => 'Aktif, tidak ada yang mati', 'input_type' => 'option'],
             ],
             'Drying Bed' => [
-                ['name' => 'Kondisi lumpur', 'standard_condition' => 'Kering', 'input_type' => 'option_standard'],
-                ['name' => 'Berat lumpur (Kg)', 'standard_condition' => 'Tercatat', 'input_type' => 'number'],
+                ['name' => 'Kondisi lumpur', 'standard_condition' => 'Kering', 'input_type' => 'option'],
+                ['name' => 'Berat lumpur (Kg)', 'standard_condition' => 'Tercatat', 'input_type' => 'decimal_2'],
             ],
             'Verifikasi pH Meter' => [
-                ['name' => 'pH 4', 'standard_condition' => '3,08 - 4,08', 'input_type' => 'number'],
-                ['name' => 'pH 7', 'standard_condition' => '6,44 - 7,14', 'input_type' => 'number'],
-                ['name' => 'pH 9 atau pH 10', 'standard_condition' => '8,28 - 9,18 atau 9,2 - 10,2', 'input_type' => 'number'],
+                ['name' => 'pH 4', 'standard_condition' => '3,08 - 4,08', 'input_type' => 'decimal_2'],
+                ['name' => 'pH 7', 'standard_condition' => '6,44 - 7,14', 'input_type' => 'decimal_2'],
+                ['name' => 'pH 9 atau pH 10', 'standard_condition' => '8,28 - 9,18 atau 9,2 - 10,2', 'input_type' => 'decimal_2'],
             ],
         ];
 
@@ -175,25 +175,25 @@ class IpalMasterDataSeeder extends Seeder
     {
         $sections = [
             'Air limbah awal' => [
-                ['name' => 'pH', 'input_type' => 'number'],
+                ['name' => 'pH', 'input_type' => 'decimal_2'],
                 ['name' => 'Warna', 'input_type' => 'text'],
             ],
             'Netralisasi' => [
-                ['name' => 'Jumlah Chemical', 'input_type' => 'number'],
-                ['name' => 'pH', 'input_type' => 'number'],
-                ['name' => 'Waktu', 'input_type' => 'text'],
+                ['name' => 'Jumlah Chemical', 'input_type' => 'decimal_2'],
+                ['name' => 'pH', 'input_type' => 'decimal_2'],
+                ['name' => 'Durasi (menit)', 'input_type' => 'duration_minutes'],
                 ['name' => 'Warna', 'input_type' => 'text'],
             ],
             'Koagulasi' => [
-                ['name' => 'Jumlah Chemical', 'input_type' => 'number'],
-                ['name' => 'pH', 'input_type' => 'number'],
-                ['name' => 'Waktu', 'input_type' => 'text'],
+                ['name' => 'Jumlah Chemical', 'input_type' => 'decimal_2'],
+                ['name' => 'pH', 'input_type' => 'decimal_2'],
+                ['name' => 'Durasi (menit)', 'input_type' => 'duration_minutes'],
                 ['name' => 'Warna', 'input_type' => 'text'],
             ],
             'Flokulasi' => [
-                ['name' => 'Jumlah Chemical', 'input_type' => 'number'],
-                ['name' => 'pH', 'input_type' => 'number'],
-                ['name' => 'Waktu', 'input_type' => 'text'],
+                ['name' => 'Jumlah Chemical', 'input_type' => 'decimal_2'],
+                ['name' => 'pH', 'input_type' => 'decimal_2'],
+                ['name' => 'Durasi (menit)', 'input_type' => 'duration_minutes'],
                 ['name' => 'Warna', 'input_type' => 'text'],
             ],
         ];

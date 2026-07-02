@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Master;
 
+use App\Support\Ipal\InputType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SaveBatchItemRequest extends FormRequest
 {
@@ -24,7 +26,7 @@ class SaveBatchItemRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'input_type' => ['required', 'in:number,text,select'],
+            'input_type' => ['required', Rule::in(InputType::allowedForMaster())],
             'order_no' => ['required', 'integer', 'min:1'],
         ];
     }

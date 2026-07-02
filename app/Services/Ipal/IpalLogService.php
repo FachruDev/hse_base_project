@@ -17,6 +17,7 @@ use App\Models\Master\OperationalWeekday;
 use App\Models\Master\ProcessItem;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
+use App\Support\Ipal\InputType;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -670,14 +671,14 @@ class IpalLogService
         $numberValue = $payload['value_number'] ?? null;
         $textValue = $payload['value_text'] ?? null;
 
-        if ($inputType === 'number') {
+        if (InputType::storesNumber($inputType)) {
             if ($numberValue === null) {
                 if (! $strict) {
                     return null;
                 }
 
                 throw ValidationException::withMessages([
-                    'process.values' => ['Process item tipe number wajib mengisi value_number.'],
+                    'process.values' => ['Process item tipe angka wajib mengisi value_number.'],
                 ]);
             }
 
@@ -723,14 +724,14 @@ class IpalLogService
         $numberValue = $payload['value_number'] ?? null;
         $textValue = $payload['value_text'] ?? null;
 
-        if ($inputType === 'number') {
+        if (InputType::storesNumber($inputType)) {
             if ($numberValue === null) {
                 if (! $strict) {
                     return;
                 }
 
                 throw ValidationException::withMessages([
-                    'batch.values' => ['Batch item tipe number wajib mengisi value_number.'],
+                    'batch.values' => ['Batch item tipe angka wajib mengisi value_number.'],
                 ]);
             }
 
@@ -950,6 +951,10 @@ class IpalLogService
             return $templateId;
         }
 
+        if (is_string($templateId) && ctype_digit($templateId)) {
+            return (int) $templateId;
+        }
+
         if ($isOperational) {
             throw ValidationException::withMessages([
                 'process.template_id' => ['Template proses wajib diisi untuk hari operasional.'],
@@ -1016,6 +1021,10 @@ class IpalLogService
 
         if (is_int($templateId)) {
             return $templateId;
+        }
+
+        if (is_string($templateId) && ctype_digit($templateId)) {
+            return (int) $templateId;
         }
 
         if ($isOperational) {

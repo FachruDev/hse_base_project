@@ -4,20 +4,12 @@ import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { confirmDelete } from '@/lib/sweetalert';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { CatatanPengolahanLimbahAirEntryPayload } from '@/modules/dashboard/types';
+import { ActualValueInput } from './actual-value-input';
 import type { ProcessFormState } from './entry-form-types';
 import { buildAvailableBatchNumbers } from './entry-form-types';
-
-function roundToDecimals(value: string, decimals: number): string {
-    const num = parseFloat(value);
-    if (isNaN(num)) {
-        return value;
-    }
-    return num.toFixed(decimals);
-}
 
 type BatchMixingSectionProps = {
     entryForm: CatatanPengolahanLimbahAirEntryPayload;
@@ -260,83 +252,34 @@ export function BatchMixingSection({ entryForm, form, readOnly, selectedBatchNo,
                                                                                             </span>
                                                                                         </TableCell>
                                                                                         <TableCell className="min-w-[240px] py-2 pr-4">
-                                                                                            {batchItem.input_type === 'number' ? (
-                                                                                                <Input
-                                                                                                    type="number"
-                                                                                                    step="0.01"
-                                                                                                    className="bg-background shadow-sm transition-all focus-visible:ring-primary/50"
-                                                                                                    value={value.value_number}
-                                                                                                    readOnly={readOnly}
-                                                                                                    required={!readOnly}
-                                                                                                    onBlur={(event) => {
-                                                                                                        const rounded = roundToDecimals(event.target.value, 2);
-                                                                                                        if (rounded !== event.target.value && rounded !== '') {
-                                                                                                            form.setData('batch', [
-                                                                                                                ...form.data.batch.map((existingBatch, existingBatchIndex) => {
-                                                                                                                    if (existingBatchIndex !== batchFormIndex) {
-                                                                                                                        return existingBatch;
-                                                                                                                    }
-                                                                                                                    return {
-                                                                                                                        ...existingBatch,
-                                                                                                                        values: existingBatch.values.map((existingValue, existingValueIndex) =>
-                                                                                                                            existingValueIndex === valueIndex
-                                                                                                                                ? { ...existingValue, value_number: rounded }
-                                                                                                                                : existingValue,
-                                                                                                                        ),
-                                                                                                                    };
-                                                                                                                }),
-                                                                                                            ]);
-                                                                                                        }
-                                                                                                    }}
-                                                                                                    onChange={(event) => {
-                                                                                                        form.setData('batch', [
-                                                                                                            ...form.data.batch.map((existingBatch, existingBatchIndex) => {
-                                                                                                                if (existingBatchIndex !== batchFormIndex) {
-                                                                                                                    return existingBatch;
-                                                                                                                }
-                                                                                                                return {
-                                                                                                                    ...existingBatch,
-                                                                                                                    values: existingBatch.values.map((existingValue, existingValueIndex) =>
-                                                                                                                        existingValueIndex === valueIndex
-                                                                                                                            ? {
-                                                                                                                                ...existingValue,
-                                                                                                                                value_number: event.target.value,
-                                                                                                                            }
-                                                                                                                            : existingValue,
-                                                                                                                    ),
-                                                                                                                };
-                                                                                                            }),
-                                                                                                        ]);
-                                                                                                    }}
-                                                                                                />
-                                                                                            ) : (
-                                                                                                <Input
-                                                                                                    className="bg-background shadow-sm transition-all focus-visible:ring-primary/50"
-                                                                                                    value={value.value_text}
-                                                                                                    readOnly={readOnly}
-                                                                                                    required={!readOnly}
-                                                                                                    onChange={(event) => {
-                                                                                                        form.setData('batch', [
-                                                                                                            ...form.data.batch.map((existingBatch, existingBatchIndex) => {
-                                                                                                                if (existingBatchIndex !== batchFormIndex) {
-                                                                                                                    return existingBatch;
-                                                                                                                }
-                                                                                                                return {
-                                                                                                                    ...existingBatch,
-                                                                                                                    values: existingBatch.values.map((existingValue, existingValueIndex) =>
-                                                                                                                        existingValueIndex === valueIndex
-                                                                                                                            ? {
-                                                                                                                                ...existingValue,
-                                                                                                                                value_text: event.target.value,
-                                                                                                                            }
-                                                                                                                            : existingValue,
-                                                                                     ),
-                                                                                                                };
-                                                                                                            }),
-                                                                                                        ]);
-                                                                                                    }}
-                                                                                                />
-                                                                                            )}
+                                                                                            <ActualValueInput
+                                                                                                inputType={batchItem.input_type}
+                                                                                                valueText={value.value_text}
+                                                                                                valueNumber={value.value_number}
+                                                                                                readOnly={readOnly}
+                                                                                                required={!readOnly}
+                                                                                                onChange={(nextValue) => {
+                                                                                                    form.setData('batch', [
+                                                                                                        ...form.data.batch.map((existingBatch, existingBatchIndex) => {
+                                                                                                            if (existingBatchIndex !== batchFormIndex) {
+                                                                                                                return existingBatch;
+                                                                                                            }
+
+                                                                                                            return {
+                                                                                                                ...existingBatch,
+                                                                                                                values: existingBatch.values.map((existingValue, existingValueIndex) =>
+                                                                                                                    existingValueIndex === valueIndex
+                                                                                                                        ? {
+                                                                                                                              ...existingValue,
+                                                                                                                              ...nextValue,
+                                                                                                                          }
+                                                                                                                        : existingValue,
+                                                                                                                ),
+                                                                                                            };
+                                                                                                        }),
+                                                                                                    ]);
+                                                                                                }}
+                                                                                            />
                                                                                         </TableCell>
                                                                                     </TableRow>
                                                                                 );

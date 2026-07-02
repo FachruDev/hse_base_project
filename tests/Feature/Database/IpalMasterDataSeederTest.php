@@ -10,6 +10,7 @@ use App\Models\Master\ProcessSection;
 use App\Models\Master\ProcessTemplate;
 use Database\Seeders\IpalMasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class IpalMasterDataSeederTest extends TestCase
@@ -27,7 +28,38 @@ class IpalMasterDataSeederTest extends TestCase
         $this->assertNotNull($processTemplate);
         $this->assertSame(22, ChecklistItem::query()->where('template_id', $checklistTemplate->id)->count());
         $this->assertSame(12, ProcessSection::query()->where('template_id', $processTemplate->id)->count());
-        $this->assertSame(31, ProcessItem::query()->count());
+        $this->assertSame(32, ProcessItem::query()->count());
         $this->assertSame(14, BatchItem::query()->count());
+
+        $durationSections = ['Netralisasi', 'Koagulasi', 'Flokulasi'];
+        $this->assertSame(
+            0,
+            DB::table('m_batch_items')
+                ->join('m_batch_sections', 'm_batch_sections.id', '=', 'm_batch_items.section_id')
+                ->whereIn('m_batch_sections.name', $durationSections)
+                ->where('m_batch_items.name', 'Waktu')
+                ->count(),
+        );
+        $this->assertSame(
+            3,
+            DB::table('m_batch_items')
+                ->join('m_batch_sections', 'm_batch_sections.id', '=', 'm_batch_items.section_id')
+                ->whereIn('m_batch_sections.name', $durationSections)
+                ->where('m_batch_items.name', 'Durasi (menit)')
+                ->where('m_batch_items.input_type', 'duration_minutes')
+                ->count(),
+        );
+        $this->assertSame(
+            0,
+            ProcessItem::query()
+                ->whereIn('input_type', ['number', 'select', 'option_standard'])
+                ->count(),
+        );
+        $this->assertSame(
+            0,
+            BatchItem::query()
+                ->whereIn('input_type', ['number', 'select', 'option_standard'])
+                ->count(),
+        );
     }
 }

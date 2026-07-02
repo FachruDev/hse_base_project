@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Master;
 
+use App\Support\Ipal\InputType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SaveProcessItemRequest extends FormRequest
 {
@@ -26,7 +28,7 @@ class SaveProcessItemRequest extends FormRequest
             'section_id' => ['required', 'integer', 'exists:m_process_sections,id'],
             'name' => ['required', 'string', 'max:255'],
             'standard_condition' => ['nullable', 'string'],
-            'input_type' => ['required', 'in:number,text,select'],
+            'input_type' => ['required', Rule::in(InputType::allowedForMaster())],
             'order_no' => ['required', 'integer', 'min:1'],
         ];
     }

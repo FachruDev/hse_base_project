@@ -22,12 +22,14 @@ use App\Services\Ipal\IpalLogService;
 use App\Services\Web\B3StoragePageService;
 use App\Services\Web\CatatanPengolahanLimbahAirPageService;
 use App\Services\Web\DashboardService;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\LaravelPdf\Facades\Pdf;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class DashboardController extends Controller
@@ -69,6 +71,44 @@ class DashboardController extends Controller
                 $request->month(),
             ),
         ]);
+    }
+
+    public function catatanPengolahanLimbahAirMonthlyChecklistPdf(
+        IpalMonthlyPeriodRequest $request,
+        CatatanPengolahanLimbahAirPageService $pageService,
+    ): Responsable {
+        $detail = $pageService->buildMonthlyPdfDetail(
+            $this->authenticatedUser($request),
+            $request->year(),
+            $request->month(),
+        );
+
+        return Pdf::view('pdf.ipal.monthly-checklist', [
+            'monthlyDetail' => $detail,
+        ])
+            ->landscape()
+            ->format('a4')
+            ->margins(8, 8, 10, 8)
+            ->name("checklist-ipal-{$request->year()}-{$request->month()}.pdf");
+    }
+
+    public function catatanPengolahanLimbahAirMonthlyBatchMixingPdf(
+        IpalMonthlyPeriodRequest $request,
+        CatatanPengolahanLimbahAirPageService $pageService,
+    ): Responsable {
+        $detail = $pageService->buildMonthlyPdfDetail(
+            $this->authenticatedUser($request),
+            $request->year(),
+            $request->month(),
+        );
+
+        return Pdf::view('pdf.ipal.monthly-batch-mixing', [
+            'monthlyDetail' => $detail,
+        ])
+            ->landscape()
+            ->format('a4')
+            ->margins(8, 8, 10, 8)
+            ->name("batch-mixing-ipal-{$request->year()}-{$request->month()}.pdf");
     }
 
     public function catatanPengolahanLimbahAirApproveMonthlyChecklist(
