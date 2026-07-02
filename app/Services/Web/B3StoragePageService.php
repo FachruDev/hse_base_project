@@ -97,6 +97,27 @@ class B3StoragePageService
             ])
             ->all();
 
+        $initiatorUserOptions = User::query()
+            ->with('department:id,name')
+            ->where('is_active', true)
+            ->orderBy('external_id')
+            ->orderBy('name')
+            ->get(['id', 'external_id', 'name', 'email', 'department_id'])
+            ->map(static fn (User $record): array => [
+                'value' => $record->external_id,
+                'label' => trim(sprintf(
+                    '%s - %s%s',
+                    $record->external_id,
+                    $record->name,
+                    $record->email ? " ({$record->email})" : '',
+                )),
+                'external_id' => $record->external_id,
+                'name' => $record->name,
+                'email' => $record->email,
+                'department_name' => $record->department?->name,
+            ])
+            ->all();
+
         return [
             'module' => [
                 'title' => 'Form Penyimpanan Limbah B3',
@@ -108,6 +129,7 @@ class B3StoragePageService
                 'operator' => [
                     'name' => $user->name,
                     'external_id' => $user->external_id,
+                    'email' => $user->email,
                     'department_name' => $user->department?->name,
                 ],
             ],
@@ -118,6 +140,7 @@ class B3StoragePageService
                 ],
                 'waste_types' => $wasteTypeOptions,
                 'initiator_departments' => $initiatorDepartmentOptions,
+                'initiator_users' => $initiatorUserOptions,
             ],
         ];
     }

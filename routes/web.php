@@ -45,6 +45,10 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}',
         [DashboardController::class, 'catatanPengolahanLimbahAirLogShow'],
     )->name('dashboard.forms.catatan-pengolahan-limbah-air.logs.show');
+    Route::get(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}/pdf',
+        [DashboardController::class, 'catatanPengolahanLimbahAirDailyPdf'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.logs.pdf');
     Route::patch(
         '/dashboard/forms/catatan-pengolahan-limbah-air/logs/{log}/approve',
         [DashboardController::class, 'catatanPengolahanLimbahAirApproveDailyLog'],

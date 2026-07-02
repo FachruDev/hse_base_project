@@ -334,16 +334,19 @@ class B3StorageService
             $initiatorDepartmentOther = null;
         }
 
-        $initiatorUserId = $currentLog?->initiator_user_id;
+        $initiatorUserId = $currentLog?->initiator_user_id ?? $operator->id;
         $initiatorUserExternalId = isset($payload['initiator_user_external_id'])
             ? trim((string) $payload['initiator_user_external_id'])
             : null;
 
         if ($initiatorUserExternalId !== null && $initiatorUserExternalId !== '') {
-            $initiatorUser = User::query()->where('external_id', $initiatorUserExternalId)->first();
+            $initiatorUser = User::query()
+                ->where('external_id', $initiatorUserExternalId)
+                ->where('is_active', true)
+                ->first();
             $initiatorUserId = $initiatorUser?->id;
         } elseif ($initiatorUserExternalId === '') {
-            $initiatorUserId = null;
+            $initiatorUserId = $operator->id;
         }
 
         $photoPath = $currentLog?->photo_path;

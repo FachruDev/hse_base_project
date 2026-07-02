@@ -30,6 +30,20 @@ class B3StorageMonthlyWorkflowTest extends TestCase
 
         [$operatorA, $operatorB, $environmentSupervisor, $hseDepartmentHead] = $this->createUsers();
         [$solidWasteType, $liquidWasteType, $qcDepartment, $qaDepartment] = $this->createMasterData();
+        $initiatorUser = User::factory()->create([
+            'external_id' => 'qc.initiator',
+            'name' => 'QC Initiator',
+            'email' => 'qc.initiator@example.test',
+            'is_active' => true,
+        ]);
+
+        $this->get('/dashboard/forms/penyimpanan-limbah-b3/create?user_id=operator.b3.a')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entryForm.entry.operator.email', $operatorA->email)
+                ->has('entryForm.options.initiator_users')
+                ->etc()
+            );
 
         $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a', [
             'movement_date' => '2026-06-03',
@@ -43,6 +57,12 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'note' => 'Masuk TPS',
         ])->assertRedirect();
 
+        $this->assertDatabaseHas('b3_storage_logs', [
+            'document_number' => '01/QC/VI/26',
+            'operator_id' => $operatorA->id,
+            'initiator_user_id' => $operatorA->id,
+        ]);
+
         $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.b', [
             'movement_date' => '2026-06-20',
             'movement_time' => '10:15',
@@ -53,7 +73,25 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'document_number' => '02/QA/VI/26',
             'photo' => UploadedFile::fake()->image('bukti-b.jpg'),
             'note' => 'Keluar TPS',
+            'initiator_user_external_id' => 'qc.initiator',
         ])->assertRedirect();
+
+        $this->assertDatabaseHas('b3_storage_logs', [
+            'document_number' => '02/QA/VI/26',
+            'operator_id' => $operatorB->id,
+            'initiator_user_id' => $initiatorUser->id,
+        ]);
+
+        $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a', [
+            'movement_date' => '2026-06-21',
+            'movement_time' => '11:10',
+            'movement_type' => 'MASUK',
+            'waste_type_id' => $solidWasteType->id,
+            'initiator_department_id' => $qcDepartment->id,
+            'weight_kg' => 2.1,
+            'document_number' => 'INVALID/USER/VI/26',
+            'initiator_user_external_id' => 'missing.user',
+        ])->assertSessionHasErrors(['initiator_user_external_id']);
 
         $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a', [
             'movement_date' => '2026-07-02',

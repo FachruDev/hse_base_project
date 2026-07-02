@@ -36,7 +36,12 @@ class StoreB3StorageLogRequest extends FormRequest
             'document_number' => ['required', 'string', 'max:255'],
             'photo' => ['nullable', 'image', 'max:5120'],
             'note' => ['nullable', 'string'],
-            'initiator_user_external_id' => ['nullable', 'string', 'max:255'],
+            'initiator_user_external_id' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::exists('users', 'external_id')->where(static fn ($query) => $query->where('is_active', true)),
+            ],
         ];
     }
 

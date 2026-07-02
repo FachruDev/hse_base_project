@@ -50,11 +50,21 @@
     </tr>
     <tr>
         <th>Petugas Dept. Inisiator</th>
-        <td>{{ $log['initiator_user_name'] ?? '-' }}</td>
+        <td>
+            {{ $log['initiator_user_name'] ?? '-' }}
+            @if ($log['initiator_user_name'] ?? null)
+                <br><span class="muted">Terverifikasi Sistem</span>
+            @endif
+        </td>
     </tr>
     <tr>
         <th>Operator TPS LB3</th>
-        <td>{{ $log['operator_name'] ?? '-' }}{{ $log['operator_external_id'] ? ' ('.$log['operator_external_id'].')' : '' }}</td>
+        <td>
+            {{ $log['operator_name'] ?? '-' }}{{ $log['operator_external_id'] ? ' ('.$log['operator_external_id'].')' : '' }}
+            @if ($log['operator_name'] ?? null)
+                <br><span class="muted">Login Operator</span>
+            @endif
+        </td>
     </tr>
     <tr>
         <th>Catatan</th>
@@ -70,11 +80,13 @@
     <tr>
         <td>
             Petugas Dept. Inisiator<br>
-            <strong>{{ $log['initiator_user_name'] ?? '-' }}</strong>
+            <strong>{{ $log['initiator_user_name'] ?? '-' }}</strong><br>
+            <span class="muted">Terverifikasi Sistem</span>
         </td>
         <td>
             Operator TPS LB3<br>
-            <strong>{{ $log['operator_name'] ?? '-' }}</strong>
+            <strong>{{ $log['operator_name'] ?? '-' }}</strong><br>
+            <span class="muted">Login Operator</span>
         </td>
     </tr>
 </table>

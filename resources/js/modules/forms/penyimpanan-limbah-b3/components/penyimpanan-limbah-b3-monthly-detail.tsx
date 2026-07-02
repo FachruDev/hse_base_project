@@ -577,11 +577,13 @@ function B3StorageLogDetailDrawer({
                                 label="Petugas Dept. Inisiator"
                                 name={row.initiator_user_name}
                                 fallback="Belum tercatat"
+                                verificationLabel="Terverifikasi Sistem"
                             />
                             <SignatureField
                                 label="Operator TPS LB3"
                                 name={row.operator_name}
                                 fallback="Belum tercatat"
+                                verificationLabel="Login Operator"
                             />
                         </div>
                     </div>
@@ -612,16 +614,25 @@ function SignatureField({
     label,
     name,
     fallback,
+    verificationLabel,
 }: {
     label: string;
     name: string | null | undefined;
     fallback: string;
+    verificationLabel?: string;
 }) {
     return (
         <div className="rounded-md border border-border/70 p-3">
             <p className="text-xs font-medium text-muted-foreground">{label}</p>
             <div className="mt-3 flex min-h-16 items-end justify-center border-b border-dashed border-border/80 pb-2 text-center">
-                <span className="text-sm font-semibold">{name ?? fallback}</span>
+                <div>
+                    <span className="text-sm font-semibold">{name ?? fallback}</span>
+                    {name && verificationLabel ? (
+                        <p className="mt-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                            {verificationLabel}
+                        </p>
+                    ) : null}
+                </div>
             </div>
         </div>
     );

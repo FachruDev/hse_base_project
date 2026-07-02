@@ -396,6 +396,14 @@ export type B3StorageOption = {
     label: string;
 };
 
+export type B3StorageInitiatorUserOption = B3StorageOption & {
+    value: string;
+    external_id: string;
+    name: string;
+    email?: string | null;
+    department_name?: string | null;
+};
+
 export type B3StorageEntryPayload = {
     module: {
         title: string;
@@ -407,6 +415,7 @@ export type B3StorageEntryPayload = {
         operator: {
             name: string;
             external_id: string;
+            email?: string | null;
             department_name?: string | null;
         };
     };
@@ -414,5 +423,6 @@ export type B3StorageEntryPayload = {
         movement_types: B3StorageOption[];
         waste_types: B3StorageOption[];
         initiator_departments: B3StorageOption[];
+        initiator_users: B3StorageInitiatorUserOption[];
     };
 };

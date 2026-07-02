@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, ShieldCheck } from 'lucide-react';
 import * as React from 'react';
 import { showAlert } from '@/lib/sweetalert';
 
@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,9 +39,13 @@ type B3FormState = {
     note: string;
 };
 
+const SELF_INITIATOR_VALUE = '__SELF__';
+
 export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: PenyimpananLimbahB3EntryProps) {
     const [wasteTypeSelection, setWasteTypeSelection] = React.useState<string>('');
     const [initiatorSelection, setInitiatorSelection] = React.useState<string>('');
+    const [verificationOpen, setVerificationOpen] = React.useState(false);
+    const [selectedInitiatorUser, setSelectedInitiatorUser] = React.useState<string>(SELF_INITIATOR_VALUE);
 
     const form = useForm<B3FormState>({
         movement_date: entryForm.entry.tanggal_default,
@@ -75,13 +80,44 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
             label: item.label,
         })),
     ];
+    const initiatorUserItems = [
+        {
+            value: SELF_INITIATOR_VALUE,
+            label: `${entryForm.entry.operator.external_id} - ${entryForm.entry.operator.name}${entryForm.entry.operator.email ? ` (${entryForm.entry.operator.email})` : ''}`,
+        },
+        ...entryForm.options.initiator_users
+            .filter((item) => item.external_id !== entryForm.entry.operator.external_id)
+            .map((item) => ({
+                value: item.external_id,
+                label: item.label,
+            })),
+    ];
+    const selectedInitiatorDetail =
+        selectedInitiatorUser === SELF_INITIATOR_VALUE
+            ? {
+                  external_id: entryForm.entry.operator.external_id,
+                  name: entryForm.entry.operator.name,
+                  email: entryForm.entry.operator.email,
+                  department_name: entryForm.entry.operator.department_name,
+              }
+            : entryForm.options.initiator_users.find((item) => item.external_id === selectedInitiatorUser);
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        setVerificationOpen(true);
+    };
+
+    const handleConfirmSubmit = () => {
+        form.transform((data) => ({
+            ...data,
+            initiator_user_external_id: selectedInitiatorUser === SELF_INITIATOR_VALUE ? '' : selectedInitiatorUser,
+        }));
+
         form.post(b3StorageStore.url({ query: { user_id: userId } }), {
             preserveScroll: true,
             onSuccess: () => {
+                setVerificationOpen(false);
                 showAlert({
                     icon: 'success',
                     title: 'Berhasil',
@@ -91,13 +127,14 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                 });
             },
             onError: () => {
+                setVerificationOpen(true);
                 showAlert({
                     icon: 'error',
                     title: 'Gagal Menyimpan',
                     text: 'Terdapat kesalahan pada isian form Anda.',
                     confirmButtonText: 'Tutup',
                 });
-            }
+            },
         });
     };
 
@@ -363,29 +400,6 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                 </FieldContent>
                             </Field>
 
-                            <div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
-                                <div>
-                                    <p className="text-sm font-medium">Petugas Dept. Inisiator</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Kosongkan jika tidak ada petugas inisiator dari dept lain
-                                    </p>
-                                </div>
-                                <Field>
-                                    <FieldLabel htmlFor="initiator_user_external_id">ID Petugas Dept. Inisiator</FieldLabel>
-                                    <FieldContent>
-                                        <Input
-                                            id="initiator_user_external_id"
-                                            value={form.data.initiator_user_external_id}
-                                            onChange={(event) =>
-                                                form.setData('initiator_user_external_id', event.target.value)
-                                            }
-                                            placeholder="Masukkan ID petugas..."
-                                        />
-                                        <FieldError>{form.errors.initiator_user_external_id}</FieldError>
-                                    </FieldContent>
-                                </Field>
-                            </div>
-
                             <div className="flex justify-end gap-3">
                                 <Button type="submit" disabled={form.processing}>
                                     <Save className="size-4" />
@@ -396,6 +410,72 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                     </CardContent>
                 </Card>
             </div>
+            <Dialog open={verificationOpen} onOpenChange={setVerificationOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Verifikasi Petugas Dept. Inisiator</DialogTitle>
+                        <DialogDescription>
+                            Pilih petugas yang memberi paraf digital. Jika tidak ada petugas lain, gunakan akun operator TPS LB3.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <Field>
+                            <FieldLabel htmlFor="initiator_user_external_id">Petugas Dept. Inisiator</FieldLabel>
+                            <FieldContent>
+                                <Select
+                                    items={initiatorUserItems}
+                                    value={selectedInitiatorUser}
+                                    onValueChange={(value) => setSelectedInitiatorUser(value ?? SELF_INITIATOR_VALUE)}
+                                >
+                                    <SelectTrigger id="initiator_user_external_id" className="w-full">
+                                        <SelectValue placeholder="Pilih petugas" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={SELF_INITIATOR_VALUE}>
+                                            {entryForm.entry.operator.external_id} - {entryForm.entry.operator.name}
+                                            {entryForm.entry.operator.email ? ` (${entryForm.entry.operator.email})` : ''}
+                                        </SelectItem>
+                                        {entryForm.options.initiator_users
+                                            .filter((item) => item.external_id !== entryForm.entry.operator.external_id)
+                                            .map((item) => (
+                                                <SelectItem key={item.external_id} value={item.external_id}>
+                                                    {item.external_id} - {item.name}
+                                                    {item.email ? ` (${item.email})` : ''}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldError>{form.errors.initiator_user_external_id}</FieldError>
+                            </FieldContent>
+                        </Field>
+                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100">
+                            <div className="flex items-start gap-3">
+                                <ShieldCheck className="mt-0.5 size-5 shrink-0" />
+                                <div className="space-y-1 text-sm">
+                                    <p className="font-semibold">{selectedInitiatorDetail?.name ?? 'Petugas belum dipilih'}</p>
+                                    <p className="text-xs">
+                                        {selectedInitiatorDetail?.external_id ?? '-'}
+                                        {selectedInitiatorDetail?.email ? ` - ${selectedInitiatorDetail.email}` : ''}
+                                    </p>
+                                    <p className="text-xs">Dept: {selectedInitiatorDetail?.department_name ?? '-'}</p>
+                                    <Badge variant="outline" className="border-emerald-300 bg-white/60 text-emerald-900">
+                                        Terverifikasi Sistem
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setVerificationOpen(false)} disabled={form.processing}>
+                            Batal
+                        </Button>
+                        <Button type="button" onClick={handleConfirmSubmit} disabled={form.processing}>
+                            <Save className="size-4" />
+                            Konfirmasi & Simpan
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -2,7 +2,10 @@ import { ArrowLeft, ClipboardCheck, Droplets, Printer } from 'lucide-react';
 
 import * as React from 'react';
 
-import { catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import {
+    catatanPengolahanLimbahAirDailyPdf,
+    catatanPengolahanLimbahAirIndex,
+} from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,12 +64,20 @@ export function CatatanPengolahanLimbahAirEntry({ flash, entryForm, userId }: Ca
                                     <ArrowLeft className="size-4" />
                                     Kembali ke Listing
                                 </Button>
-                                {entryForm.entry.read_only ? (
+                                {entryForm.entry.read_only && entryForm.entry.log_id ? (
                                     <Button
-                                        type="button"
                                         variant="outline"
                                         className="no-print"
-                                        onClick={() => window.print()}
+                                        render={
+                                            <a
+                                                href={catatanPengolahanLimbahAirDailyPdf.url(
+                                                    { log: entryForm.entry.log_id },
+                                                    { query: { user_id: userId } },
+                                                )}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            />
+                                        }
                                     >
                                         <Printer className="size-4" />
                                         Print PDF

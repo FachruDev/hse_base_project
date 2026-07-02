@@ -185,6 +185,15 @@ class IpalMonthlyWorkflowTest extends TestCase
             && $pdf->orientation === 'Landscape'
             && count($pdf->viewData['monthlyDetail']['batch_rows'] ?? []) === 1);
 
+        Pdf::fake();
+
+        $this->get("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$logId}/pdf?user_id=operator.monthly.a")
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(fn (PdfBuilder $pdf): bool => $pdf->viewName === 'pdf.ipal.daily-detail'
+            && $pdf->downloadName === 'catatan-ipal-harian-2026-06-03.pdf'
+            && ($pdf->viewData['entryForm']['entry']['tanggal'] ?? null) === '2026-06-03');
+
         $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/checklist-approval?user_id=hse.head')
             ->assertRedirect('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=hse.head');
 

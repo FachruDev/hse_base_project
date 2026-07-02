@@ -188,6 +188,23 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function catatanPengolahanLimbahAirDailyPdf(
+        Request $request,
+        IpalDailyLog $log,
+        CatatanPengolahanLimbahAirPageService $pageService,
+    ): Responsable {
+        $viewer = $this->authenticatedUser($request);
+        $detail = $pageService->buildDailyDetail($log, $viewer);
+        $date = (string) ($detail['entry']['tanggal'] ?? $log->tanggal?->toDateString() ?? now()->toDateString());
+
+        return Pdf::view('pdf.ipal.daily-detail', [
+            'entryForm' => $detail,
+        ])
+            ->format('a4')
+            ->margins(10, 10, 12, 10)
+            ->name("catatan-ipal-harian-{$date}.pdf");
+    }
+
     public function catatanPengolahanLimbahAirApproveDailyLog(
         IpalDailyLogApproveRequest $request,
         IpalDailyLog $log,
