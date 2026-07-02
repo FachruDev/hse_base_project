@@ -383,6 +383,7 @@ export type B3StorageMonthlyDetailPayload = {
         note: string | null;
     };
     capabilities: {
+        can_approve_period: boolean;
         approve_monthly: boolean;
         next_approval_role: 'ENVIRONMENT_SUPERVISOR' | 'HSE_DEPARTMENT_HEAD' | null;
         next_approval_label: string | null;

@@ -6,6 +6,7 @@ use App\Models\B3Storage\B3StorageLog;
 use App\Models\B3Storage\B3StorageMonthlyApproval;
 use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\User;
+use App\Services\Ipal\IpalLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -221,13 +222,19 @@ class B3StorageService
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function approveMonthly(array $payload, User $signedUser): B3StorageMonthlyApproval
+    public function approveMonthly(array $payload, User $signedUser, IpalLogService $ipalLogService): B3StorageMonthlyApproval
     {
-        return DB::transaction(function () use ($payload, $signedUser): B3StorageMonthlyApproval {
+        return DB::transaction(function () use ($payload, $signedUser, $ipalLogService): B3StorageMonthlyApproval {
             $month = (int) $payload['month'];
             $year = (int) $payload['year'];
             $approvalRole = $payload['approval_role'];
             $note = $payload['note'] ?? null;
+
+            if (! $ipalLogService->isMonthCompletable($year, $month)) {
+                throw ValidationException::withMessages([
+                    'period' => ['Approval bulanan limbah B3 hanya dapat dilakukan mulai hari kerja terakhir periode.'],
+                ]);
+            }
 
             if (! $this->canApproveRole($signedUser, (string) $approvalRole)) {
                 throw ValidationException::withMessages([
@@ -253,6 +260,18 @@ class B3StorageService
             if ($approvalRole === 'HSE_DEPARTMENT_HEAD' && $approval->environment_supervisor_signed_at === null) {
                 throw ValidationException::withMessages([
                     'approval_role' => ['Approval HSE Department Head menunggu approval Environment Supervisor.'],
+                ]);
+            }
+
+            if ($approvalRole === 'ENVIRONMENT_SUPERVISOR' && $approval->environment_supervisor_signed_at !== null) {
+                throw ValidationException::withMessages([
+                    'approval_role' => ['Approval Environment Supervisor sudah dilakukan.'],
+                ]);
+            }
+
+            if ($approvalRole === 'HSE_DEPARTMENT_HEAD' && $approval->hse_department_head_signed_at !== null) {
+                throw ValidationException::withMessages([
+                    'approval_role' => ['Approval HSE Department Head sudah dilakukan.'],
                 ]);
             }
 

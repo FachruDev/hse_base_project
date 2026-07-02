@@ -55,6 +55,18 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'note' => 'Keluar TPS',
         ])->assertRedirect();
 
+        $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a', [
+            'movement_date' => '2026-07-02',
+            'movement_time' => '09:00',
+            'movement_type' => 'MASUK',
+            'waste_type_id' => $solidWasteType->id,
+            'initiator_department_id' => $qcDepartment->id,
+            'weight_kg' => 3.25,
+            'document_number' => '03/QC/VII/26',
+            'photo' => UploadedFile::fake()->image('bukti-c.jpg'),
+            'note' => 'Masuk periode berjalan',
+        ])->assertRedirect();
+
         $listingResponse = $this->get('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a&year=2026');
         $listingResponse->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -73,6 +85,26 @@ class B3StorageMonthlyWorkflowTest extends TestCase
         $this->assertSame(1, $juneListingRow['incoming_logs_count']);
         $this->assertSame(1, $juneListingRow['outgoing_logs_count']);
         $this->assertSame(15.04, (float) $juneListingRow['total_weight_kg']);
+
+        $julyListingRow = collect($listingResponse->inertiaProps('listing.table.data'))
+            ->firstWhere('month', 7);
+
+        $this->assertFalse($julyListingRow['can_approve_period']);
+        $this->assertFalse($julyListingRow['can_approve_monthly']);
+        $this->assertSame('Belum masuk periode approval', $julyListingRow['approval_blocked_label']);
+
+        $julyDetailResponse = $this->get('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/7?user_id=env.spv');
+        $julyDetailResponse->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('monthlyDetail.capabilities.can_approve_period', false)
+                ->where('monthlyDetail.capabilities.approve_monthly', false)
+                ->where('monthlyDetail.capabilities.approval_blocked_reason', 'Belum masuk periode approval.')
+                ->etc()
+            );
+
+        $this->post('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/7/approval?user_id=env.spv', [
+            'approval_role' => 'ENVIRONMENT_SUPERVISOR',
+        ])->assertSessionHasErrors(['period']);
 
         $filteredListingResponse = $this->get('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a&year=2026&date_from=2026-06-16&date_to=2026-08-16');
         $filteredJuneListingRow = collect($filteredListingResponse->inertiaProps('listing.table.data'))
@@ -154,6 +186,10 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'approval_role' => 'ENVIRONMENT_SUPERVISOR',
         ])->assertRedirect('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/6?user_id=env.spv');
 
+        $this->post('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/6/approval?user_id=env.spv', [
+            'approval_role' => 'ENVIRONMENT_SUPERVISOR',
+        ])->assertSessionHasErrors(['approval_role']);
+
         $this->assertDatabaseHas('b3_storage_monthly_approvals', [
             'month' => 6,
             'year' => 2026,
@@ -163,6 +199,10 @@ class B3StorageMonthlyWorkflowTest extends TestCase
         $this->post('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/6/approval?user_id=hse.head', [
             'approval_role' => 'HSE_DEPARTMENT_HEAD',
         ])->assertRedirect('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/6?user_id=hse.head');
+
+        $this->post('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/6/approval?user_id=hse.head', [
+            'approval_role' => 'HSE_DEPARTMENT_HEAD',
+        ])->assertSessionHasErrors(['approval_role']);
 
         $this->assertDatabaseHas('b3_storage_monthly_approvals', [
             'month' => 6,

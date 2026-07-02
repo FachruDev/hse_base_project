@@ -54,50 +54,72 @@
 <table>
     <thead>
         <tr>
-            <th>No</th>
+            <th>No / No. Dokumen</th>
             <th>Tipe</th>
-            <th>Tanggal</th>
-            <th>Jam</th>
+            <th>Tanggal &amp; Waktu</th>
             <th>Jenis Limbah</th>
             <th>Berat (Kg)</th>
-            <th>No. Dokumen</th>
             <th>Dept. Inisiator</th>
             <th>Operator TPS LB3</th>
-            <th>Catatan</th>
-            <th>Dibuat</th>
         </tr>
     </thead>
     <tbody>
         @forelse ($monthlyDetail['rows'] as $row)
             <tr>
-                <td class="center">{{ $row['no'] }}</td>
+                <td>
+                    #{{ $row['no'] }}<br>
+                    <strong>{{ $row['document_number'] }}</strong>
+                </td>
                 <td class="center">{{ $row['movement_type'] ?? ($row['tanggal_masuk'] ? 'MASUK' : 'KELUAR') }}</td>
-                <td>{{ $row['movement_date'] ?? $row['tanggal_masuk'] ?? $row['tanggal_keluar'] ?? '-' }}</td>
-                <td>{{ $row['jam'] ?? '-' }}</td>
+                <td>
+                    {{ $row['movement_date'] ?? $row['tanggal_masuk'] ?? $row['tanggal_keluar'] ?? '-' }}<br>
+                    <span class="muted">{{ $row['jam'] ?? '-' }}</span>
+                </td>
                 <td>{{ $row['waste_type_name'] ?? $row['waste_type_other'] ?? '-' }}</td>
                 <td class="right">{{ $formatWeight($row['weight_kg'] ?? 0) }}</td>
-                <td>{{ $row['document_number'] }}</td>
-                <td>{{ $row['initiator_department'] ?? '-' }}</td>
+                <td>
+                    {{ $row['initiator_department'] ?? '-' }}
+                    @if ($row['initiator_user_name'] ?? null)
+                        <br><span class="muted">({{ $row['initiator_user_name'] }})</span>
+                    @endif
+                </td>
                 <td>{{ $row['operator_name'] ?? '-' }}</td>
-                <td>{{ $row['note'] ?? '-' }}</td>
-                <td>{{ $row['created_at'] ?? '-' }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="10" class="center muted">
+                <td colspan="7" class="center muted">
                     Tidak ada log B3 pada rentang data ini.
                 </td>
             </tr>
         @endforelse
     </tbody>
-    <tfoot>
-        <tr class="total-row">
-            <td colspan="5">Total</td>
-            <td class="right">{{ $formatWeight($monthlyDetail['totals']['overall']) }}</td>
-            <td colspan="4">Overall: {{ $formatWeight($monthlyDetail['totals']['overall']) }} kg</td>
-        </tr>
-    </tfoot>
 </table>
+
+@php
+    $rowsWithNotes = collect($monthlyDetail['rows'])->filter(fn ($row): bool => filled($row['note'] ?? null));
+@endphp
+
+@if ($rowsWithNotes->isNotEmpty())
+    <h2>Catatan</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Tanggal</th>
+                <th>No. Dokumen</th>
+                <th>Catatan</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($rowsWithNotes as $row)
+                <tr>
+                    <td>{{ $row['movement_date'] ?? '-' }}</td>
+                    <td>{{ $row['document_number'] }}</td>
+                    <td>{{ $row['note'] }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+@endif
 
 <table class="signature">
     <tr>

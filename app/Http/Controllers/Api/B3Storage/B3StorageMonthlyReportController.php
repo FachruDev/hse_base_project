@@ -7,6 +7,7 @@ use App\Http\Requests\B3Storage\ApproveB3StorageMonthlyRequest;
 use App\Http\Requests\B3Storage\B3StorageMonthlyReportRequest;
 use App\Models\User;
 use App\Services\B3Storage\B3StorageService;
+use App\Services\Ipal\IpalLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -15,6 +16,7 @@ class B3StorageMonthlyReportController extends Controller
 {
     public function __construct(
         private readonly B3StorageService $b3StorageService,
+        private readonly IpalLogService $ipalLogService,
     ) {}
 
     public function index(B3StorageMonthlyReportRequest $request): JsonResponse
@@ -38,7 +40,7 @@ class B3StorageMonthlyReportController extends Controller
             ? User::query()->findOrFail((int) $validated['signer_user_id'])
             : $this->authenticatedUser($request);
 
-        $approval = $this->b3StorageService->approveMonthly($validated, $signedUser);
+        $approval = $this->b3StorageService->approveMonthly($validated, $signedUser, $this->ipalLogService);
 
         return response()->json([
             'message' => 'Approval bulanan limbah B3 berhasil disimpan.',

@@ -129,8 +129,14 @@ class B3StoragePageService
      * @param  array{date_from: string, date_to: string}  $filters
      * @return array<string, mixed>
      */
-    public function buildMonthlyDetail(User $user, int $year, int $month, B3StorageService $b3StorageService, array $filters = []): array
-    {
+    public function buildMonthlyDetail(
+        User $user,
+        int $year,
+        int $month,
+        B3StorageService $b3StorageService,
+        IpalLogService $ipalLogService,
+        array $filters = [],
+    ): array {
         $filters = [
             'date_from' => (string) ($filters['date_from'] ?? ''),
             'date_to' => (string) ($filters['date_to'] ?? ''),
@@ -138,8 +144,17 @@ class B3StoragePageService
         $report = $b3StorageService->monthlyReport($month, $year, $filters);
         $approvalStatus = (string) $report['approval']['status'];
         $nextApprovalRole = $this->resolveNextApprovalRole($approvalStatus);
+        $hasLogs = B3StorageLog::query()
+            ->whereMonth('movement_date', $month)
+            ->whereYear('movement_date', $year)
+            ->exists();
+        $canApprovePeriod = $ipalLogService->isMonthCompletable($year, $month);
         $canApproveRole = $nextApprovalRole !== null && $this->canApproveRole($user, $nextApprovalRole);
-        $canApprove = $user->can('b3storage.monthly-approval.approve') && $approvalStatus !== 'APPROVED' && $canApproveRole;
+        $canApprove = $user->can('b3storage.monthly-approval.approve')
+            && $approvalStatus !== 'APPROVED'
+            && $canApproveRole
+            && $canApprovePeriod
+            && $hasLogs;
 
         return [
             'module' => [
@@ -151,10 +166,11 @@ class B3StoragePageService
             'approval' => $this->mapMonthlyApprovalPayload($report['approval']),
             'filters' => $filters,
             'capabilities' => [
+                'can_approve_period' => $canApprovePeriod,
                 'approve_monthly' => $canApprove,
                 'next_approval_role' => $nextApprovalRole,
                 'next_approval_label' => $this->resolveNextApprovalLabel($approvalStatus),
-                'approval_blocked_reason' => $canApprove ? null : $this->resolveApprovalBlockedReason($user, $approvalStatus, $nextApprovalRole),
+                'approval_blocked_reason' => $canApprove ? null : $this->resolveApprovalBlockedReason($user, $approvalStatus, $nextApprovalRole, $canApprovePeriod, $hasLogs),
             ],
         ];
     }
@@ -433,10 +449,18 @@ class B3StoragePageService
         };
     }
 
-    private function resolveApprovalBlockedReason(User $user, string $status, ?string $nextApprovalRole): ?string
+    private function resolveApprovalBlockedReason(User $user, string $status, ?string $nextApprovalRole, bool $canApprovePeriod = true, bool $hasLogs = true): ?string
     {
         if ($status === 'APPROVED') {
             return null;
+        }
+
+        if (! $hasLogs) {
+            return 'Belum ada log B3.';
+        }
+
+        if (! $canApprovePeriod) {
+            return 'Belum masuk periode approval.';
         }
 
         if ($nextApprovalRole === 'ENVIRONMENT_SUPERVISOR' && $user->hasRole('hse_dept_head')) {

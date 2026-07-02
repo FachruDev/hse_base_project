@@ -7,6 +7,7 @@ use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -18,6 +19,7 @@ class B3StorageWorkflowTest extends TestCase
     public function test_can_run_b3_storage_workflow_from_master_to_monthly_approval(): void
     {
         Storage::fake('public');
+        Carbon::setTestNow('2026-07-02 10:00:00');
 
         $operator = User::factory()->create([
             'external_id' => 'operator.b3',
@@ -108,6 +110,27 @@ class B3StorageWorkflowTest extends TestCase
             ->assertJsonPath('data.period.year', 2026)
             ->assertJsonPath('data.approval.status', 'NOT_SUBMITTED');
 
+        $this->post('/api/b3-storage/logs?userid=operator.b3', [
+            'movement_date' => '2026-07-02',
+            'movement_time' => '09:00',
+            'movement_type' => 'MASUK',
+            'waste_type_id' => $wasteType->id,
+            'initiator_department_id' => $department->id,
+            'weight_kg' => 3.25,
+            'document_number' => '03/QC/VII/26',
+            'photo' => UploadedFile::fake()->image('bukti-juli.jpg'),
+            'note' => 'Periode berjalan',
+        ], [
+            'Accept' => 'application/json',
+        ])->assertCreated();
+
+        $this->postJson('/api/b3-storage/monthly-report/approve?userid=env.spv', [
+            'month' => 7,
+            'year' => 2026,
+            'approval_role' => 'ENVIRONMENT_SUPERVISOR',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['period']);
+
         $this->postJson('/api/b3-storage/monthly-report/approve?userid=hse.head', [
             'month' => 4,
             'year' => 2026,
@@ -133,6 +156,13 @@ class B3StorageWorkflowTest extends TestCase
         $reportAfterApproval
             ->assertOk()
             ->assertJsonPath('data.approval.status', 'APPROVED');
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     public function test_can_manage_b3_storage_master_data_from_api(): void

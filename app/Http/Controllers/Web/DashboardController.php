@@ -313,6 +313,7 @@ class DashboardController extends Controller
         B3StorageMonthlyPeriodRequest $request,
         B3StoragePageService $pageService,
         B3StorageService $b3StorageService,
+        IpalLogService $ipalLogService,
     ): Response {
         abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
 
@@ -322,6 +323,7 @@ class DashboardController extends Controller
                 $request->year(),
                 $request->month(),
                 $b3StorageService,
+                $ipalLogService,
                 $request->filters(),
             ),
         ]);
@@ -331,6 +333,7 @@ class DashboardController extends Controller
         B3StorageMonthlyPeriodRequest $request,
         B3StoragePageService $pageService,
         B3StorageService $b3StorageService,
+        IpalLogService $ipalLogService,
     ): Responsable {
         abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
 
@@ -339,6 +342,7 @@ class DashboardController extends Controller
             $request->year(),
             $request->month(),
             $b3StorageService,
+            $ipalLogService,
             $request->filters(),
         );
 
@@ -355,6 +359,7 @@ class DashboardController extends Controller
         B3StorageMonthlyPeriodRequest $request,
         B3StoragePageService $pageService,
         B3StorageService $b3StorageService,
+        IpalLogService $ipalLogService,
         SimpleXlsx $simpleXlsx,
     ): SymfonyResponse {
         abort_unless($request->user()?->can('b3storage.monthly-report.view'), 403);
@@ -364,6 +369,7 @@ class DashboardController extends Controller
             $request->year(),
             $request->month(),
             $b3StorageService,
+            $ipalLogService,
             $request->filters(),
         );
 
@@ -404,11 +410,12 @@ class DashboardController extends Controller
     public function b3StorageApproveMonthly(
         B3StorageMonthlyApprovalRequest $request,
         B3StorageService $b3StorageService,
+        IpalLogService $ipalLogService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('b3storage.monthly-approval.approve'), 403);
         $user = $this->authenticatedUser($request);
 
-        $b3StorageService->approveMonthly($request->approvalPayload(), $user);
+        $b3StorageService->approveMonthly($request->approvalPayload(), $user, $ipalLogService);
 
         return redirect()
             ->route('dashboard.forms.penyimpanan-limbah-b3.monthly.show', [

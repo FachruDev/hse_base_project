@@ -1,13 +1,17 @@
 import { router } from '@inertiajs/react';
 import {
     ArrowLeft,
+    ArrowDownToLine,
+    ArrowUpFromLine,
     CheckCircle2,
+    ClipboardList,
     Eye,
     FileImage,
     FileSpreadsheet,
     Plus,
     Printer,
     Scale,
+    ShieldCheck,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -41,7 +45,6 @@ import {
     Table,
     TableBody,
     TableCell,
-    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -261,22 +264,32 @@ export function PenyimpananLimbahB3MonthlyDetail({
                     <SummaryCard
                         label="Total Log"
                         value={`${monthlyDetail.summary.total_logs_count} log`}
+                        icon={ClipboardList}
+                        tone="sky"
                     />
                     <SummaryCard
                         label="Masuk"
                         value={`${monthlyDetail.summary.incoming_logs_count} log`}
+                        icon={ArrowDownToLine}
+                        tone="emerald"
                     />
                     <SummaryCard
                         label="Keluar"
                         value={`${monthlyDetail.summary.outgoing_logs_count} log`}
+                        icon={ArrowUpFromLine}
+                        tone="rose"
                     />
                     <SummaryCard
                         label="Total Berat"
                         value={`${formatWeight(monthlyDetail.summary.total_weight_kg)} kg`}
+                        icon={Scale}
+                        tone="amber"
                     />
                     <SummaryCard
                         label="Approval"
                         value={monthlyDetail.approval.status_label}
+                        icon={ShieldCheck}
+                        tone="violet"
                     />
                 </div>
 
@@ -321,47 +334,32 @@ export function PenyimpananLimbahB3MonthlyDetail({
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain">
-                            <Table className="min-w-[1180px]">
+                            <Table className="min-w-[980px]">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="sticky left-0 z-10 w-12 min-w-12 bg-background px-3 text-center">
-                                            No
+                                        <TableHead className="sticky left-0 z-10 min-w-[170px] bg-background px-3">
+                                            No / No. Dokumen
                                         </TableHead>
-                                        <TableHead className="min-w-[150px]">
+                                        <TableHead className="min-w-[140px]">
                                             Tipe Pergerakan
                                         </TableHead>
-                                        <TableHead className="min-w-[120px]">
-                                            Tanggal
-                                        </TableHead>
-                                        <TableHead className="min-w-[80px]">
-                                            Jam
+                                        <TableHead className="min-w-[150px]">
+                                            Tanggal &amp; Waktu
                                         </TableHead>
                                         <TableHead className="min-w-[220px]">
                                             Jenis Limbah
                                         </TableHead>
                                         <TableHead className="min-w-[110px] text-right">
-                                            Berat (Kg)
+                                            Berat
                                         </TableHead>
-                                        <TableHead className="min-w-[160px]">
-                                            No. Dokumen
-                                        </TableHead>
-                                        <TableHead className="min-w-[150px]">
+                                        <TableHead className="min-w-[190px]">
                                             Dept. Inisiator
                                         </TableHead>
-                                        <TableHead className="min-w-[150px]">
-                                            Operator TPS LB3
-                                        </TableHead>
-                                        <TableHead className="min-w-[100px]">
-                                            Foto
-                                        </TableHead>
-                                        <TableHead className="min-w-[180px]">
-                                            Catatan
-                                        </TableHead>
                                         <TableHead className="min-w-[160px]">
-                                            Dibuat
+                                            Operator
                                         </TableHead>
-                                        <TableHead className="min-w-[90px] text-center">
-                                            Detail
+                                        <TableHead className="min-w-[90px] text-right">
+                                            Action
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -369,8 +367,15 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                     {monthlyDetail.rows.length > 0 ? (
                                         monthlyDetail.rows.map((row) => (
                                             <TableRow key={row.id}>
-                                                <TableCell className="sticky left-0 z-10 bg-background px-3 text-center font-medium">
-                                                    {row.no}
+                                                <TableCell className="sticky left-0 z-10 bg-background px-3">
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs font-semibold text-muted-foreground">
+                                                            #{row.no}
+                                                        </p>
+                                                        <p className="font-medium">
+                                                            {row.document_number}
+                                                        </p>
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <span
@@ -385,64 +390,37 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                                     </span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {row.movement_date ?? '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {row.jam ?? '-'}
+                                                    <div className="space-y-0.5">
+                                                        <p className="font-medium">
+                                                            {row.movement_date ?? '-'}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {row.jam ?? '-'}
+                                                        </p>
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="whitespace-normal">
                                                     {row.waste_type_name ?? '-'}
                                                 </TableCell>
                                                 <TableCell className="text-right font-medium">
-                                                    {formatWeight(row.weight_kg)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {row.document_number}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {row.initiator_department ??
-                                                        '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {row.operator_name ?? '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {row.photo_path ? (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            render={
-                                                                <a
-                                                                    href={b3StoragePhoto.url(
-                                                                        {
-                                                                            log: row.id,
-                                                                        },
-                                                                        {
-                                                                            query: {
-                                                                                user_id:
-                                                                                    userId,
-                                                                            },
-                                                                        },
-                                                                    )}
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                />
-                                                            }
-                                                        >
-                                                            <FileImage className="size-4" />
-                                                            Foto
-                                                        </Button>
-                                                    ) : (
-                                                        '-'
-                                                    )}
+                                                    {formatWeight(row.weight_kg)} kg
                                                 </TableCell>
                                                 <TableCell className="whitespace-normal">
-                                                    {row.note ?? '-'}
+                                                    <div className="space-y-0.5">
+                                                        <p className="font-medium">
+                                                            {row.initiator_department ?? '-'}
+                                                        </p>
+                                                        {row.initiator_user_name ? (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                ({row.initiator_user_name})
+                                                            </p>
+                                                        ) : null}
+                                                    </div>
                                                 </TableCell>
-                                                <TableCell>
-                                                    {row.created_at ?? '-'}
+                                                <TableCell className="whitespace-normal">
+                                                    {row.operator_name ?? '-'}
                                                 </TableCell>
-                                                <TableCell className="text-center">
+                                                <TableCell className="text-right">
                                                     <Button
                                                         type="button"
                                                         variant="outline"
@@ -460,7 +438,7 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                     ) : (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={12}
+                                                colSpan={8}
                                                 className="px-4 py-10 text-center text-muted-foreground"
                                             >
                                                 Belum ada log B3 pada periode
@@ -468,89 +446,6 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                             </TableCell>
                                         </TableRow>
                                     )}
-                                </TableBody>
-                                <TableFooter>
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={5}
-                                            className="sticky left-0 z-10 bg-muted px-3 font-semibold"
-                                        >
-                                            Total
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold">
-                                            {formatWeight(
-                                                monthlyDetail.totals.overall,
-                                            )}
-                                        </TableCell>
-                                        <TableCell
-                                            colSpan={6}
-                                            className="font-semibold"
-                                        >
-                                            Overall:{' '}
-                                            {formatWeight(
-                                                monthlyDetail.totals.overall,
-                                            )}{' '}
-                                            kg
-                                        </TableCell>
-                                    </TableRow>
-                                </TableFooter>
-                                <TableBody>
-                                    <TableRow className="bg-muted/30">
-                                        <TableCell
-                                            colSpan={6}
-                                            className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                                        >
-                                            Tanda Tangan &amp; Paraf
-                                        </TableCell>
-                                        <TableCell
-                                            colSpan={6}
-                                            className="bg-muted/40"
-                                        />
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={2}
-                                            className="sticky left-0 z-10 bg-background px-3 py-3 text-sm text-muted-foreground"
-                                        >
-                                            Petugas Operator TPS LB3
-                                        </TableCell>
-                                        <TableCell
-                                            colSpan={4}
-                                            className="py-3 text-sm font-medium"
-                                        >
-                                            {monthlyDetail.rows[0]?.operator_name ?? '-'}
-                                        </TableCell>
-                                        <TableCell colSpan={6} className="py-3">
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                ✅ Tercatat
-                                            </span>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={2}
-                                            className="sticky left-0 z-10 bg-background px-3 py-3 text-sm text-muted-foreground"
-                                        >
-                                            Petugas Dept. Inisiator
-                                        </TableCell>
-                                        <TableCell
-                                            colSpan={4}
-                                            className="py-3 text-sm font-medium"
-                                        >
-                                            {monthlyDetail.rows.find((r) => r.initiator_user_name != null)?.initiator_user_name ?? '-'}
-                                        </TableCell>
-                                        <TableCell colSpan={6} className="py-3">
-                                            {monthlyDetail.rows.some((r) => r.initiator_user_name != null) ? (
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                    ✅ Tercatat
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                                    Belum diisi
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
                                 </TableBody>
                             </Table>
                         </div>
@@ -697,14 +592,43 @@ function DetailField({
     );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+type SummaryTone = 'sky' | 'emerald' | 'rose' | 'amber' | 'violet';
+
+function SummaryCard({
+    label,
+    value,
+    icon: Icon,
+    tone,
+}: {
+    label: string;
+    value: string;
+    icon: React.ComponentType<{ className?: string }>;
+    tone: SummaryTone;
+}) {
+    const toneClass: Record<SummaryTone, string> = {
+        sky: 'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-900/40',
+        emerald:
+            'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40',
+        rose: 'bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-950/30 dark:text-rose-300 dark:ring-rose-900/40',
+        amber: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
+        violet:
+            'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
+    };
+
     return (
-        <Card className="border-none shadow-sm ring-1 ring-border/60">
+        <Card className={`${toneClass[tone]} border-none shadow-sm ring-1`}>
             <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground uppercase">
-                    {label}
-                </p>
-                <p className="mt-2 text-lg font-semibold">{value}</p>
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-medium opacity-75 uppercase">
+                            {label}
+                        </p>
+                        <p className="mt-2 text-lg font-semibold">{value}</p>
+                    </div>
+                    <span className="inline-flex size-9 items-center justify-center rounded-md bg-white/70 shadow-sm dark:bg-white/10">
+                        <Icon className="size-4" />
+                    </span>
+                </div>
             </CardContent>
         </Card>
     );
