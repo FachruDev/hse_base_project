@@ -15,7 +15,9 @@ use App\Http\Requests\Web\IpalMonthlyProcessApprovalRequest;
 use App\Http\Requests\Web\SaveIpalChecklistRequest;
 use App\Http\Requests\Web\SaveIpalProcessRequest;
 use App\Models\B3Storage\B3StorageLog;
+use App\Models\Ipal\IpalChecklistValueAttachment;
 use App\Models\Ipal\IpalDailyLog;
+use App\Models\Ipal\IpalProcessValueAttachment;
 use App\Models\User;
 use App\Services\B3Storage\B3StorageService;
 use App\Services\Ipal\IpalLogService;
@@ -109,6 +111,40 @@ class DashboardController extends Controller
             ->format('a4')
             ->margins(8, 8, 10, 8)
             ->name("batch-mixing-ipal-{$request->year()}-{$request->month()}.pdf");
+    }
+
+    public function catatanPengolahanLimbahAirChecklistAttachment(
+        Request $request,
+        IpalChecklistValueAttachment $attachment,
+    ): SymfonyResponse {
+        $viewer = $this->authenticatedUser($request);
+        $attachment->loadMissing('checklistValue.checklist.dailyLog');
+
+        $log = $attachment->checklistValue?->checklist?->dailyLog;
+        abort_unless($log instanceof IpalDailyLog && $this->canViewIpalAttachment($viewer, $log), 403);
+
+        if (! Storage::disk('public')->exists($attachment->file_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($attachment->file_path, $attachment->original_name);
+    }
+
+    public function catatanPengolahanLimbahAirProcessAttachment(
+        Request $request,
+        IpalProcessValueAttachment $attachment,
+    ): SymfonyResponse {
+        $viewer = $this->authenticatedUser($request);
+        $attachment->loadMissing('processValue.processLog.dailyLog');
+
+        $log = $attachment->processValue?->processLog?->dailyLog;
+        abort_unless($log instanceof IpalDailyLog && $this->canViewIpalAttachment($viewer, $log), 403);
+
+        if (! Storage::disk('public')->exists($attachment->file_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($attachment->file_path, $attachment->original_name);
     }
 
     public function catatanPengolahanLimbahAirApproveMonthlyChecklist(
@@ -359,5 +395,16 @@ class DashboardController extends Controller
         }
 
         return $user;
+    }
+
+    private function canViewIpalAttachment(User $viewer, IpalDailyLog $log): bool
+    {
+        if ($viewer->id === $log->operator_id) {
+            return true;
+        }
+
+        return $viewer->can('ipal.logs.approve')
+            || $viewer->can('ipal.logs.reopen')
+            || $viewer->can('ipal.logs.reopen-monthly');
     }
 }

@@ -29,6 +29,14 @@ Route::middleware('external.user')->group(function (): void {
         '/dashboard/forms/catatan-pengolahan-limbah-air/monthly/{year}/{month}/batch-mixing.pdf',
         [DashboardController::class, 'catatanPengolahanLimbahAirMonthlyBatchMixingPdf'],
     )->name('dashboard.forms.catatan-pengolahan-limbah-air.monthly.batch-mixing.pdf');
+    Route::get(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/attachments/checklist/{attachment}',
+        [DashboardController::class, 'catatanPengolahanLimbahAirChecklistAttachment'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.attachments.checklist');
+    Route::get(
+        '/dashboard/forms/catatan-pengolahan-limbah-air/attachments/process/{attachment}',
+        [DashboardController::class, 'catatanPengolahanLimbahAirProcessAttachment'],
+    )->name('dashboard.forms.catatan-pengolahan-limbah-air.attachments.process');
     Route::post(
         '/dashboard/forms/catatan-pengolahan-limbah-air/monthly/{year}/{month}/checklist-approval',
         [DashboardController::class, 'catatanPengolahanLimbahAirApproveMonthlyChecklist'],

@@ -11,7 +11,11 @@ use App\Models\Master\ProcessSection;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
@@ -263,5 +267,118 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
             ],
             'batch' => [],
         ])->assertRedirect()->assertSessionHasNoErrors();
+    }
+
+    public function test_ipal_detail_attachment_urls_are_served_through_authorized_routes(): void
+    {
+        Storage::fake('public');
+
+        $operator = User::factory()->create([
+            'external_id' => 'operator.attachment.01',
+            'is_active' => true,
+        ]);
+        $supervisor = User::factory()->create([
+            'external_id' => 'supervisor.attachment.01',
+            'is_active' => true,
+        ]);
+        Permission::query()->firstOrCreate([
+            'name' => 'ipal.logs.approve',
+            'guard_name' => 'web',
+        ]);
+        $supervisor->givePermissionTo('ipal.logs.approve');
+
+        $checklistTemplate = ChecklistTemplate::query()->create([
+            'name' => 'Checklist Attachment',
+            'is_active' => true,
+        ]);
+        $checklistItem = ChecklistItem::query()->create([
+            'template_id' => $checklistTemplate->id,
+            'name' => 'Pompa Transfer',
+            'category' => null,
+            'standard_condition' => 'Berfungsi',
+            'order_no' => 1,
+            'is_active' => true,
+        ]);
+
+        $processTemplate = ProcessTemplate::query()->create([
+            'name' => 'Process Attachment',
+            'is_active' => true,
+        ]);
+        $processSection = ProcessSection::query()->create([
+            'template_id' => $processTemplate->id,
+            'name' => 'Ekualisasi',
+            'order_no' => 1,
+        ]);
+        $processItem = ProcessItem::query()->create([
+            'section_id' => $processSection->id,
+            'name' => 'pH',
+            'standard_condition' => '6-9',
+            'input_type' => 'decimal_2',
+            'order_no' => 1,
+        ]);
+
+        $date = '2026-04-29';
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/checklist?user_id=operator.attachment.01', [
+            'tanggal' => $date,
+            'checklist' => [
+                'template_id' => $checklistTemplate->id,
+                'values' => [
+                    [
+                        'item_id' => $checklistItem->id,
+                        'status' => 'OK',
+                        'note' => null,
+                        'attachment' => UploadedFile::fake()->image('checklist.jpg'),
+                    ],
+                ],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/process?user_id=operator.attachment.01', [
+            'tanggal' => $date,
+            'action' => 'SUBMIT',
+            'has_mixing' => false,
+            'process' => [
+                'template_id' => $processTemplate->id,
+                'values' => [
+                    [
+                        'item_id' => $processItem->id,
+                        'value_number' => 7.12,
+                        'note' => null,
+                        'attachment' => UploadedFile::fake()->image('process.jpg'),
+                    ],
+                ],
+            ],
+            'batch' => [],
+        ])->assertSessionHasNoErrors();
+
+        $operatorResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/create?user_id=operator.attachment.01&tanggal=2026-04-29');
+        $operatorResponse->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entryForm.checklist.items.0.attachment_original_name', 'checklist.jpg')
+                ->where('entryForm.process.sections.0.items.0.attachment_original_name', 'process.jpg')
+                ->etc()
+            );
+
+        $operatorChecklistUrl = $operatorResponse->inertiaProps('entryForm.checklist.items.0.attachment_url');
+        $operatorProcessUrl = $operatorResponse->inertiaProps('entryForm.process.sections.0.items.0.attachment_url');
+
+        $this->assertIsString($operatorChecklistUrl);
+        $this->assertStringContainsString('/dashboard/forms/catatan-pengolahan-limbah-air/attachments/checklist/', $operatorChecklistUrl);
+        $this->assertStringContainsString('user_id=operator.attachment.01', $operatorChecklistUrl);
+        $this->get($operatorChecklistUrl)->assertOk();
+        $this->get($operatorProcessUrl)->assertOk();
+
+        $logId = IpalDailyLog::query()
+            ->whereDate('tanggal', $date)
+            ->where('operator_id', $operator->id)
+            ->value('id');
+
+        $supervisorResponse = $this->get("/dashboard/forms/catatan-pengolahan-limbah-air/logs/{$logId}?user_id=supervisor.attachment.01");
+        $supervisorProcessUrl = $supervisorResponse->inertiaProps('entryForm.process.sections.0.items.0.attachment_url');
+
+        $this->assertIsString($supervisorProcessUrl);
+        $this->assertStringContainsString('user_id=supervisor.attachment.01', $supervisorProcessUrl);
+        $this->get($supervisorProcessUrl)->assertOk();
     }
 }

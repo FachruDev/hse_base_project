@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Ipal\IpalLogService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\URL;
 
 class CatatanPengolahanLimbahAirPageService
 {
@@ -137,6 +138,7 @@ class CatatanPengolahanLimbahAirPageService
             $date,
             $this->findDailyLog($user, $date),
             false,
+            $user,
         );
     }
 
@@ -169,6 +171,7 @@ class CatatanPengolahanLimbahAirPageService
             $log->tanggal?->format('Y-m-d') ?? now()->toDateString(),
             $log,
             true,
+            $viewer,
         );
 
         $payload['capabilities']['approve_daily_process'] = $canApproveDailyProcess;
@@ -195,9 +198,10 @@ class CatatanPengolahanLimbahAirPageService
     /**
      * @return array<string, mixed>
      */
-    private function buildEntryPayload(User $user, string $date, ?IpalDailyLog $log, bool $forceReadOnly): array
+    private function buildEntryPayload(User $user, string $date, ?IpalDailyLog $log, bool $forceReadOnly, ?User $viewer = null): array
     {
         $user->loadMissing('department');
+        $viewer ??= $user;
 
         $checklistTemplate = ChecklistTemplate::query()
             ->where('is_active', true)
@@ -268,6 +272,7 @@ class CatatanPengolahanLimbahAirPageService
                     ? $this->mapChecklistItems(
                         $checklistTemplate->items,
                         $log?->checklist?->values ? $log->checklist->values->keyBy('item_id') : collect(),
+                        $viewer,
                     )
                     : [],
             ],
@@ -279,6 +284,7 @@ class CatatanPengolahanLimbahAirPageService
                     ? $this->mapProcessSections(
                         $processTemplate->sections,
                         $log?->processLog?->values ? $log->processLog->values->keyBy('item_id') : collect(),
+                        $viewer,
                     )
                     : [],
             ],
@@ -599,9 +605,9 @@ class CatatanPengolahanLimbahAirPageService
      * @param  Collection<int|string, mixed>  $valueMap
      * @return array<int, array<string, mixed>>
      */
-    private function mapChecklistItems(Collection $items, Collection $valueMap): array
+    private function mapChecklistItems(Collection $items, Collection $valueMap, User $viewer): array
     {
-        return $items->map(function ($item) use ($valueMap): array {
+        return $items->map(function ($item) use ($valueMap, $viewer): array {
             $value = $valueMap->get($item->id);
             $attachment = $value?->attachments?->first();
 
@@ -614,7 +620,7 @@ class CatatanPengolahanLimbahAirPageService
                 'status_label' => $this->resolveChecklistStatusLabel($value?->status),
                 'note' => $value?->note,
                 'attachment_path' => $attachment?->file_path,
-                'attachment_url' => $attachment !== null ? $attachment->getUrl() : null,
+                'attachment_url' => $attachment !== null ? $this->buildChecklistAttachmentUrl($attachment->id, $viewer) : null,
                 'attachment_original_name' => $attachment?->original_name,
             ];
         })->all();
@@ -625,12 +631,12 @@ class CatatanPengolahanLimbahAirPageService
      * @param  Collection<int|string, mixed>  $valueMap
      * @return array<int, array<string, mixed>>
      */
-    private function mapProcessSections(Collection $sections, Collection $valueMap): array
+    private function mapProcessSections(Collection $sections, Collection $valueMap, User $viewer): array
     {
         return $sections->map(fn ($section): array => [
             'id' => $section->id,
             'name' => $section->name,
-            'items' => $section->items->map(function ($item) use ($valueMap): array {
+            'items' => $section->items->map(function ($item) use ($valueMap, $viewer): array {
                 $value = $valueMap->get($item->id);
                 $attachment = $value?->attachments?->first();
 
@@ -643,11 +649,27 @@ class CatatanPengolahanLimbahAirPageService
                     'value_number' => $value?->value_number,
                     'note' => $value?->note,
                     'attachment_path' => $attachment?->file_path,
-                    'attachment_url' => $attachment !== null ? $attachment->getUrl() : null,
+                    'attachment_url' => $attachment !== null ? $this->buildProcessAttachmentUrl($attachment->id, $viewer) : null,
                     'attachment_original_name' => $attachment?->original_name,
                 ];
             })->all(),
         ])->all();
+    }
+
+    private function buildChecklistAttachmentUrl(int $attachmentId, User $viewer): string
+    {
+        return URL::route('dashboard.forms.catatan-pengolahan-limbah-air.attachments.checklist', [
+            'attachment' => $attachmentId,
+            'user_id' => $viewer->external_id,
+        ]);
+    }
+
+    private function buildProcessAttachmentUrl(int $attachmentId, User $viewer): string
+    {
+        return URL::route('dashboard.forms.catatan-pengolahan-limbah-air.attachments.process', [
+            'attachment' => $attachmentId,
+            'user_id' => $viewer->external_id,
+        ]);
     }
 
     /**
