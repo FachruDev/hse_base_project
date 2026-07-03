@@ -126,7 +126,7 @@ class IpalMasterDataSeeder extends Seeder
             ],
             'Bio Indikator' => [
                 ['name' => 'Air', 'standard_condition' => 'Jernih, tidak berbusa', 'input_type' => 'option'],
-                ['name' => 'Jumlah ikan', 'standard_condition' => 'Sesuai standar', 'input_type' => 'decimal_2'], // ganti ke Number biasa, buatkan tipe baru untuk ini
+                ['name' => 'Jumlah ikan', 'standard_condition' => 'Sesuai standar', 'input_type' => 'integer'],
                 ['name' => 'Kondisi Ikan', 'standard_condition' => 'Aktif, tidak ada yang mati', 'input_type' => 'option'],
             ],
             'Drying Bed' => [

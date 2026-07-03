@@ -56,6 +56,13 @@ class IpalMasterDataSeederTest extends TestCase
                 ->count(),
         );
         $this->assertSame(
+            'integer',
+            ProcessItem::query()
+                ->whereHas('section', fn ($query) => $query->where('name', 'Bio Indikator'))
+                ->where('name', 'Jumlah ikan')
+                ->value('input_type'),
+        );
+        $this->assertSame(
             0,
             BatchItem::query()
                 ->whereIn('input_type', ['number', 'select', 'option_standard'])

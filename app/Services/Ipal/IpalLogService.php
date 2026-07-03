@@ -748,6 +748,8 @@ class IpalLogService
                 ]);
             }
 
+            $this->assertValidNumberForInputType($inputType, $numberValue, 'process.values');
+
             return $processLog->values()->updateOrCreate(
                 ['item_id' => $payload['item_id']],
                 [
@@ -801,6 +803,8 @@ class IpalLogService
                 ]);
             }
 
+            $this->assertValidNumberForInputType($inputType, $numberValue, 'batch.values');
+
             $batch->values()->create([
                 'item_id' => $payload['item_id'],
                 'value_number' => $numberValue,
@@ -824,6 +828,21 @@ class IpalLogService
             'item_id' => $payload['item_id'],
             'value_text' => $textValue,
             'value_number' => null,
+        ]);
+    }
+
+    private function assertValidNumberForInputType(string $inputType, mixed $numberValue, string $errorKey): void
+    {
+        if (! InputType::requiresInteger($inputType)) {
+            return;
+        }
+
+        if (filter_var($numberValue, FILTER_VALIDATE_INT) !== false) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            $errorKey => ['Item tipe angka bulat wajib diisi tanpa desimal.'],
         ]);
     }
 

@@ -269,6 +269,70 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
         ])->assertRedirect()->assertSessionHasNoErrors();
     }
 
+    public function test_integer_process_item_rejects_decimal_values(): void
+    {
+        User::factory()->create([
+            'external_id' => 'operator.integer.01',
+            'is_active' => true,
+        ]);
+
+        $checklistTemplate = ChecklistTemplate::query()->create([
+            'name' => 'Checklist Integer',
+            'is_active' => true,
+        ]);
+        ChecklistItem::query()->create([
+            'template_id' => $checklistTemplate->id,
+            'name' => 'Pompa Transfer',
+            'category' => null,
+            'standard_condition' => 'Berfungsi',
+            'order_no' => 1,
+            'is_active' => true,
+        ]);
+
+        $processTemplate = ProcessTemplate::query()->create([
+            'name' => 'Process Integer',
+            'is_active' => true,
+        ]);
+        $processSection = ProcessSection::query()->create([
+            'template_id' => $processTemplate->id,
+            'name' => 'Bio Indikator',
+            'order_no' => 1,
+        ]);
+        $integerItem = ProcessItem::query()->create([
+            'section_id' => $processSection->id,
+            'name' => 'Jumlah ikan',
+            'standard_condition' => 'Sesuai standar',
+            'input_type' => 'integer',
+            'order_no' => 1,
+        ]);
+
+        $payload = [
+            'tanggal' => '2026-04-29',
+            'action' => 'SUBMIT',
+            'has_mixing' => false,
+            'process' => [
+                'template_id' => $processTemplate->id,
+                'values' => [
+                    [
+                        'item_id' => $integerItem->id,
+                        'value_number' => '4.5',
+                        'note' => null,
+                    ],
+                ],
+            ],
+            'batch' => [],
+        ];
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/process?user_id=operator.integer.01', $payload)
+            ->assertSessionHasErrors(['process.values']);
+
+        $payload['process']['values'][0]['value_number'] = '4';
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/process?user_id=operator.integer.01', $payload)
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+    }
+
     public function test_ipal_detail_attachment_urls_are_served_through_authorized_routes(): void
     {
         Storage::fake('public');

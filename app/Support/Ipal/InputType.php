@@ -12,6 +12,8 @@ class InputType
 
     public const Decimal2 = 'decimal_2';
 
+    public const Integer = 'integer';
+
     public const DurationMinutes = 'duration_minutes';
 
     /**
@@ -24,6 +26,7 @@ class InputType
             self::Option,
             self::OptionWithManual,
             self::Decimal2,
+            self::Integer,
             self::DurationMinutes,
         ];
     }
@@ -38,6 +41,7 @@ class InputType
             ['label' => 'Option', 'value' => self::Option],
             ['label' => 'Option dengan Manual', 'value' => self::OptionWithManual],
             ['label' => 'Desimal 2 Digit', 'value' => self::Decimal2],
+            ['label' => 'Angka Bulat', 'value' => self::Integer],
             ['label' => 'Durasi Menit', 'value' => self::DurationMinutes],
         ];
     }
@@ -49,6 +53,7 @@ class InputType
             'select', 'option_standard' => self::Option,
             self::OptionWithManual => self::OptionWithManual,
             self::Decimal2 => self::Decimal2,
+            self::Integer => self::Integer,
             self::DurationMinutes => self::DurationMinutes,
             default => self::Text,
         };
@@ -58,6 +63,15 @@ class InputType
     {
         return in_array(self::canonical($inputType), [
             self::Decimal2,
+            self::Integer,
+            self::DurationMinutes,
+        ], true);
+    }
+
+    public static function requiresInteger(?string $inputType): bool
+    {
+        return in_array(self::canonical($inputType), [
+            self::Integer,
             self::DurationMinutes,
         ], true);
     }

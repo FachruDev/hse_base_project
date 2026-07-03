@@ -26,6 +26,7 @@ function canonicalInputType(inputType: string): string {
         case 'option':
         case 'option_with_manual':
         case 'decimal_2':
+        case 'integer':
         case 'duration_minutes':
         case 'text':
             return inputType;
@@ -96,6 +97,31 @@ export function ActualValueInput({
                 min="0"
                 className="bg-background shadow-sm transition-all"
                 placeholder="Durasi dalam menit..."
+                value={valueNumber}
+                readOnly={readOnly}
+                required={required}
+                onBlur={(event) => {
+                    const rounded = roundToInteger(event.target.value);
+
+                    if (rounded !== event.target.value && rounded !== '') {
+                        onChange({ value_number: rounded, value_text: '' });
+                    }
+                }}
+                onChange={(event) => {
+                    onChange({ value_number: event.target.value, value_text: '' });
+                }}
+            />
+        );
+    }
+
+    if (canonicalType === 'integer') {
+        return (
+            <Input
+                type="number"
+                step="1"
+                min="0"
+                className="bg-background shadow-sm transition-all"
+                placeholder="Masukkan angka..."
                 value={valueNumber}
                 readOnly={readOnly}
                 required={required}

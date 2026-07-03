@@ -14,15 +14,24 @@ class IpalInputTypeTest extends TestCase
         $this->assertSame(InputType::Option, InputType::canonical('select'));
         $this->assertSame(InputType::Text, InputType::canonical('unknown'));
         $this->assertSame(InputType::DurationMinutes, InputType::canonical('duration_minutes'));
+        $this->assertSame(InputType::Integer, InputType::canonical('integer'));
     }
 
     public function test_it_identifies_number_backed_input_types(): void
     {
         $this->assertTrue(InputType::storesNumber('number'));
         $this->assertTrue(InputType::storesNumber('decimal_2'));
+        $this->assertTrue(InputType::storesNumber('integer'));
         $this->assertTrue(InputType::storesNumber('duration_minutes'));
         $this->assertFalse(InputType::storesNumber('text'));
         $this->assertFalse(InputType::storesNumber('option'));
         $this->assertFalse(InputType::storesNumber('option_with_manual'));
+    }
+
+    public function test_it_identifies_integer_input_types(): void
+    {
+        $this->assertTrue(InputType::requiresInteger('integer'));
+        $this->assertTrue(InputType::requiresInteger('duration_minutes'));
+        $this->assertFalse(InputType::requiresInteger('decimal_2'));
     }
 }
