@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Web\ConfigurationController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\ManagementController;
 use App\Http\Controllers\Web\MasterDataController;
 use Illuminate\Support\Facades\Route;
 
@@ -118,6 +119,15 @@ Route::middleware('external.user')->group(function (): void {
         ->name('dashboard.master-data.update');
     Route::delete('/dashboard/master-data/{module}/{record}', [MasterDataController::class, 'destroy'])
         ->name('dashboard.master-data.destroy');
+
+    Route::get('/dashboard/management/{module}', [ManagementController::class, 'index'])
+        ->name('dashboard.management.index');
+    Route::post('/dashboard/management/{module}', [ManagementController::class, 'store'])
+        ->name('dashboard.management.store');
+    Route::patch('/dashboard/management/{module}/{record}', [ManagementController::class, 'update'])
+        ->name('dashboard.management.update');
+    Route::delete('/dashboard/management/{module}/{record}', [ManagementController::class, 'destroy'])
+        ->name('dashboard.management.destroy');
 
     Route::get('/dashboard/configuration/weekend', [ConfigurationController::class, 'weekendIndex'])
         ->name('dashboard.configuration.weekend.index');

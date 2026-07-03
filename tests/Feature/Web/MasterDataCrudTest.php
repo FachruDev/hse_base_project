@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Web;
 
+use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,6 +73,51 @@ class MasterDataCrudTest extends TestCase
         $this->assertDatabaseHas('m_checklist_templates', [
             'name' => 'Checklist Shift Pagi',
             'is_active' => true,
+        ]);
+    }
+
+    public function test_can_create_batch_section_and_batch_item_with_section(): void
+    {
+        $user = User::factory()->create([
+            'external_id' => 'superadmin.01',
+            'name' => 'Super Admin',
+            'is_active' => true,
+        ]);
+
+        Permission::query()->create(['name' => 'master.batch.view', 'guard_name' => 'web']);
+        Permission::query()->create(['name' => 'master.batch.manage', 'guard_name' => 'web']);
+
+        $user->givePermissionTo([
+            'master.batch.view',
+            'master.batch.manage',
+        ]);
+
+        $this->post('/dashboard/master-data/batch-sections?user_id=superadmin.01', [
+            'name' => 'Netralisasi',
+            'order_no' => 1,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('m_batch_sections', [
+            'name' => 'Netralisasi',
+            'order_no' => 1,
+        ]);
+
+        $sectionId = (int) BatchSection::query()
+            ->where('name', 'Netralisasi')
+            ->value('id');
+
+        $this->post('/dashboard/master-data/batch-items?user_id=superadmin.01', [
+            'section_id' => $sectionId,
+            'name' => 'pH',
+            'input_type' => 'decimal_2',
+            'order_no' => 1,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('m_batch_items', [
+            'section_id' => $sectionId,
+            'name' => 'pH',
+            'input_type' => 'decimal_2',
+            'order_no' => 1,
         ]);
     }
 }

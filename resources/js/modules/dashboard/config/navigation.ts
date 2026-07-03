@@ -36,7 +36,7 @@ export type DashboardManagementItem = {
     key: string;
     label: string;
     icon: LucideIcon;
-    sectionId: string;
+    module: string;
     permission?: string;
 };
 
@@ -119,6 +119,13 @@ export const masterDataNavigation: MasterDataNavItem[] = [
         permission: 'master.process.view',
     },
     {
+        key: 'batch-sections',
+        label: 'Section Batch',
+        icon: Layers3,
+        module: 'batch-sections',
+        permission: 'master.batch.view',
+    },
+    {
         key: 'batch-items',
         label: 'Item Batch',
         icon: Database,
@@ -146,29 +153,29 @@ export const managementNavigation: DashboardManagementItem[] = [
         key: 'users',
         label: 'User',
         icon: Users2,
-        sectionId: 'management-user',
+        module: 'users',
         permission: 'admin.users.view',
     },
     {
         key: 'roles',
         label: 'Role',
         icon: ShieldCheck,
-        sectionId: 'management-role',
+        module: 'roles',
         permission: 'admin.roles.view',
     },
     {
         key: 'permissions',
         label: 'Permission',
         icon: LockKeyhole,
-        sectionId: 'management-permission',
+        module: 'permissions',
         permission: 'admin.permissions.view',
     },
     {
         key: 'departments',
         label: 'Departemen',
         icon: LayoutGrid,
-        sectionId: 'management-departemen',
-        permission: 'admin.users.view',
+        module: 'departments',
+        permission: 'admin.departments.view',
     },
 ];
 

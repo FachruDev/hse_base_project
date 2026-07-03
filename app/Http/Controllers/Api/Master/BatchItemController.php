@@ -12,6 +12,8 @@ class BatchItemController extends Controller
     public function index(): JsonResponse
     {
         $items = BatchItem::query()
+            ->with('section:id,name')
+            ->orderBy('section_id')
             ->orderBy('order_no')
             ->paginate(50);
 
@@ -31,7 +33,7 @@ class BatchItemController extends Controller
     public function show(BatchItem $batchItem): JsonResponse
     {
         return response()->json([
-            'data' => $batchItem,
+            'data' => $batchItem->load('section:id,name'),
         ]);
     }
 
@@ -41,7 +43,7 @@ class BatchItemController extends Controller
 
         return response()->json([
             'message' => 'Batch item berhasil diperbarui.',
-            'data' => $batchItem->fresh(),
+            'data' => $batchItem->fresh()->load('section:id,name'),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Services\Web;
 use App\Models\B3Storage\B3StorageInitiatorDepartment;
 use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\Master\BatchItem;
+use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistItem;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessItem;
@@ -654,37 +655,49 @@ class MasterDataCrudService
                 'title' => 'Item Batch',
                 'short_label' => 'Item Batch',
                 'singular_label' => 'item batch',
-                'description' => 'Master item batch untuk kebutuhan mixing atau pencatatan batch.',
-                'form_description' => 'Kelola nama item batch, tipe input, dan urutan tampil.',
-                'search_placeholder' => 'Cari item batch',
+                'description' => 'Master item batch berdasarkan section mixing.',
+                'form_description' => 'Tentukan section batch, nama item, tipe input, dan urutan tampil.',
+                'search_placeholder' => 'Cari item batch atau section',
                 'view_permission' => 'master.batch.view',
                 'manage_permission' => 'master.batch.manage',
                 'model' => BatchItem::class,
-                'integer_fields' => ['order_no'],
+                'integer_fields' => ['section_id', 'order_no'],
                 'boolean_fields' => [],
                 'defaults' => [
+                    'section_id' => null,
                     'name' => '',
                     'input_type' => 'text',
                     'order_no' => 1,
                 ],
                 'rules' => [
+                    'section_id' => ['required', 'integer', 'exists:m_batch_sections,id'],
                     'name' => ['required', 'string', 'max:255'],
                     'input_type' => ['required', Rule::in(InputType::allowedForMaster())],
                     'order_no' => ['required', 'integer', 'min:1'],
                 ],
                 'columns' => [
+                    ['key' => 'section', 'label' => 'Section'],
                     ['key' => 'name', 'label' => 'Nama Item'],
                     ['key' => 'input_type', 'label' => 'Tipe Input'],
                     ['key' => 'order_no', 'label' => 'Urutan'],
                 ],
                 'query' => fn (): Builder => BatchItem::query()
+                    ->with('section:id,name')
+                    ->orderBy('section_id')
                     ->orderBy('order_no')
                     ->orderBy('id'),
                 'search' => function (Builder $query, string $search): void {
-                    $query->where('name', 'like', "%{$search}%");
+                    $query->where(function (Builder $innerQuery) use ($search): void {
+                        $innerQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhereHas('section', function (Builder $sectionQuery) use ($search): void {
+                                $sectionQuery->where('name', 'like', "%{$search}%");
+                            });
+                    });
                 },
                 'row' => function (BatchItem $record): array {
                     return [
+                        'section' => $record->section?->name ?? '-',
                         'name' => $record->name,
                         'input_type' => strtoupper($record->input_type),
                         'order_no' => (string) $record->order_no,
@@ -692,12 +705,20 @@ class MasterDataCrudService
                 },
                 'form_values' => function (BatchItem $record): array {
                     return [
+                        'section_id' => $record->section_id,
                         'name' => $record->name,
                         'input_type' => $record->input_type,
                         'order_no' => $record->order_no,
                     ];
                 },
                 'fields' => fn (): array => [
+                    [
+                        'name' => 'section_id',
+                        'label' => 'Section Batch',
+                        'type' => 'select',
+                        'required' => true,
+                        'options' => $this->batchSectionOptions(),
+                    ],
                     [
                         'name' => 'name',
                         'label' => 'Nama Item',
@@ -710,6 +731,66 @@ class MasterDataCrudService
                         'type' => 'select',
                         'required' => true,
                         'options' => $this->inputTypeOptions(),
+                    ],
+                    [
+                        'name' => 'order_no',
+                        'label' => 'Urutan',
+                        'type' => 'number',
+                        'required' => true,
+                    ],
+                ],
+            ],
+            'batch-sections' => [
+                'title' => 'Section Batch',
+                'short_label' => 'Section Batch',
+                'singular_label' => 'section batch',
+                'description' => 'Master section batch untuk grouping data batch mixing.',
+                'form_description' => 'Kelola nama section dan urutan tampil pada form batch mixing.',
+                'search_placeholder' => 'Cari section batch',
+                'view_permission' => 'master.batch.view',
+                'manage_permission' => 'master.batch.manage',
+                'model' => BatchSection::class,
+                'integer_fields' => ['order_no'],
+                'boolean_fields' => [],
+                'defaults' => [
+                    'name' => '',
+                    'order_no' => 1,
+                ],
+                'rules' => [
+                    'name' => ['required', 'string', 'max:255'],
+                    'order_no' => ['required', 'integer', 'min:1'],
+                ],
+                'columns' => [
+                    ['key' => 'name', 'label' => 'Nama Section'],
+                    ['key' => 'order_no', 'label' => 'Urutan'],
+                    ['key' => 'items_count', 'label' => 'Jumlah Item'],
+                ],
+                'query' => fn (): Builder => BatchSection::query()
+                    ->withCount('items')
+                    ->orderBy('order_no')
+                    ->orderBy('id'),
+                'search' => function (Builder $query, string $search): void {
+                    $query->where('name', 'like', "%{$search}%");
+                },
+                'row' => function (BatchSection $record): array {
+                    return [
+                        'name' => $record->name,
+                        'order_no' => (string) $record->order_no,
+                        'items_count' => (string) $record->items_count,
+                    ];
+                },
+                'form_values' => function (BatchSection $record): array {
+                    return [
+                        'name' => $record->name,
+                        'order_no' => $record->order_no,
+                    ];
+                },
+                'fields' => fn (): array => [
+                    [
+                        'name' => 'name',
+                        'label' => 'Nama Section',
+                        'type' => 'text',
+                        'required' => true,
                     ],
                     [
                         'name' => 'order_no',
@@ -935,6 +1016,22 @@ class MasterDataCrudService
             ->get(['id', 'template_id', 'name'])
             ->map(fn (ProcessSection $section): array => [
                 'label' => trim(($section->template?->name ? $section->template->name.' - ' : '').$section->name),
+                'value' => $section->id,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{label: string, value: int}>
+     */
+    private function batchSectionOptions(): array
+    {
+        return BatchSection::query()
+            ->orderBy('order_no')
+            ->orderBy('id')
+            ->get(['id', 'name'])
+            ->map(fn (BatchSection $section): array => [
+                'label' => $section->name,
                 'value' => $section->id,
             ])
             ->all();

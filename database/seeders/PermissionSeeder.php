@@ -46,6 +46,10 @@ class PermissionSeeder extends Seeder
                 'admin.permissions.create',
                 'admin.permissions.update',
                 'admin.permissions.delete',
+                'admin.departments.view',
+                'admin.departments.create',
+                'admin.departments.update',
+                'admin.departments.delete',
             ],
             'master' => [
                 'master.checklist.view',

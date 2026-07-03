@@ -2,12 +2,10 @@
 
 namespace App\Http\Requests\Master;
 
-use App\Support\Ipal\InputType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class SaveBatchItemRequest extends FormRequest
+class SaveBatchSectionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,9 +23,7 @@ class SaveBatchItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'section_id' => ['required', 'integer', 'exists:m_batch_sections,id'],
             'name' => ['required', 'string', 'max:255'],
-            'input_type' => ['required', Rule::in(InputType::allowedForMaster())],
             'order_no' => ['required', 'integer', 'min:1'],
         ];
     }

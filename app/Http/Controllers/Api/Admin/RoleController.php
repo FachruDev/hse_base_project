@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveRoleRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()?->can('admin.roles.view'), 403);
+
         $roles = Role::query()
             ->with('permissions:id,name,guard_name')
             ->orderBy('name')
@@ -21,6 +24,8 @@ class RoleController extends Controller
 
     public function store(SaveRoleRequest $request): JsonResponse
     {
+        abort_unless($request->user()?->can('admin.roles.create'), 403);
+
         $validated = $request->validated();
 
         $role = Role::query()->create([
@@ -38,8 +43,10 @@ class RoleController extends Controller
         ], 201);
     }
 
-    public function show(Role $role): JsonResponse
+    public function show(Request $request, Role $role): JsonResponse
     {
+        abort_unless($request->user()?->can('admin.roles.view'), 403);
+
         return response()->json([
             'data' => $role->load('permissions:id,name,guard_name'),
         ]);
@@ -47,6 +54,8 @@ class RoleController extends Controller
 
     public function update(SaveRoleRequest $request, Role $role): JsonResponse
     {
+        abort_unless($request->user()?->can('admin.roles.update'), 403);
+
         $validated = $request->validated();
 
         $role->update([
@@ -64,8 +73,10 @@ class RoleController extends Controller
         ]);
     }
 
-    public function destroy(Role $role): JsonResponse
+    public function destroy(Request $request, Role $role): JsonResponse
     {
+        abort_unless($request->user()?->can('admin.roles.delete'), 403);
+
         $role->delete();
 
         return response()->json([

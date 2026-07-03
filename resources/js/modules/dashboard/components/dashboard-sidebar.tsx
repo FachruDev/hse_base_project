@@ -16,6 +16,7 @@ import {
     catatanPengolahanLimbahAirIndex,
     index as dashboardIndex,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { index as managementIndex } from '@/actions/App/Http/Controllers/Web/ManagementController';
 import { index as masterDataIndex } from '@/actions/App/Http/Controllers/Web/MasterDataController';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -271,8 +272,8 @@ export function DashboardSidebar({
                                             {managementItems.map((item) => (
                                                 <SidebarMenuSubItem key={item.key}>
                                                     <SidebarMenuSubButton
-                                                        href={buildDashboardSectionHref(
-                                                            item.sectionId,
+                                                        href={buildManagementHref(
+                                                            item.module,
                                                             userId,
                                                         )}
                                                     >
@@ -440,8 +441,8 @@ function buildMasterDataHref(module: string, userId: string): string {
     return masterDataIndex.url(module, { query: { user_id: userId } });
 }
 
-function buildDashboardSectionHref(sectionId: string, userId: string): string {
-    return `${dashboardIndex.url({ query: { user_id: userId } })}#${sectionId}`;
+function buildManagementHref(module: string, userId: string): string {
+    return managementIndex.url(module, { query: { user_id: userId } });
 }
 
 function Users2Icon() {

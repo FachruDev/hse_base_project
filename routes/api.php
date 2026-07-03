@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\B3Storage\B3StorageMonthlyReportController;
 use App\Http\Controllers\Api\B3Storage\B3StorageWasteTypeController;
 use App\Http\Controllers\Api\Ipal\IpalLogController;
 use App\Http\Controllers\Api\Master\BatchItemController;
+use App\Http\Controllers\Api\Master\BatchSectionController;
 use App\Http\Controllers\Api\Master\ChecklistItemController;
 use App\Http\Controllers\Api\Master\ChecklistTemplateController;
 use App\Http\Controllers\Api\Master\HolidayController;
@@ -44,6 +45,8 @@ Route::middleware('external.user')->group(function (): void {
             ->parameters(['process-items' => 'processItem']);
         Route::apiResource('batch-items', BatchItemController::class)
             ->parameters(['batch-items' => 'batchItem']);
+        Route::apiResource('batch-sections', BatchSectionController::class)
+            ->parameters(['batch-sections' => 'batchSection']);
         Route::apiResource('operational-weekdays', OperationalWeekdayController::class)
             ->parameters(['operational-weekdays' => 'operationalWeekday']);
         Route::apiResource('holidays', HolidayController::class);
