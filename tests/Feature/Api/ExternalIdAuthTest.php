@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class ExternalIdAuthTest extends TestCase
@@ -35,11 +36,14 @@ class ExternalIdAuthTest extends TestCase
 
     public function test_allows_request_when_userid_exists(): void
     {
-        User::factory()->create([
+        $user = User::factory()->create([
             'external_id' => 'irvan.m',
             'name' => 'Irvan Maulana',
             'is_active' => true,
         ]);
+
+        Permission::query()->create(['name' => 'master.checklist.view', 'guard_name' => 'web']);
+        $user->givePermissionTo('master.checklist.view');
 
         ChecklistTemplate::query()->create([
             'name' => 'Template Harian',

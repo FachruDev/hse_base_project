@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -37,6 +38,19 @@ class B3StorageWorkflowTest extends TestCase
             'external_id' => 'hse.head',
             'name' => 'HSE Dept Head',
             'is_active' => true,
+        ]);
+
+        $this->givePermissions($operator, [
+            'b3storage.logs.create',
+            'b3storage.logs.view',
+            'b3storage.logs.update',
+            'b3storage.monthly-report.view',
+        ]);
+        $this->givePermissions($environmentSupervisor, [
+            'b3storage.monthly-approval.approve',
+        ]);
+        $this->givePermissions($hseDepartmentHead, [
+            'b3storage.monthly-approval.approve',
         ]);
 
         Role::query()->create([
@@ -167,9 +181,14 @@ class B3StorageWorkflowTest extends TestCase
 
     public function test_can_manage_b3_storage_master_data_from_api(): void
     {
-        User::factory()->create([
+        $admin = User::factory()->create([
             'external_id' => 'admin.b3',
             'is_active' => true,
+        ]);
+
+        $this->givePermissions($admin, [
+            'b3storage.master.view',
+            'b3storage.master.manage',
         ]);
 
         $wasteTypeResponse = $this->postJson('/api/b3-storage/master/waste-types?userid=admin.b3', [
@@ -209,5 +228,39 @@ class B3StorageWorkflowTest extends TestCase
 
         $this->deleteJson("/api/b3-storage/master/initiator-departments/{$departmentId}?userid=admin.b3")
             ->assertOk();
+    }
+
+    public function test_b3_storage_api_requires_action_permissions(): void
+    {
+        $user = User::factory()->create([
+            'external_id' => 'plain.b3',
+            'is_active' => true,
+        ]);
+
+        $this->getJson('/api/b3-storage/logs?userid='.$user->external_id)
+            ->assertForbidden();
+
+        $this->givePermissions($user, ['b3storage.logs.view']);
+
+        $this->getJson('/api/b3-storage/logs?userid='.$user->external_id)
+            ->assertOk();
+
+        $this->getJson('/api/b3-storage/master/waste-types?userid='.$user->external_id)
+            ->assertForbidden();
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    private function givePermissions(User $user, array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::query()->firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

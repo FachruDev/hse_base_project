@@ -29,7 +29,7 @@ Response login dan `/auth/me` mengembalikan `permissions`. Frontend bisa memakai
 - `b3storage.monthly-report.view`: lihat report bulanan B3.
 - `b3storage.monthly-approval.approve`: approval bulanan B3.
 
-Catatan: beberapa endpoint API lama masih kompatibel dengan auth `user_id` dan belum memblokir semua permission di level route. Untuk mobile, tetap gunakan daftar permission di atas untuk UX dan koordinasi role.
+Catatan: endpoint mobile untuk master form, IPAL, B3 Storage, report, dan approval sudah memblokir permission di backend. Beberapa endpoint API backoffice lama masih kompatibel dengan auth `user_id`; untuk mobile, tetap gunakan daftar permission di atas untuk UX dan koordinasi role.
 
 ## Scope Endpoint Mobile
 

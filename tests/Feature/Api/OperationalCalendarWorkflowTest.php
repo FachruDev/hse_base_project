@@ -9,6 +9,7 @@ use App\Models\Master\OperationalWeekday;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class OperationalCalendarWorkflowTest extends TestCase
@@ -60,10 +61,13 @@ class OperationalCalendarWorkflowTest extends TestCase
 
     public function test_non_operational_day_auto_generates_na_checklist_values(): void
     {
-        User::factory()->create([
+        $operator = User::factory()->create([
             'external_id' => 'operator.02',
             'is_active' => true,
         ]);
+
+        Permission::query()->create(['name' => 'ipal.logs.create', 'guard_name' => 'web']);
+        $operator->givePermissionTo('ipal.logs.create');
 
         $checklistTemplate = ChecklistTemplate::query()->create([
             'name' => 'Checklist Harian',

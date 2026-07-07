@@ -11,6 +11,7 @@ use App\Models\Master\ProcessTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class IpalWorkflowTest extends TestCase
@@ -29,6 +30,14 @@ class IpalWorkflowTest extends TestCase
             'external_id' => 'supervisor.01',
             'name' => 'Supervisor 01',
             'is_active' => true,
+        ]);
+
+        $this->givePermissions($operator, [
+            'ipal.logs.create',
+            'ipal.logs.submit',
+        ]);
+        $this->givePermissions($supervisor, [
+            'ipal.logs.approve',
         ]);
 
         $checklistTemplate = ChecklistTemplate::query()->create([
@@ -156,5 +165,36 @@ class IpalWorkflowTest extends TestCase
             'operator_id' => $operator->id,
             'supervisor_id' => $supervisor->id,
         ]);
+    }
+
+    public function test_ipal_api_requires_action_permissions(): void
+    {
+        $user = User::factory()->create([
+            'external_id' => 'plain.ipal',
+            'is_active' => true,
+        ]);
+
+        $this->getJson('/api/ipal/logs?userid='.$user->external_id)
+            ->assertForbidden();
+
+        $this->givePermissions($user, ['ipal.logs.view']);
+
+        $this->getJson('/api/ipal/logs?userid='.$user->external_id)
+            ->assertOk();
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    private function givePermissions(User $user, array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::query()->firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

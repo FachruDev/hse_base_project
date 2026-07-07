@@ -20,6 +20,8 @@ class IpalLogController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()?->can('ipal.logs.view'), Response::HTTP_FORBIDDEN);
+
         $month = $request->integer('month');
         $year = $request->integer('year');
         $perPage = max(1, min(100, $request->integer('per_page', 50)));
@@ -43,6 +45,8 @@ class IpalLogController extends Controller
 
     public function store(StoreIpalLogRequest $request): JsonResponse
     {
+        abort_unless($request->user()?->can('ipal.logs.create'), Response::HTTP_FORBIDDEN);
+
         $log = $this->ipalLogService->createLog($request->validated(), $this->authenticatedUser($request));
 
         return response()->json([
@@ -51,8 +55,10 @@ class IpalLogController extends Controller
         ], 201);
     }
 
-    public function show(IpalDailyLog $log): JsonResponse
+    public function show(Request $request, IpalDailyLog $log): JsonResponse
     {
+        abort_unless($request->user()?->can('ipal.logs.view'), Response::HTTP_FORBIDDEN);
+
         return response()->json([
             'data' => $this->ipalLogService->detail($log),
         ]);
@@ -60,6 +66,8 @@ class IpalLogController extends Controller
 
     public function submit(Request $request, IpalDailyLog $log): JsonResponse
     {
+        abort_unless($request->user()?->can('ipal.logs.submit'), Response::HTTP_FORBIDDEN);
+
         $processLog = $this->ipalLogService->submit($log, $this->authenticatedUser($request));
 
         return response()->json([
@@ -70,6 +78,8 @@ class IpalLogController extends Controller
 
     public function approve(ApproveIpalLogRequest $request, IpalDailyLog $log): JsonResponse
     {
+        abort_unless($request->user()?->can('ipal.logs.approve'), Response::HTTP_FORBIDDEN);
+
         $processLog = $this->ipalLogService->approve($log, $this->authenticatedUser($request));
 
         return response()->json([

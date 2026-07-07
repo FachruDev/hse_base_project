@@ -21,6 +21,8 @@ class B3StorageMonthlyReportController extends Controller
 
     public function index(B3StorageMonthlyReportRequest $request): JsonResponse
     {
+        abort_unless($request->user()?->can('b3storage.monthly-report.view'), Response::HTTP_FORBIDDEN);
+
         $report = $this->b3StorageService->monthlyReport(
             (int) $request->validated('month'),
             (int) $request->validated('year'),
@@ -34,6 +36,8 @@ class B3StorageMonthlyReportController extends Controller
     public function approve(
         ApproveB3StorageMonthlyRequest $request,
     ): JsonResponse {
+        abort_unless($request->user()?->can('b3storage.monthly-approval.approve'), Response::HTTP_FORBIDDEN);
+
         $validated = $request->validated();
 
         $signedUser = isset($validated['signer_user_id'])

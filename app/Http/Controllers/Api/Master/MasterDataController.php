@@ -8,11 +8,15 @@ use App\Models\Master\BatchSection;
 use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessTemplate;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class MasterDataController extends Controller
 {
-    public function checklist(): JsonResponse
+    public function checklist(Request $request): JsonResponse
     {
+        abort_unless($request->user()?->can('master.checklist.view'), Response::HTTP_FORBIDDEN);
+
         $templates = ChecklistTemplate::query()
             ->where('is_active', true)
             ->with([
@@ -28,8 +32,13 @@ class MasterDataController extends Controller
         ]);
     }
 
-    public function process(): JsonResponse
+    public function process(Request $request): JsonResponse
     {
+        abort_unless(
+            $request->user()?->can('master.process.view') && $request->user()?->can('master.batch.view'),
+            Response::HTTP_FORBIDDEN,
+        );
+
         $templates = ProcessTemplate::query()
             ->where('is_active', true)
             ->with([

@@ -6,6 +6,7 @@ use App\Models\Master\ChecklistTemplate;
 use App\Models\MobileApiToken;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class MobileAuthTest extends TestCase
@@ -14,11 +15,14 @@ class MobileAuthTest extends TestCase
 
     public function test_mobile_user_can_login_with_user_id_and_email(): void
     {
-        User::factory()->create([
+        $user = User::factory()->create([
             'external_id' => 'irvan.m',
             'email' => 'irvan.m@galenium.local',
             'name' => 'Irvan Maulana',
         ]);
+
+        Permission::query()->create(['name' => 'master.checklist.view', 'guard_name' => 'web']);
+        $user->givePermissionTo('master.checklist.view');
 
         $response = $this->postJson('/api/auth/login', [
             'user_id' => 'irvan.m',
@@ -61,11 +65,14 @@ class MobileAuthTest extends TestCase
 
     public function test_bearer_token_can_access_api_and_logout_invalidates_token(): void
     {
-        User::factory()->create([
+        $user = User::factory()->create([
             'external_id' => 'irvan.m',
             'email' => 'irvan.m@galenium.local',
             'name' => 'Irvan Maulana',
         ]);
+
+        Permission::query()->create(['name' => 'master.checklist.view', 'guard_name' => 'web']);
+        $user->givePermissionTo('master.checklist.view');
 
         ChecklistTemplate::query()->create([
             'name' => 'Template Harian',

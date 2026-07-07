@@ -22,6 +22,8 @@ class B3StorageLogController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()?->can('b3storage.logs.view'), Response::HTTP_FORBIDDEN);
+
         $month = $request->integer('month');
         $year = $request->integer('year');
         $perPage = max(1, min(100, $request->integer('per_page', 50)));
@@ -37,6 +39,8 @@ class B3StorageLogController extends Controller
 
     public function store(StoreB3StorageLogRequest $request): JsonResponse
     {
+        abort_unless($request->user()?->can('b3storage.logs.create'), Response::HTTP_FORBIDDEN);
+
         $log = $this->b3StorageService->createLog(
             $request->validated(),
             $this->authenticatedUser($request),
@@ -49,8 +53,10 @@ class B3StorageLogController extends Controller
         ], 201);
     }
 
-    public function show(B3StorageLog $log): JsonResponse
+    public function show(Request $request, B3StorageLog $log): JsonResponse
     {
+        abort_unless($request->user()?->can('b3storage.logs.view'), Response::HTTP_FORBIDDEN);
+
         return response()->json([
             'data' => $this->b3StorageService->detail($log),
         ]);
@@ -58,6 +64,8 @@ class B3StorageLogController extends Controller
 
     public function update(UpdateB3StorageLogRequest $request, B3StorageLog $log): JsonResponse
     {
+        abort_unless($request->user()?->can('b3storage.logs.update'), Response::HTTP_FORBIDDEN);
+
         $updatedLog = $this->b3StorageService->updateLog(
             $log,
             $request->validated(),
@@ -71,8 +79,10 @@ class B3StorageLogController extends Controller
         ]);
     }
 
-    public function destroy(B3StorageLog $log): JsonResponse
+    public function destroy(Request $request, B3StorageLog $log): JsonResponse
     {
+        abort_unless($request->user()?->can('b3storage.logs.delete'), Response::HTTP_FORBIDDEN);
+
         $this->b3StorageService->deleteLog($log);
 
         return response()->json([
@@ -80,8 +90,10 @@ class B3StorageLogController extends Controller
         ]);
     }
 
-    public function photo(B3StorageLog $log): StreamedResponse
+    public function photo(Request $request, B3StorageLog $log): StreamedResponse
     {
+        abort_unless($request->user()?->can('b3storage.logs.view'), Response::HTTP_FORBIDDEN);
+
         if (! is_string($log->photo_path) || $log->photo_path === '') {
             abort(Response::HTTP_NOT_FOUND, 'Foto tidak tersedia.');
         }
