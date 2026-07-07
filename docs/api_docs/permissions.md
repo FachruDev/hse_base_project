@@ -21,7 +21,7 @@ Dokumen ini adalah acuan permission untuk Flutter. Permission dikirim dari `POST
 
 ## Master Data Read-Only
 
-| Endpoint | Permission UI | Kegunaan |
+| Endpoint | Permission backend/UI | Kegunaan |
 | --- | --- | --- |
 | `GET /master/checklist` | `master.checklist.view` | Dropdown/template checklist IPAL. |
 | `GET /master/process` | `master.process.view` dan `master.batch.view` | Template catatan proses IPAL dan item batch mixing. |
@@ -30,7 +30,7 @@ Dokumen ini adalah acuan permission untuk Flutter. Permission dikirim dari `POST
 
 ## IPAL: Form 1-3
 
-| Endpoint | Permission UI | Kegunaan |
+| Endpoint | Permission backend/UI | Kegunaan |
 | --- | --- | --- |
 | `GET /ipal/logs` | `ipal.logs.view` | Riwayat/index log IPAL harian. |
 | `POST /ipal/logs` | `ipal.logs.create` | Buat draft atau submit log IPAL harian. |
@@ -40,7 +40,7 @@ Dokumen ini adalah acuan permission untuk Flutter. Permission dikirim dari `POST
 
 ## B3 Storage: Form 4
 
-| Endpoint | Permission UI | Kegunaan |
+| Endpoint | Permission backend/UI | Kegunaan |
 | --- | --- | --- |
 | `GET /b3-storage/logs` | `b3storage.logs.view` | Riwayat/index log B3. |
 | `POST /b3-storage/logs` | `b3storage.logs.create` | Buat log B3 masuk/keluar. |
@@ -56,8 +56,9 @@ Dokumen ini adalah acuan permission untuk Flutter. Permission dikirim dari `POST
 | Role | Permission utama untuk mobile |
 | --- | --- |
 | `superadmin` | Semua permission. |
-| `hse_admin` | Semua master, IPAL view/approve, dan B3 penuh. |
-| `hse_supervisor` | Master read-only, IPAL view/approve, B3 report/approval. |
+| `admin` | Semua master, IPAL view, dan B3 penuh. |
+| `supervisor` | Master read-only, IPAL view/approve, B3 report/approval. |
+| `hse_dept_head` | B3 master read-only, B3 view/report/approval. |
 | `operator` | Master read-only, IPAL create/view/submit, B3 create/view/update/report. |
 
 ## Hal yang Belum Tercakup / Perlu Konfirmasi
@@ -66,5 +67,5 @@ Dokumen ini adalah acuan permission untuk Flutter. Permission dikirim dari `POST
 - API IPAL belum punya endpoint approval checklist bulanan HSE Dept Head. Approval checklist bulanan saat ini tersedia di web dashboard.
 - Master data IPAL sudah mengirim kategori proses, uraian proses, kondisi standar, tipe input, dan section batch. Namun opsi pilihan detail untuk `option_standard`/`option_with_manual` masih belum punya tabel option terpisah; Flutter dapat menampilkan pilihan umum dan tetap mengirim hasilnya sebagai `value_text`.
 - Beberapa route API admin/master CRUD masih ada di backend, tetapi tidak masuk scope mobile. Mobile cukup memakai endpoint master read-only di dokumen ini.
-- Sebagian endpoint API lama belum memakai middleware permission per route. Karena itu Flutter tetap wajib memakai daftar permission dari login/me untuk UX, dan backend permission hardening bisa dijadikan pekerjaan lanjutan.
+- Endpoint mobile untuk master form, IPAL, B3 Storage, report, dan approval sudah memblokir permission di backend. Flutter tetap wajib memakai daftar permission dari login/me untuk UX dan menangani response `403`.
 - Belum ada endpoint upload/sync offline khusus. Jika Flutter butuh mode offline, perlu kontrak tambahan untuk conflict handling dan retry.

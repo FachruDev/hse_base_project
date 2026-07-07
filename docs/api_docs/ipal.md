@@ -64,7 +64,7 @@ Mapping `input_type`:
 
 ## GET /ipal/logs
 
-Permission UI: `ipal.logs.view`.
+Permission backend/UI: `ipal.logs.view`.
 
 Riwayat log IPAL.
 
@@ -90,7 +90,7 @@ Response berupa pagination Laravel. Field penting per row:
 
 ## POST /ipal/logs
 
-Permission UI: `ipal.logs.create`.
+Permission backend/UI: `ipal.logs.create`.
 
 Membuat log IPAL harian.
 
@@ -207,13 +207,13 @@ Catatan:
 
 ## GET /ipal/logs/{log}
 
-Permission UI: `ipal.logs.view`.
+Permission backend/UI: `ipal.logs.view`.
 
 Detail lengkap log IPAL, termasuk checklist, catatan proses, batch mixing, dan approval harian.
 
 ## POST /ipal/logs/{log}/submit
 
-Permission UI: `ipal.logs.submit`.
+Permission backend/UI: `ipal.logs.submit`.
 
 Submit catatan proses harian oleh operator.
 
@@ -232,7 +232,7 @@ Response:
 
 ## POST /ipal/logs/{log}/approve
 
-Permission UI: `ipal.logs.approve`.
+Permission backend/UI: `ipal.logs.approve`.
 
 Approve catatan proses harian oleh user supervisor/HSE yang berwenang.
 
