@@ -22,16 +22,22 @@ class B3StorageLogController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->can('b3storage.logs.view'), Response::HTTP_FORBIDDEN);
+        $viewer = $this->authenticatedUser($request);
+        abort_unless($this->canViewLogs($viewer), Response::HTTP_FORBIDDEN);
 
         $month = $request->integer('month');
         $year = $request->integer('year');
         $perPage = max(1, min(100, $request->integer('per_page', 50)));
+        $dateFrom = $this->dateQuery($request, 'date_from');
+        $dateTo = $this->dateQuery($request, 'date_to');
 
         $logs = $this->b3StorageService->logsIndex(
             $month > 0 ? $month : null,
             $year > 0 ? $year : null,
             $perPage,
+            $viewer,
+            $dateFrom,
+            $dateTo,
         );
 
         return response()->json($logs);
@@ -55,7 +61,7 @@ class B3StorageLogController extends Controller
 
     public function show(Request $request, B3StorageLog $log): JsonResponse
     {
-        abort_unless($request->user()?->can('b3storage.logs.view'), Response::HTTP_FORBIDDEN);
+        abort_unless($this->b3StorageService->canViewLog($this->authenticatedUser($request), $log), Response::HTTP_FORBIDDEN);
 
         return response()->json([
             'data' => $this->b3StorageService->detail($log),
@@ -92,7 +98,7 @@ class B3StorageLogController extends Controller
 
     public function photo(Request $request, B3StorageLog $log): StreamedResponse
     {
-        abort_unless($request->user()?->can('b3storage.logs.view'), Response::HTTP_FORBIDDEN);
+        abort_unless($this->b3StorageService->canViewLog($this->authenticatedUser($request), $log), Response::HTTP_FORBIDDEN);
 
         if (! is_string($log->photo_path) || $log->photo_path === '') {
             abort(Response::HTTP_NOT_FOUND, 'Foto tidak tersedia.');
@@ -114,5 +120,23 @@ class B3StorageLogController extends Controller
         }
 
         return $user;
+    }
+
+    private function canViewLogs(User $user): bool
+    {
+        return $user->can('b3storage.logs.view-all')
+            || $user->can('b3storage.logs.view-own')
+            || $user->can('b3storage.logs.view');
+    }
+
+    private function dateQuery(Request $request, string $key): ?string
+    {
+        $value = $request->query($key);
+
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : null;
     }
 }

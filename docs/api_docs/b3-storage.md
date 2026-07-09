@@ -9,23 +9,34 @@ Authorization: Bearer {access_token}
 Permission terkait:
 
 - `b3storage.logs.create`: membuat log B3.
-- `b3storage.logs.view`: melihat index/detail/foto log B3.
+- `b3storage.logs.view-own`: melihat index/detail/foto log B3 milik sendiri.
+- `b3storage.logs.view-all`: melihat semua index/detail/foto log B3.
+- `b3storage.logs.view`: alias kompatibilitas lama untuk melihat semua log.
 - `b3storage.logs.update`: update log B3.
 - `b3storage.logs.delete`: hapus log B3.
-- `b3storage.monthly-report.view`: melihat report bulanan B3.
-- `b3storage.monthly-approval.approve`: approval bulanan Environment Supervisor/HSE Dept Head.
+
+Catatan: report dan approval bulanan B3 tidak tersedia di mobile API. Fitur tersebut tetap ada di dashboard web Laravel.
 
 ## GET /b3-storage/logs
 
-Permission backend/UI: `b3storage.logs.view`.
+Permission backend/UI: `b3storage.logs.view-own`, `b3storage.logs.view-all`, atau alias lama `b3storage.logs.view`.
 
 Riwayat log penyimpanan limbah B3.
+
+Scope data:
+
+- `b3storage.logs.view-all`: semua log.
+- `b3storage.logs.view-own`: hanya log dengan `operator_id` atau `initiator_user_id` milik user login.
 
 Query optional:
 
 - `month`: 1-12
 - `year`: contoh `2026`
+- `date_from`: format `YYYY-MM-DD`
+- `date_to`: format `YYYY-MM-DD`
 - `per_page`: default 50, maksimum 100
+
+Jika `date_from` atau `date_to` dikirim, backend memakai filter rentang tanggal dan mengabaikan `month/year`. Jika kosong, backend tetap memakai filter bulan/tahun.
 
 Response berupa pagination Laravel. Field penting:
 
@@ -119,7 +130,7 @@ Validasi foto:
 
 ## GET /b3-storage/logs/{log}
 
-Permission backend/UI: `b3storage.logs.view`.
+Permission backend/UI: `b3storage.logs.view-own`, `b3storage.logs.view-all`, atau alias lama `b3storage.logs.view`.
 
 Detail satu log B3.
 
@@ -137,126 +148,12 @@ Menghapus log B3 dan foto terkait.
 
 ## GET /b3-storage/logs/{log}/photo
 
-Permission backend/UI: `b3storage.logs.view`.
+Permission backend/UI: `b3storage.logs.view-own`, `b3storage.logs.view-all`, atau alias lama `b3storage.logs.view`.
 
 Mengambil file foto log B3.
 
 Header tetap memakai bearer token. Endpoint ini mengembalikan file image, bukan JSON.
 
-## GET /b3-storage/monthly-report
+## Laporan Bulanan B3
 
-Permission backend/UI: `b3storage.monthly-report.view`.
-
-Report bulanan B3 sesuai format form fisik.
-
-Query wajib:
-
-- `month`: 1-12
-- `year`: contoh `2026`
-
-Example:
-
-```http
-GET /api/b3-storage/monthly-report?month=6&year=2026
-```
-
-Response 200:
-
-```json
-{
-  "data": {
-    "period": {
-      "month": 6,
-      "year": 2026,
-      "label": "Juni 2026"
-    },
-    "columns": {
-      "waste_types": [
-        {
-          "id": 1,
-          "name": "Produk/Bahan Awal Padat",
-          "order_no": 1
-        }
-      ],
-      "has_other_column": true
-    },
-    "rows": [
-      {
-        "no": 1,
-        "id": 10,
-        "tanggal_masuk": "2026-06-07",
-        "tanggal_keluar": null,
-        "jam": "14:30",
-        "weights_by_waste_type": {
-          "1": "50.000"
-        },
-        "weight_other": null,
-        "document_number": "03/HSE/XI/20",
-        "initiator_department": "QC",
-        "operator_name": "Irvan Maulana",
-        "photo_path": "b3-storage/photos/file.jpg",
-        "note": null
-      }
-    ],
-    "totals": {
-      "by_waste_type": {
-        "1": 50
-      },
-      "other": 0,
-      "overall": 50
-    },
-    "approval": {
-      "status": "NOT_SUBMITTED",
-      "environment_supervisor": {},
-      "hse_department_head": {},
-      "note": null
-    }
-  }
-}
-```
-
-## POST /b3-storage/monthly-report/approve
-
-Permission backend/UI: `b3storage.monthly-approval.approve`.
-
-Approval bulanan B3.
-
-Request Environment Supervisor:
-
-```json
-{
-  "month": 6,
-  "year": 2026,
-  "approval_role": "ENVIRONMENT_SUPERVISOR",
-  "note": "Sudah diperiksa"
-}
-```
-
-Request HSE Department Head:
-
-```json
-{
-  "month": 6,
-  "year": 2026,
-  "approval_role": "HSE_DEPARTMENT_HEAD",
-  "note": "Disetujui"
-}
-```
-
-Urutan approval:
-
-1. `ENVIRONMENT_SUPERVISOR`
-2. `HSE_DEPARTMENT_HEAD`
-
-Jika HSE approve sebelum Environment Supervisor, response 422:
-
-```json
-{
-  "message": "The given data was invalid.",
-  "errors": {
-    "approval_role": [
-      "Approval HSE Department Head menunggu approval Environment Supervisor."
-    ]
-  }
-}
-```
+Endpoint `GET /b3-storage/monthly-report` dan `POST /b3-storage/monthly-report/approve` tidak tersedia di mobile API. Gunakan dashboard web Laravel untuk report, export, dan approval bulanan B3.

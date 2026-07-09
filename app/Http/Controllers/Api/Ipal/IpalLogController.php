@@ -20,11 +20,15 @@ class IpalLogController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->can('ipal.logs.view'), Response::HTTP_FORBIDDEN);
+        $viewer = $this->authenticatedUser($request);
+        abort_unless($this->canViewLogs($viewer), Response::HTTP_FORBIDDEN);
 
         $month = $request->integer('month');
         $year = $request->integer('year');
         $perPage = max(1, min(100, $request->integer('per_page', 50)));
+        $dateFrom = $this->dateQuery($request, 'date_from');
+        $dateTo = $this->dateQuery($request, 'date_to');
+        $hasDateRange = $dateFrom !== null || $dateTo !== null;
 
         $logs = IpalDailyLog::query()
             ->with([
@@ -34,8 +38,11 @@ class IpalLogController extends Controller
                 'processLog.batches:id,process_log_id,batch_no',
                 'processLog.approval:id,process_log_id,operator_signed_at,supervisor_signed_at',
             ])
-            ->when($month > 0, fn ($query) => $query->whereMonth('tanggal', $month))
-            ->when($year > 0, fn ($query) => $query->whereYear('tanggal', $year))
+            ->when(! $this->canViewAllLogs($viewer), fn ($query) => $query->where('operator_id', $viewer->id))
+            ->when($dateFrom !== null, fn ($query) => $query->whereDate('tanggal', '>=', $dateFrom))
+            ->when($dateTo !== null, fn ($query) => $query->whereDate('tanggal', '<=', $dateTo))
+            ->when(! $hasDateRange && $month > 0, fn ($query) => $query->whereMonth('tanggal', $month))
+            ->when(! $hasDateRange && $year > 0, fn ($query) => $query->whereYear('tanggal', $year))
             ->orderByDesc('tanggal')
             ->orderByDesc('id')
             ->paginate($perPage);
@@ -57,7 +64,7 @@ class IpalLogController extends Controller
 
     public function show(Request $request, IpalDailyLog $log): JsonResponse
     {
-        abort_unless($request->user()?->can('ipal.logs.view'), Response::HTTP_FORBIDDEN);
+        abort_unless($this->canViewLog($this->authenticatedUser($request), $log), Response::HTTP_FORBIDDEN);
 
         return response()->json([
             'data' => $this->ipalLogService->detail($log),
@@ -97,5 +104,38 @@ class IpalLogController extends Controller
         }
 
         return $user;
+    }
+
+    private function canViewLogs(User $user): bool
+    {
+        return $this->canViewAllLogs($user)
+            || $user->can('ipal.logs.view-own');
+    }
+
+    private function canViewAllLogs(User $user): bool
+    {
+        return $user->can('ipal.logs.view-all')
+            || $user->can('ipal.logs.view');
+    }
+
+    private function canViewLog(User $user, IpalDailyLog $log): bool
+    {
+        if ($this->canViewAllLogs($user)) {
+            return true;
+        }
+
+        return $user->can('ipal.logs.view-own')
+            && (int) $log->operator_id === $user->id;
+    }
+
+    private function dateQuery(Request $request, string $key): ?string
+    {
+        $value = $request->query($key);
+
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : null;
     }
 }

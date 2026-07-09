@@ -61,6 +61,8 @@ class PermissionSeeder extends Seeder
             ],
             'ipal' => [
                 'ipal.logs.create',
+                'ipal.logs.view-own',
+                'ipal.logs.view-all',
                 'ipal.logs.view',
                 'ipal.logs.submit',
                 'ipal.logs.approve',
@@ -77,6 +79,8 @@ class PermissionSeeder extends Seeder
                 'b3storage.master.manage',
                 'b3storage.logs.create',
                 'b3storage.logs.select-user',
+                'b3storage.logs.view-own',
+                'b3storage.logs.view-all',
                 'b3storage.logs.view',
                 'b3storage.logs.update',
                 'b3storage.logs.delete',

@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Auth\MobileAuthController;
 use App\Http\Controllers\Api\B3Storage\B3StorageInitiatorDepartmentController;
 use App\Http\Controllers\Api\B3Storage\B3StorageLogController;
-use App\Http\Controllers\Api\B3Storage\B3StorageMonthlyReportController;
 use App\Http\Controllers\Api\B3Storage\B3StorageWasteTypeController;
 use App\Http\Controllers\Api\Ipal\IpalLogController;
 use App\Http\Controllers\Api\Master\BatchItemController;
@@ -71,9 +70,6 @@ Route::middleware('external.user')->group(function (): void {
         Route::apiResource('logs', B3StorageLogController::class)
             ->parameters(['logs' => 'log']);
         Route::get('logs/{log}/photo', [B3StorageLogController::class, 'photo']);
-
-        Route::get('monthly-report', [B3StorageMonthlyReportController::class, 'index']);
-        Route::post('monthly-report/approve', [B3StorageMonthlyReportController::class, 'approve']);
     });
 
     Route::prefix('admin')->group(function (): void {

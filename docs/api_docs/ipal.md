@@ -9,7 +9,9 @@ Authorization: Bearer {access_token}
 Permission terkait:
 
 - `ipal.logs.create`: membuat draft/submit log IPAL harian.
-- `ipal.logs.view`: melihat index/detail log IPAL.
+- `ipal.logs.view-own`: melihat index/detail log IPAL milik sendiri.
+- `ipal.logs.view-all`: melihat semua index/detail log IPAL.
+- `ipal.logs.view`: alias kompatibilitas lama untuk melihat semua log.
 - `ipal.logs.submit`: submit catatan proses harian.
 - `ipal.logs.approve`: approve catatan proses harian.
 
@@ -66,15 +68,24 @@ Mapping `input_type`:
 
 ## GET /ipal/logs
 
-Permission backend/UI: `ipal.logs.view`.
+Permission backend/UI: `ipal.logs.view-own`, `ipal.logs.view-all`, atau alias lama `ipal.logs.view`.
 
 Riwayat log IPAL.
+
+Scope data:
+
+- `ipal.logs.view-all`: semua log.
+- `ipal.logs.view-own`: hanya log dengan `operator_id` milik user login.
 
 Query optional:
 
 - `month`: 1-12
 - `year`: contoh `2026`
+- `date_from`: format `YYYY-MM-DD`
+- `date_to`: format `YYYY-MM-DD`
 - `per_page`: default 50, maksimum 100
+
+Jika `date_from` atau `date_to` dikirim, backend memakai filter rentang tanggal dan mengabaikan `month/year`. Jika kosong, backend tetap memakai filter bulan/tahun.
 
 Example:
 
@@ -213,7 +224,7 @@ Catatan:
 
 ## GET /ipal/logs/{log}
 
-Permission backend/UI: `ipal.logs.view`.
+Permission backend/UI: `ipal.logs.view-own`, `ipal.logs.view-all`, atau alias lama `ipal.logs.view`.
 
 Detail lengkap log IPAL, termasuk checklist, catatan proses, batch mixing, dan approval harian.
 

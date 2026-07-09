@@ -43,10 +43,16 @@ class B3StorageNonHseUserSeederTest extends TestCase
             $this->assertTrue($user->hasRole('non_hse_operator'));
             $this->assertTrue($user->can('b3storage.master.view'));
             $this->assertTrue($user->can('b3storage.logs.create'));
+            $this->assertTrue($user->can('b3storage.logs.view-own'));
             $this->assertFalse($user->can('b3storage.logs.select-user'));
+            $this->assertFalse($user->can('b3storage.logs.view-all'));
             $this->assertFalse($user->can('b3storage.logs.view'));
+            $this->assertFalse($user->can('b3storage.logs.update'));
+            $this->assertFalse($user->can('b3storage.logs.delete'));
             $this->assertFalse($user->can('b3storage.monthly-report.view'));
             $this->assertFalse($user->can('ipal.logs.view'));
+            $this->assertFalse($user->can('ipal.logs.view-own'));
+            $this->assertFalse($user->can('ipal.logs.view-all'));
             $this->assertFalse($user->can('ipal.logs.create'));
         }
     }

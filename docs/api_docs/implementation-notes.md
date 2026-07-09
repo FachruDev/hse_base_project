@@ -18,18 +18,22 @@ Response login dan `/auth/me` mengembalikan `permissions`. Frontend bisa memakai
 - `master.process.view`: baca master catatan proses IPAL.
 - `master.batch.view`: baca master batch mixing IPAL.
 - `ipal.logs.create`: input IPAL.
-- `ipal.logs.view`: lihat riwayat/detail IPAL.
+- `ipal.logs.view-own`: lihat riwayat/detail IPAL milik sendiri.
+- `ipal.logs.view-all`: lihat semua riwayat/detail IPAL.
+- `ipal.logs.view`: alias kompatibilitas lama untuk lihat semua riwayat/detail IPAL.
 - `ipal.logs.submit`: submit catatan proses IPAL.
 - `ipal.logs.approve`: approve catatan proses IPAL.
 - `b3storage.master.view`: baca master jenis limbah dan dept inisiator B3.
 - `b3storage.logs.create`: input B3.
-- `b3storage.logs.view`: lihat riwayat/detail/foto B3.
+- `b3storage.logs.view-own`: lihat riwayat/detail/foto B3 milik sendiri.
+- `b3storage.logs.view-all`: lihat semua riwayat/detail/foto B3.
+- `b3storage.logs.view`: alias kompatibilitas lama untuk lihat semua riwayat/detail/foto B3.
 - `b3storage.logs.update`: update B3.
 - `b3storage.logs.delete`: delete B3.
-- `b3storage.monthly-report.view`: lihat report bulanan B3.
-- `b3storage.monthly-approval.approve`: approval bulanan B3.
 
-Catatan: endpoint mobile untuk master form, IPAL, B3 Storage, report, dan approval sudah memblokir permission di backend. Beberapa endpoint API backoffice lama masih kompatibel dengan auth `user_id`; untuk mobile, tetap gunakan daftar permission di atas untuk UX dan koordinasi role.
+Catatan: endpoint mobile untuk master form, IPAL, dan B3 Storage sudah memblokir permission di backend. Beberapa endpoint API backoffice lama masih kompatibel dengan auth `user_id`; untuk mobile, tetap gunakan daftar permission di atas untuk UX dan koordinasi role.
+
+Report dan approval bulanan B3 tidak tersedia di mobile API. Fitur tersebut tetap ada di dashboard web Laravel.
 
 ## Scope Endpoint Mobile
 
@@ -38,7 +42,7 @@ Gunakan hanya endpoint yang didokumentasikan di folder ini:
 - Auth.
 - Master data read-only untuk dropdown.
 - IPAL form 1-3.
-- B3 Storage form 4 dan report/approval bulanan.
+- B3 Storage form 4 dan riwayat log.
 
 Jangan gunakan endpoint admin, role, permission, atau CRUD master data dari mobile. Endpoint tersebut untuk dashboard/backoffice.
 
@@ -54,7 +58,8 @@ Gunakan multipart request:
 
 - Date: `YYYY-MM-DD`, contoh `2026-06-07`.
 - Time: `HH:mm`, contoh `14:30`.
-- Month report: `month` integer 1-12 dan `year` integer.
+- Riwayat default: `month` integer 1-12 dan `year` integer.
+- Riwayat dengan rentang tanggal: `date_from` dan `date_to` format `YYYY-MM-DD`. Jika dikirim, backend mengabaikan `month/year`.
 
 ## IPAL Status Labels
 
@@ -93,4 +98,4 @@ B3:
 2. Load `/b3-storage/master/initiator-departments`.
 3. Input log `MASUK` atau `KELUAR`.
 4. Upload foto bila tersedia.
-5. Gunakan monthly report untuk layar rekap bulanan.
+5. Untuk riwayat, tampilkan data sesuai permission `view-own` atau `view-all`.

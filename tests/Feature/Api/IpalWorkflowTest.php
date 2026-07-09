@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Ipal\IpalDailyLog;
 use App\Models\Master\BatchItem;
 use App\Models\Master\ChecklistItem;
 use App\Models\Master\ChecklistTemplate;
@@ -198,6 +199,45 @@ class IpalWorkflowTest extends TestCase
             ->assertOk();
     }
 
+    public function test_ipal_history_can_be_scoped_to_own_or_all_and_filtered_by_date_range(): void
+    {
+        $owner = User::factory()->create([
+            'external_id' => 'owner.ipal',
+            'is_active' => true,
+        ]);
+        $other = User::factory()->create([
+            'external_id' => 'other.ipal',
+            'is_active' => true,
+        ]);
+        $viewerAll = User::factory()->create([
+            'external_id' => 'viewer.all.ipal',
+            'is_active' => true,
+        ]);
+
+        $this->givePermissions($owner, ['ipal.logs.view-own']);
+        $this->givePermissions($viewerAll, ['ipal.logs.view-all']);
+
+        $ownerLog = $this->createIpalLog($owner, '2026-07-09');
+        $otherLog = $this->createIpalLog($other, '2026-07-11');
+        $this->createIpalLog($other, '2026-08-01');
+
+        $this->getJson('/api/ipal/logs?userid=owner.ipal&date_from=2026-07-01&date_to=2026-07-31')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.id', $ownerLog->id);
+
+        $this->getJson("/api/ipal/logs/{$otherLog->id}?userid=owner.ipal")
+            ->assertForbidden();
+
+        $this->getJson('/api/ipal/logs?userid=viewer.all.ipal&date_from=2026-07-01&date_to=2026-07-31')
+            ->assertOk()
+            ->assertJsonPath('total', 2);
+
+        $this->getJson("/api/ipal/logs/{$otherLog->id}?userid=viewer.all.ipal")
+            ->assertOk()
+            ->assertJsonPath('data.id', $otherLog->id);
+    }
+
     /**
      * @param  array<int, string>  $permissions
      */
@@ -211,5 +251,15 @@ class IpalWorkflowTest extends TestCase
         }
 
         $user->givePermissionTo($permissions);
+    }
+
+    private function createIpalLog(User $operator, string $tanggal): IpalDailyLog
+    {
+        return IpalDailyLog::query()->create([
+            'tanggal' => $tanggal,
+            'operator_id' => $operator->id,
+            'day_type' => 'WORKDAY',
+            'is_operational' => true,
+        ]);
     }
 }

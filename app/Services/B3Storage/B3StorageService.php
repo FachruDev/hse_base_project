@@ -67,27 +67,47 @@ class B3StorageService
         ]);
     }
 
-    public function logsIndex(?int $month, ?int $year, int $perPage = 50): LengthAwarePaginator
-    {
+    public function logsIndex(
+        ?int $month,
+        ?int $year,
+        int $perPage = 50,
+        ?User $viewer = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null,
+    ): LengthAwarePaginator {
         $query = B3StorageLog::query()
             ->with(['wasteType:id,name', 'initiatorDepartment:id,name', 'operator:id,external_id,name'])
             ->orderByDesc('movement_date')
             ->orderByDesc('id');
+        $hasDateRange = ($dateFrom !== null && $dateFrom !== '') || ($dateTo !== null && $dateTo !== '');
 
-        if ($month !== null) {
+        if ($viewer instanceof User && ! $this->canViewAllLogs($viewer)) {
+            $query->where(function ($query) use ($viewer): void {
+                $query
+                    ->where('operator_id', $viewer->id)
+                    ->orWhere('initiator_user_id', $viewer->id);
+            });
+        }
+
+        if ($dateFrom !== null && $dateFrom !== '') {
+            $query->whereDate('movement_date', '>=', $dateFrom);
+        }
+
+        if ($dateTo !== null && $dateTo !== '') {
+            $query->whereDate('movement_date', '<=', $dateTo);
+        }
+
+        if (! $hasDateRange && $month !== null) {
             $query->whereMonth('movement_date', $month);
         }
 
-        if ($year !== null) {
+        if (! $hasDateRange && $year !== null) {
             $query->whereYear('movement_date', $year);
         }
 
         return $query->paginate($perPage);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     /**
      * @param  array{date_from?: string, date_to?: string}  $filters
      * @return array<string, mixed>
@@ -310,6 +330,22 @@ class B3StorageService
             'HSE_DEPARTMENT_HEAD' => $user->hasRole('hse_dept_head'),
             default => false,
         };
+    }
+
+    public function canViewLog(User $viewer, B3StorageLog $log): bool
+    {
+        if ($this->canViewAllLogs($viewer)) {
+            return true;
+        }
+
+        return $viewer->can('b3storage.logs.view-own')
+            && ((int) $log->operator_id === $viewer->id || (int) $log->initiator_user_id === $viewer->id);
+    }
+
+    private function canViewAllLogs(User $viewer): bool
+    {
+        return $viewer->can('b3storage.logs.view-all')
+            || $viewer->can('b3storage.logs.view');
     }
 
     /**
