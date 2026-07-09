@@ -1,9 +1,16 @@
 import {
     Bell,
+    CalendarCog,
     ChevronDown,
     ChevronRight,
+    ClipboardPenLine,
+    Database,
+    FileStack,
     LayoutGrid,
+    PanelLeftClose,
+    PanelLeftOpen,
     Settings2,
+    Users2,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -47,8 +54,13 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
     SidebarSeparator,
-    SidebarTrigger,
+    useSidebar,
 } from '@/components/ui/sidebar';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
     configurationNavigation,
     dashboardNavigation,
@@ -79,11 +91,10 @@ function useSidebarState(key: string, defaultValue: boolean) {
                 return resolvedState;
             });
         },
-        [key]
+        [key],
     );
 
     return [state, updateState] as const;
-
 }
 
 type DashboardSidebarProps = {
@@ -104,55 +115,94 @@ export function DashboardSidebar({
     departmentName,
 }: DashboardSidebarProps) {
     // Menggunakan custom hook. Nilai false menjadi default agar sidebar tidak terlalu penuh saat pertama kali dibuka.
-    const [managementOpen, setManagementOpen] = useSidebarState('sidebar-management-open', false);
-    const [formsOpen, setFormsOpen] = useSidebarState('sidebar-forms-open', false);
-    const [formManagementOpen, setFormManagementOpen] = useSidebarState('sidebar-form-management-open', false);
-    const [masterDataOpen, setMasterDataOpen] = useSidebarState('sidebar-master-open', false);
-    const [configurationOpen, setConfigurationOpen] = useSidebarState('sidebar-config-open', false);
+    const [managementOpen, setManagementOpen] = useSidebarState(
+        'sidebar-management-open',
+        false,
+    );
+    const [formsOpen, setFormsOpen] = useSidebarState(
+        'sidebar-forms-open',
+        false,
+    );
+    const [formManagementOpen, setFormManagementOpen] = useSidebarState(
+        'sidebar-form-management-open',
+        false,
+    );
+    const [masterDataOpen, setMasterDataOpen] = useSidebarState(
+        'sidebar-master-open',
+        false,
+    );
+    const [configurationOpen, setConfigurationOpen] = useSidebarState(
+        'sidebar-config-open',
+        false,
+    );
 
     const { theme, setTheme } = useTheme();
 
-    const managementItems = React.useMemo(() => managementNavigation.filter((item) => {
-        return (
-            item.permission === undefined ||
-            permissions.includes(item.permission)
-        );
-    }), [permissions]);
+    const managementItems = React.useMemo(
+        () =>
+            managementNavigation.filter((item) => {
+                return (
+                    item.permission === undefined ||
+                    permissions.includes(item.permission)
+                );
+            }),
+        [permissions],
+    );
 
-    const formEntryItems = React.useMemo(() => formEntryNavigation.filter((item) =>
-        permissions.includes(item.permission)
-    ), [permissions]);
+    const formEntryItems = React.useMemo(
+        () =>
+            formEntryNavigation.filter((item) =>
+                permissions.includes(item.permission),
+            ),
+        [permissions],
+    );
 
-    const formManagementItems = React.useMemo(() => formManagementNavigation.filter((item) =>
-        permissions.includes(item.permission)
-    ), [permissions]);
+    const formManagementItems = React.useMemo(
+        () =>
+            formManagementNavigation.filter((item) =>
+                permissions.includes(item.permission),
+            ),
+        [permissions],
+    );
 
-    const masterDataItems = React.useMemo(() => masterDataNavigation.filter((item) =>
-        permissions.includes(item.permission)
-    ), [permissions]);
+    const masterDataItems = React.useMemo(
+        () =>
+            masterDataNavigation.filter((item) =>
+                permissions.includes(item.permission),
+            ),
+        [permissions],
+    );
 
-    const configurationItems = React.useMemo(() => configurationNavigation.filter((item) =>
-        permissions.includes(item.permission)
-    ), [permissions]);
+    const configurationItems = React.useMemo(
+        () =>
+            configurationNavigation.filter((item) =>
+                permissions.includes(item.permission),
+            ),
+        [permissions],
+    );
 
-    const initials = React.useMemo(() => userName
-        .split(' ')
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase(), [userName]);
+    const initials = React.useMemo(
+        () =>
+            userName
+                .split(' ')
+                .map((part) => part[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase(),
+        [userName],
+    );
 
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
 
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader className="gap-3">
-                <div className="flex items-center justify-between rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
+                <div className="flex items-center justify-between rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
+                    <div className="flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:min-w-8 group-data-[collapsible=icon]:justify-center">
+                        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary text-xs font-semibold text-primary-foreground shadow-sm group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-lg">
                             IP
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 group-data-[collapsible=icon]:hidden">
                             <p className="truncate text-sm font-semibold text-sidebar-foreground">
                                 {appName}
                             </p>
@@ -161,7 +211,7 @@ export function DashboardSidebar({
                             </p>
                         </div>
                     </div>
-                    <SidebarTrigger className="shrink-0" />
+                    <SidebarCollapseToggle />
                 </div>
             </SidebarHeader>
 
@@ -193,19 +243,23 @@ export function DashboardSidebar({
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Form Operasional"
-                                        onClick={() => setFormsOpen((current) => !current)}
+                                        onClick={() =>
+                                            setFormsOpen((current) => !current)
+                                        }
                                     >
-                                        <LayoutGrid className="size-4" />
+                                        <ClipboardPenLine className="size-4" />
                                         <span>Form Operasional</span>
                                         <ChevronRight
-                                            className={`ml-auto transition-transform ${formsOpen ? 'rotate-90' : ''}`}
+                                            className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${formsOpen ? 'rotate-90' : ''}`}
                                         />
                                     </SidebarMenuButton>
 
                                     {formsOpen && (
                                         <SidebarMenuSub>
                                             {formEntryItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.key}>
+                                                <SidebarMenuSubItem
+                                                    key={item.key}
+                                                >
                                                     <SidebarMenuSubButton
                                                         href={buildFormHref(
                                                             item.target as any,
@@ -213,7 +267,9 @@ export function DashboardSidebar({
                                                         )}
                                                     >
                                                         <item.icon />
-                                                        <span>{item.label}</span>
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
@@ -226,19 +282,25 @@ export function DashboardSidebar({
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Management Form"
-                                        onClick={() => setFormManagementOpen((current) => !current)}
+                                        onClick={() =>
+                                            setFormManagementOpen(
+                                                (current) => !current,
+                                            )
+                                        }
                                     >
-                                        <LayoutGrid className="size-4" />
+                                        <FileStack className="size-4" />
                                         <span>Management Form</span>
                                         <ChevronRight
-                                            className={`ml-auto transition-transform ${formManagementOpen ? 'rotate-90' : ''}`}
+                                            className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${formManagementOpen ? 'rotate-90' : ''}`}
                                         />
                                     </SidebarMenuButton>
 
                                     {formManagementOpen && (
                                         <SidebarMenuSub>
                                             {formManagementItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.key}>
+                                                <SidebarMenuSubItem
+                                                    key={item.key}
+                                                >
                                                     <SidebarMenuSubButton
                                                         href={buildFormHref(
                                                             item.target,
@@ -246,7 +308,9 @@ export function DashboardSidebar({
                                                         )}
                                                     >
                                                         <item.icon />
-                                                        <span>{item.label}</span>
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
@@ -259,19 +323,25 @@ export function DashboardSidebar({
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Master Data"
-                                        onClick={() => setMasterDataOpen((current) => !current)}
+                                        onClick={() =>
+                                            setMasterDataOpen(
+                                                (current) => !current,
+                                            )
+                                        }
                                     >
-                                        <LayoutGrid className="size-4" />
+                                        <Database className="size-4" />
                                         <span>Master Data Form</span>
                                         <ChevronRight
-                                            className={`ml-auto transition-transform ${masterDataOpen ? 'rotate-90' : ''}`}
+                                            className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${masterDataOpen ? 'rotate-90' : ''}`}
                                         />
                                     </SidebarMenuButton>
 
                                     {masterDataOpen && (
                                         <SidebarMenuSub>
                                             {masterDataItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.key}>
+                                                <SidebarMenuSubItem
+                                                    key={item.key}
+                                                >
                                                     <SidebarMenuSubButton
                                                         href={buildMasterDataHref(
                                                             item.module,
@@ -279,7 +349,9 @@ export function DashboardSidebar({
                                                         )}
                                                     >
                                                         <item.icon />
-                                                        <span>{item.label}</span>
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
@@ -299,19 +371,25 @@ export function DashboardSidebar({
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Management User"
-                                        onClick={() => setManagementOpen((current) => !current)}
+                                        onClick={() =>
+                                            setManagementOpen(
+                                                (current) => !current,
+                                            )
+                                        }
                                     >
-                                        <Users2Icon />
+                                        <Users2 className="size-4" />
                                         <span>Management User</span>
                                         <ChevronRight
-                                            className={`ml-auto transition-transform ${managementOpen ? 'rotate-90' : ''}`}
+                                            className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${managementOpen ? 'rotate-90' : ''}`}
                                         />
                                     </SidebarMenuButton>
 
                                     {managementOpen && (
                                         <SidebarMenuSub>
                                             {managementItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.key}>
+                                                <SidebarMenuSubItem
+                                                    key={item.key}
+                                                >
                                                     <SidebarMenuSubButton
                                                         href={buildManagementHref(
                                                             item.module,
@@ -319,7 +397,9 @@ export function DashboardSidebar({
                                                         )}
                                                     >
                                                         <item.icon />
-                                                        <span>{item.label}</span>
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
@@ -332,19 +412,25 @@ export function DashboardSidebar({
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Konfigurasi"
-                                        onClick={() => setConfigurationOpen((current) => !current)}
+                                        onClick={() =>
+                                            setConfigurationOpen(
+                                                (current) => !current,
+                                            )
+                                        }
                                     >
-                                        <LayoutGrid className="size-4" />
+                                        <CalendarCog className="size-4" />
                                         <span>Konfigurasi</span>
                                         <ChevronRight
-                                            className={`ml-auto transition-transform ${configurationOpen ? 'rotate-90' : ''}`}
+                                            className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${configurationOpen ? 'rotate-90' : ''}`}
                                         />
                                     </SidebarMenuButton>
 
                                     {configurationOpen && (
                                         <SidebarMenuSub>
                                             {configurationItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.key}>
+                                                <SidebarMenuSubItem
+                                                    key={item.key}
+                                                >
                                                     <SidebarMenuSubButton
                                                         href={buildConfigurationHref(
                                                             item.target as any,
@@ -352,7 +438,9 @@ export function DashboardSidebar({
                                                         )}
                                                     >
                                                         <item.icon />
-                                                        <span>{item.label}</span>
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                             ))}
@@ -373,14 +461,14 @@ export function DashboardSidebar({
                         render={
                             <Button
                                 variant="ghost"
-                                className="h-auto w-full justify-start rounded-xl border border-sidebar-border bg-sidebar-accent/35 px-3 py-3"
+                                className="h-auto w-full justify-start rounded-xl border border-sidebar-border bg-sidebar-accent/35 px-3 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:px-0"
                             />
                         }
                     >
                         <Avatar size="sm">
                             <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
-                        <div className="min-w-0 flex-1 text-left">
+                        <div className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:hidden">
                             <p className="truncate text-xs font-medium text-sidebar-foreground">
                                 {userName}
                             </p>
@@ -388,7 +476,7 @@ export function DashboardSidebar({
                                 {userId}
                             </p>
                         </div>
-                        <ChevronDown className="size-4 shrink-0 text-sidebar-foreground/70" />
+                        <ChevronDown className="size-4 shrink-0 text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden" />
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent align="end" className="w-64">
@@ -500,8 +588,34 @@ function buildManagementHref(module: string, userId: string): string {
     return managementIndex.url(module, { query: { user_id: userId } });
 }
 
-function Users2Icon() {
-    return <LayoutGrid className="size-4" />;
+function SidebarCollapseToggle() {
+    const { state, toggleSidebar, isMobile } = useSidebar();
+    const isCollapsed = state === 'collapsed' && !isMobile;
+    const label = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    const Icon = isCollapsed ? PanelLeftOpen : PanelLeftClose;
+
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant={isCollapsed ? 'outline' : 'ghost'}
+                        size="icon-sm"
+                        aria-label={label}
+                        title={label}
+                        className="shrink-0 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:border-sidebar-border group-data-[collapsible=icon]:bg-background group-data-[collapsible=icon]:shadow-sm"
+                        onClick={toggleSidebar}
+                    />
+                }
+            >
+                <Icon className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent side="right" align="center">
+                {label}
+            </TooltipContent>
+        </Tooltip>
+    );
 }
 
 function buildConfigurationHref(

@@ -1,15 +1,46 @@
 import { useForm } from '@inertiajs/react';
-import { Database, FilePenLine, FolderTree, Plus, Search, Trash2 } from 'lucide-react';
+import {
+    Database,
+    FilePenLine,
+    FolderTree,
+    Plus,
+    Search,
+    Trash2,
+    X,
+} from 'lucide-react';
 import * as React from 'react';
 
-import { destroy, index, store, update } from '@/actions/App/Http/Controllers/Web/ManagementController';
+import {
+    destroy,
+    index,
+    store,
+    update,
+} from '@/actions/App/Http/Controllers/Web/ManagementController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import {
+    Field,
+    FieldContent,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Pagination,
@@ -19,9 +50,26 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { ManagementField, ManagementFormValue, ManagementPayload } from '@/modules/management/types';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import type {
+    ManagementField,
+    ManagementFormValue,
+    ManagementPayload,
+} from '@/modules/management/types';
 
 type ManagementPageProps = {
     flash: {
@@ -34,17 +82,31 @@ type ManagementPageProps = {
 
 type FormState = Record<string, ManagementFormValue>;
 
-export function ManagementPage({ flash, management, userId }: ManagementPageProps) {
+export function ManagementPage({
+    flash,
+    management,
+    userId,
+}: ManagementPageProps) {
     const [search, setSearch] = React.useState(management.filters.search);
-    const [perPage, setPerPage] = React.useState(String(management.filters.per_page));
+    const [perPage, setPerPage] = React.useState(
+        String(management.filters.per_page),
+    );
     const form = useForm<FormState>(management.form.values);
-    const canSubmit = management.form.mode === 'edit' ? management.capabilities.update : management.capabilities.create;
-    const hasRowActions = management.capabilities.update || management.capabilities.delete;
+    const canSubmit =
+        management.form.mode === 'edit'
+            ? management.capabilities.update
+            : management.capabilities.create;
+    const hasRowActions =
+        management.capabilities.update || management.capabilities.delete;
 
     React.useEffect(() => {
         form.setData(management.form.values);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [management.form.mode, management.form.editing_id, management.module.key]);
+    }, [
+        management.form.mode,
+        management.form.editing_id,
+        management.module.key,
+    ]);
 
     const submitFilters = (nextSearch: string, nextPerPage: string) => {
         window.location.href = index.url(management.module.key, {
@@ -76,10 +138,16 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
             },
         };
 
-        if (management.form.mode === 'edit' && management.form.editing_id !== null) {
+        if (
+            management.form.mode === 'edit' &&
+            management.form.editing_id !== null
+        ) {
             form.patch(
                 update.url(
-                    { module: management.module.key, record: management.form.editing_id },
+                    {
+                        module: management.module.key,
+                        record: management.form.editing_id,
+                    },
                     { query: { user_id: userId } },
                 ),
                 options,
@@ -88,7 +156,10 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
             return;
         }
 
-        form.post(store.url(management.module.key, { query: { user_id: userId } }), options);
+        form.post(
+            store.url(management.module.key, { query: { user_id: userId } }),
+            options,
+        );
     };
 
     return (
@@ -99,13 +170,25 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                             <div className="space-y-2">
                                 <Badge variant="outline">Management User</Badge>
-                                <CardTitle className="text-2xl">{management.module.title}</CardTitle>
-                                <CardDescription>{management.module.description}</CardDescription>
+                                <CardTitle className="text-2xl">
+                                    {management.module.title}
+                                </CardTitle>
+                                <CardDescription>
+                                    {management.module.description}
+                                </CardDescription>
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
-                                <Badge variant="outline">{management.table.meta.total} data</Badge>
-                                <Badge variant={canSubmit ? 'secondary' : 'outline'}>
-                                    {canSubmit ? 'Bisa Kelola Data' : 'View Only'}
+                                <Badge variant="outline">
+                                    {management.table.meta.total} data
+                                </Badge>
+                                <Badge
+                                    variant={
+                                        canSubmit ? 'secondary' : 'outline'
+                                    }
+                                >
+                                    {canSubmit
+                                        ? 'Bisa Kelola Data'
+                                        : 'View Only'}
                                 </Badge>
                             </div>
                         </div>
@@ -132,15 +215,21 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                     {management.modules.map((module) => (
                         <a
                             key={module.key}
-                            href={index.url(module.key, { query: { user_id: userId } })}
+                            href={index.url(module.key, {
+                                query: { user_id: userId },
+                            })}
                             className={`rounded-2xl border p-4 transition-colors ${
                                 module.key === management.module.key
                                     ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                                     : 'border-border/60 bg-card hover:bg-muted/30'
                             }`}
                         >
-                            <p className="text-sm font-semibold">{module.short_label}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">{module.title}</p>
+                            <p className="text-sm font-semibold">
+                                {module.short_label}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {module.title}
+                            </p>
                         </a>
                     ))}
                 </section>
@@ -150,10 +239,17 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                         <CardHeader className="gap-4 border-b border-border/60 bg-muted/20">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <CardTitle className="text-base">Daftar Data</CardTitle>
-                                    <CardDescription>Listing management dengan pencarian dan pagination.</CardDescription>
+                                    <CardTitle className="text-base">
+                                        Daftar Data
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Listing management dengan pencarian dan
+                                        pagination.
+                                    </CardDescription>
                                 </div>
-                                <Badge variant="outline">{management.module.singular_label}</Badge>
+                                <Badge variant="outline">
+                                    {management.module.singular_label}
+                                </Badge>
                             </div>
                             <form
                                 className="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px_auto]"
@@ -163,11 +259,15 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                                 }}
                             >
                                 <div className="relative">
-                                    <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                    <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
                                     <Input
                                         value={search}
-                                        onChange={(event) => setSearch(event.target.value)}
-                                        placeholder={management.module.search_placeholder}
+                                        onChange={(event) =>
+                                            setSearch(event.target.value)
+                                        }
+                                        placeholder={
+                                            management.module.search_placeholder
+                                        }
                                         className="pl-8"
                                     />
                                 </div>
@@ -188,9 +288,15 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                                         <SelectValue placeholder="10 / halaman" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="10">10 / halaman</SelectItem>
-                                        <SelectItem value="25">25 / halaman</SelectItem>
-                                        <SelectItem value="50">50 / halaman</SelectItem>
+                                        <SelectItem value="10">
+                                            10 / halaman
+                                        </SelectItem>
+                                        <SelectItem value="25">
+                                            25 / halaman
+                                        </SelectItem>
+                                        <SelectItem value="50">
+                                            50 / halaman
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Button type="submit">Cari</Button>
@@ -201,34 +307,61 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            {management.table.columns.map((column) => (
-                                                <TableHead key={column.key} className="px-4">
-                                                    {column.label}
+                                            {management.table.columns.map(
+                                                (column) => (
+                                                    <TableHead
+                                                        key={column.key}
+                                                        className="px-4"
+                                                    >
+                                                        {column.label}
+                                                    </TableHead>
+                                                ),
+                                            )}
+                                            {hasRowActions ? (
+                                                <TableHead className="px-4 text-right">
+                                                    Aksi
                                                 </TableHead>
-                                            ))}
-                                            {hasRowActions ? <TableHead className="px-4 text-right">Aksi</TableHead> : null}
+                                            ) : null}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {management.table.rows.map((row) => (
                                             <TableRow key={row.id}>
-                                                {management.table.columns.map((column) => (
-                                                    <TableCell key={`${row.id}-${column.key}`} className="px-4">
-                                                        {row.values[column.key] ?? '-'}
-                                                    </TableCell>
-                                                ))}
+                                                {management.table.columns.map(
+                                                    (column) => (
+                                                        <TableCell
+                                                            key={`${row.id}-${column.key}`}
+                                                            className="px-4"
+                                                        >
+                                                            {row.values[
+                                                                column.key
+                                                            ] ?? '-'}
+                                                        </TableCell>
+                                                    ),
+                                                )}
                                                 {hasRowActions ? (
                                                     <TableCell className="px-4">
                                                         <div className="flex justify-end gap-2">
-                                                            {management.capabilities.update ? (
+                                                            {management
+                                                                .capabilities
+                                                                .update ? (
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
                                                                     render={
                                                                         <a
-                                                                            href={index.url(management.module.key, {
-                                                                                query: { user_id: userId, edit: row.id },
-                                                                            })}
+                                                                            href={index.url(
+                                                                                management
+                                                                                    .module
+                                                                                    .key,
+                                                                                {
+                                                                                    query: {
+                                                                                        user_id:
+                                                                                            userId,
+                                                                                        edit: row.id,
+                                                                                    },
+                                                                                },
+                                                                            )}
                                                                         />
                                                                     }
                                                                 >
@@ -236,21 +369,39 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                                                                     Edit
                                                                 </Button>
                                                             ) : null}
-                                                            {management.capabilities.delete ? (
+                                                            {management
+                                                                .capabilities
+                                                                .delete ? (
                                                                 <Button
                                                                     variant="destructive"
                                                                     size="sm"
                                                                     onClick={() => {
-                                                                        if (!window.confirm('Hapus data ini?')) {
+                                                                        if (
+                                                                            !window.confirm(
+                                                                                'Hapus data ini?',
+                                                                            )
+                                                                        ) {
                                                                             return;
                                                                         }
 
                                                                         form.delete(
                                                                             destroy.url(
-                                                                                { module: management.module.key, record: row.id },
-                                                                                { query: { user_id: userId } },
+                                                                                {
+                                                                                    module: management
+                                                                                        .module
+                                                                                        .key,
+                                                                                    record: row.id,
+                                                                                },
+                                                                                {
+                                                                                    query: {
+                                                                                        user_id:
+                                                                                            userId,
+                                                                                    },
+                                                                                },
                                                                             ),
-                                                                            { preserveScroll: true },
+                                                                            {
+                                                                                preserveScroll: true,
+                                                                            },
                                                                         );
                                                                     }}
                                                                 >
@@ -272,7 +423,10 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                                             <FolderTree />
                                         </EmptyMedia>
                                         <EmptyTitle>Belum ada data</EmptyTitle>
-                                        <EmptyDescription>Mulai tambahkan data management untuk modul ini.</EmptyDescription>
+                                        <EmptyDescription>
+                                            Mulai tambahkan data management
+                                            untuk modul ini.
+                                        </EmptyDescription>
                                     </EmptyHeader>
                                 </Empty>
                             )}
@@ -283,44 +437,95 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                         <CardHeader>
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <CardTitle className="text-base">{management.form.title}</CardTitle>
-                                    <CardDescription>{management.form.description}</CardDescription>
+                                    <CardTitle className="text-base">
+                                        {management.form.title}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {management.form.description}
+                                    </CardDescription>
                                 </div>
                                 {canSubmit ? (
-                                    <Badge variant={management.form.mode === 'edit' ? 'secondary' : 'outline'}>
-                                        {management.form.mode === 'edit' ? 'Mode Edit' : 'Mode Tambah'}
+                                    <Badge
+                                        variant={
+                                            management.form.mode === 'edit'
+                                                ? 'secondary'
+                                                : 'outline'
+                                        }
+                                    >
+                                        {management.form.mode === 'edit'
+                                            ? 'Mode Edit'
+                                            : 'Mode Tambah'}
                                     </Badge>
                                 ) : null}
                             </div>
                         </CardHeader>
                         <CardContent>
                             {canSubmit ? (
-                                <form className="space-y-4" onSubmit={handleSubmit}>
+                                <form
+                                    className="space-y-4"
+                                    onSubmit={handleSubmit}
+                                >
                                     <FieldGroup>
                                         {management.form.fields.map((field) => (
                                             <Field key={field.name}>
-                                                <FieldLabel htmlFor={field.name}>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
                                                     {field.label}
-                                                    {field.required ? <span className="text-destructive">*</span> : null}
+                                                    {field.required ? (
+                                                        <span className="text-destructive">
+                                                            *
+                                                        </span>
+                                                    ) : null}
                                                 </FieldLabel>
                                                 <FieldContent>
-                                                    <ManagementFieldInput field={field} form={form} />
-                                                    <FieldError>{form.errors[field.name]}</FieldError>
+                                                    <ManagementFieldInput
+                                                        field={field}
+                                                        form={form}
+                                                    />
+                                                    <FieldError>
+                                                        {
+                                                            form.errors[
+                                                                field.name
+                                                            ]
+                                                        }
+                                                    </FieldError>
                                                 </FieldContent>
                                             </Field>
                                         ))}
                                     </FieldGroup>
 
                                     <div className="flex flex-wrap gap-3 pt-2">
-                                        <Button type="submit" disabled={form.processing}>
-                                            {management.form.mode === 'create' ? <Plus className="size-4" /> : <FilePenLine className="size-4" />}
+                                        <Button
+                                            type="submit"
+                                            disabled={form.processing}
+                                        >
+                                            {management.form.mode ===
+                                            'create' ? (
+                                                <Plus className="size-4" />
+                                            ) : (
+                                                <FilePenLine className="size-4" />
+                                            )}
                                             {management.form.submit_label}
                                         </Button>
                                         {management.form.cancel_edit ? (
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                render={<a href={index.url(management.module.key, { query: { user_id: userId } })} />}
+                                                render={
+                                                    <a
+                                                        href={index.url(
+                                                            management.module
+                                                                .key,
+                                                            {
+                                                                query: {
+                                                                    user_id:
+                                                                        userId,
+                                                                },
+                                                            },
+                                                        )}
+                                                    />
+                                                }
                                             >
                                                 Batal Edit
                                             </Button>
@@ -333,8 +538,14 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                                         <EmptyMedia variant="icon">
                                             <Database />
                                         </EmptyMedia>
-                                        <EmptyTitle>Akses kelola tidak tersedia</EmptyTitle>
-                                        <EmptyDescription>Role Anda hanya memiliki izin melihat data management untuk modul ini.</EmptyDescription>
+                                        <EmptyTitle>
+                                            Akses kelola tidak tersedia
+                                        </EmptyTitle>
+                                        <EmptyDescription>
+                                            Role Anda hanya memiliki izin
+                                            melihat data management untuk modul
+                                            ini.
+                                        </EmptyDescription>
                                     </EmptyHeader>
                                 </Empty>
                             )}
@@ -344,38 +555,65 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
 
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Menampilkan {management.table.meta.from ?? 0} - {management.table.meta.to ?? 0} dari {management.table.meta.total} data.
+                        Menampilkan {management.table.meta.from ?? 0} -{' '}
+                        {management.table.meta.to ?? 0} dari{' '}
+                        {management.table.meta.total} data.
                     </p>
 
                     <Pagination className="justify-end">
                         <PaginationContent>
-                            {management.table.meta.links.map((link, indexItem) => {
-                                const label = normalizePaginationLabel(link.label);
+                            {management.table.meta.links.map(
+                                (link, indexItem) => {
+                                    const label = normalizePaginationLabel(
+                                        link.label,
+                                    );
 
-                                if (label === 'Sebelumnya') {
+                                    if (label === 'Sebelumnya') {
+                                        return (
+                                            <PaginationItem
+                                                key={`${label}-${indexItem}`}
+                                            >
+                                                <PaginationPrevious
+                                                    href={link.url ?? '#'}
+                                                    text={label}
+                                                    aria-disabled={
+                                                        link.url === null
+                                                    }
+                                                />
+                                            </PaginationItem>
+                                        );
+                                    }
+
+                                    if (label === 'Berikutnya') {
+                                        return (
+                                            <PaginationItem
+                                                key={`${label}-${indexItem}`}
+                                            >
+                                                <PaginationNext
+                                                    href={link.url ?? '#'}
+                                                    text={label}
+                                                    aria-disabled={
+                                                        link.url === null
+                                                    }
+                                                />
+                                            </PaginationItem>
+                                        );
+                                    }
+
                                     return (
-                                        <PaginationItem key={`${label}-${indexItem}`}>
-                                            <PaginationPrevious href={link.url ?? '#'} text={label} aria-disabled={link.url === null} />
+                                        <PaginationItem
+                                            key={`${label}-${indexItem}`}
+                                        >
+                                            <PaginationLink
+                                                href={link.url ?? '#'}
+                                                isActive={link.active}
+                                            >
+                                                {label}
+                                            </PaginationLink>
                                         </PaginationItem>
                                     );
-                                }
-
-                                if (label === 'Berikutnya') {
-                                    return (
-                                        <PaginationItem key={`${label}-${indexItem}`}>
-                                            <PaginationNext href={link.url ?? '#'} text={label} aria-disabled={link.url === null} />
-                                        </PaginationItem>
-                                    );
-                                }
-
-                                return (
-                                    <PaginationItem key={`${label}-${indexItem}`}>
-                                        <PaginationLink href={link.url ?? '#'} isActive={link.active}>
-                                            {label}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                );
-                            })}
+                                },
+                            )}
                         </PaginationContent>
                     </Pagination>
                 </div>
@@ -398,8 +636,21 @@ function ManagementFieldInput({
             <Input
                 id={field.name}
                 type="number"
-                value={typeof value === 'number' ? value : typeof value === 'string' ? value : ''}
-                onChange={(event) => form.setData(field.name, event.target.value === '' ? '' : Number(event.target.value))}
+                value={
+                    typeof value === 'number'
+                        ? value
+                        : typeof value === 'string'
+                          ? value
+                          : ''
+                }
+                onChange={(event) =>
+                    form.setData(
+                        field.name,
+                        event.target.value === ''
+                            ? ''
+                            : Number(event.target.value),
+                    )
+                }
             />
         );
     }
@@ -411,7 +662,9 @@ function ManagementFieldInput({
                 type="password"
                 autoComplete="new-password"
                 value={typeof value === 'string' ? value : ''}
-                onChange={(event) => form.setData(field.name, event.target.value)}
+                onChange={(event) =>
+                    form.setData(field.name, event.target.value)
+                }
             />
         );
     }
@@ -423,18 +676,27 @@ function ManagementFieldInput({
                     value: String(option.value),
                     label: option.label,
                 }))}
-                value={value === null || value === undefined ? undefined : String(value)}
+                value={
+                    value === null || value === undefined
+                        ? undefined
+                        : String(value)
+                }
                 onValueChange={(rawValue) => {
                     const resolvedValue = resolveOptionValue(field, rawValue);
                     form.setData(field.name, resolvedValue);
                 }}
             >
                 <SelectTrigger className="w-full">
-                    <SelectValue placeholder={`Pilih ${field.label.toLowerCase()}`} />
+                    <SelectValue
+                        placeholder={`Pilih ${field.label.toLowerCase()}`}
+                    />
                 </SelectTrigger>
                 <SelectContent>
                     {field.options?.map((option) => (
-                        <SelectItem key={`${field.name}-${String(option.value)}`} value={String(option.value)}>
+                        <SelectItem
+                            key={`${field.name}-${String(option.value)}`}
+                            value={String(option.value)}
+                        >
                             {option.label}
                         </SelectItem>
                     ))}
@@ -444,65 +706,200 @@ function ManagementFieldInput({
     }
 
     if (field.type === 'multi-checkbox') {
-        const selectedValues = Array.isArray(value) ? value : [];
-        const groupedOptions = groupOptions(field.options ?? []);
-
         return (
-            <div className="max-h-72 space-y-4 overflow-auto rounded-md border border-border/60 p-3">
-                {Object.entries(groupedOptions).map(([group, options]) => (
-                    <div key={`${field.name}-${group}`} className="space-y-2">
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">{group}</p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                            {options.map((option) => {
-                                const optionValue = String(option.value);
-
-                                return (
-                                    <label
-                                        key={`${field.name}-${optionValue}`}
-                                        className="flex items-center gap-2 rounded-md border border-border/60 px-3 py-2 text-sm"
-                                    >
-                                        <Checkbox
-                                            checked={selectedValues.includes(optionValue)}
-                                            onCheckedChange={(checked) => {
-                                                const nextValues = checked
-                                                    ? [...selectedValues, optionValue]
-                                                    : selectedValues.filter((item) => item !== optionValue);
-
-                                                form.setData(field.name, nextValues);
-                                            }}
-                                        />
-                                        <span className="min-w-0 truncate">{option.label}</span>
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    </div>
-                ))}
-            </div>
+            <ManagementMultiCheckboxField
+                field={field}
+                form={form}
+                value={value}
+            />
         );
     }
 
     return (
         <Input
             id={field.name}
-            value={typeof value === 'string' ? value : typeof value === 'number' ? value : ''}
+            value={
+                typeof value === 'string'
+                    ? value
+                    : typeof value === 'number'
+                      ? value
+                      : ''
+            }
             onChange={(event) => form.setData(field.name, event.target.value)}
         />
     );
 }
 
-function resolveOptionValue(field: ManagementField, rawValue: string | null): string | number | boolean | null {
+function ManagementMultiCheckboxField({
+    field,
+    form,
+    value,
+}: {
+    field: ManagementField;
+    form: ReturnType<typeof useForm<FormState>>;
+    value: ManagementFormValue;
+}) {
+    const [permissionSearch, setPermissionSearch] = React.useState('');
+    const selectedValues = Array.isArray(value) ? value : [];
+    const options = field.options ?? [];
+    const normalizedSearch = permissionSearch.trim().toLowerCase();
+    const filteredOptions = React.useMemo(() => {
+        if (normalizedSearch === '') {
+            return options;
+        }
+
+        return options.filter((option) => {
+            const searchableText = [
+                option.label,
+                String(option.value),
+                option.group ?? '',
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            return searchableText.includes(normalizedSearch);
+        });
+    }, [normalizedSearch, options]);
+    const groupedOptions = React.useMemo(
+        () => groupOptions(filteredOptions),
+        [filteredOptions],
+    );
+
+    return (
+        <div className="space-y-3 rounded-lg border border-border/60 bg-muted/10 p-3">
+            <div className="space-y-2">
+                <div className="relative">
+                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        value={permissionSearch}
+                        onChange={(event) =>
+                            setPermissionSearch(event.target.value)
+                        }
+                        placeholder="Cari permission..."
+                        className="h-9 pr-9 pl-8"
+                    />
+                    {permissionSearch !== '' ? (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label="Bersihkan pencarian permission"
+                            className="absolute top-1/2 right-2 -translate-y-1/2"
+                            onClick={() => setPermissionSearch('')}
+                        >
+                            <X className="size-3" />
+                        </Button>
+                    ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline" className="text-[11px]">
+                        {selectedValues.length} dipilih
+                    </Badge>
+                    <span>
+                        Menampilkan {filteredOptions.length} dari{' '}
+                        {options.length} permission
+                    </span>
+                </div>
+            </div>
+
+            <div className="max-h-[28rem] space-y-4 overflow-auto pr-1">
+                {filteredOptions.length > 0 ? (
+                    Object.entries(groupedOptions).map(
+                        ([group, groupOptions]) => (
+                            <div
+                                key={`${field.name}-${group}`}
+                                className="space-y-2"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase">
+                                        {group}
+                                    </p>
+                                    <Badge
+                                        variant="outline"
+                                        className="shrink-0 text-[11px]"
+                                    >
+                                        {groupOptions.length} izin
+                                    </Badge>
+                                </div>
+                                <div className="grid gap-2">
+                                    {groupOptions.map((option) => {
+                                        const optionValue = String(
+                                            option.value,
+                                        );
+
+                                        return (
+                                            <label
+                                                key={`${field.name}-${optionValue}`}
+                                                className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-2 rounded-md border border-border/60 bg-background px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+                                            >
+                                                <Checkbox
+                                                    className="mt-0.5 shrink-0"
+                                                    checked={selectedValues.includes(
+                                                        optionValue,
+                                                    )}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) => {
+                                                        const nextValues =
+                                                            checked
+                                                                ? [
+                                                                      ...selectedValues,
+                                                                      optionValue,
+                                                                  ]
+                                                                : selectedValues.filter(
+                                                                      (item) =>
+                                                                          item !==
+                                                                          optionValue,
+                                                                  );
+
+                                                        form.setData(
+                                                            field.name,
+                                                            nextValues,
+                                                        );
+                                                    }}
+                                                />
+                                                <span className="min-w-0 leading-5 wrap-anywhere text-foreground">
+                                                    {option.label}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ),
+                    )
+                ) : (
+                    <div className="rounded-md border border-dashed border-border/70 bg-background px-3 py-6 text-center text-sm text-muted-foreground">
+                        Permission tidak ditemukan.
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function resolveOptionValue(
+    field: ManagementField,
+    rawValue: string | null,
+): string | number | boolean | null {
     if (rawValue === null) {
         return null;
     }
 
-    const matchedOption = field.options?.find((option) => String(option.value) === rawValue);
+    const matchedOption = field.options?.find(
+        (option) => String(option.value) === rawValue,
+    );
 
     return matchedOption?.value ?? rawValue;
 }
 
-function groupOptions(options: ManagementField['options']): Record<string, NonNullable<ManagementField['options']>> {
-    return (options ?? []).reduce<Record<string, NonNullable<ManagementField['options']>>>((groups, option) => {
+function groupOptions(
+    options: ManagementField['options'],
+): Record<string, NonNullable<ManagementField['options']>> {
+    return (options ?? []).reduce<
+        Record<string, NonNullable<ManagementField['options']>>
+    >((groups, option) => {
         const group = option.group ?? 'lainnya';
         groups[group] = groups[group] ?? [];
         groups[group].push(option);

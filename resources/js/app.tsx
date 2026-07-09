@@ -1,8 +1,8 @@
 import { createInertiaApp } from '@inertiajs/react';
 import type { ComponentType } from 'react';
 import { hydrateRoot } from 'react-dom/client';
-import { ThemeProvider } from '@/components/theme-provider';
 import { ScrollToTop } from '@/components/scroll-to-top';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
