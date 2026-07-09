@@ -75,6 +75,8 @@ class B3StoragePageService
      */
     public function buildForm(User $user): array
     {
+        $canSelectInitiatorUser = $user->can('b3storage.logs.select-user');
+
         $wasteTypeOptions = B3StorageWasteType::query()
             ->where('is_active', true)
             ->orderBy('order_no')
@@ -97,26 +99,28 @@ class B3StoragePageService
             ])
             ->all();
 
-        $initiatorUserOptions = User::query()
-            ->with('department:id,name')
-            ->where('is_active', true)
-            ->orderBy('external_id')
-            ->orderBy('name')
-            ->get(['id', 'external_id', 'name', 'email', 'department_id'])
-            ->map(static fn (User $record): array => [
-                'value' => $record->external_id,
-                'label' => trim(sprintf(
-                    '%s - %s%s',
-                    $record->external_id,
-                    $record->name,
-                    $record->email ? " ({$record->email})" : '',
-                )),
-                'external_id' => $record->external_id,
-                'name' => $record->name,
-                'email' => $record->email,
-                'department_name' => $record->department?->name,
-            ])
-            ->all();
+        $initiatorUserOptions = $canSelectInitiatorUser
+            ? User::query()
+                ->with('department:id,name')
+                ->where('is_active', true)
+                ->orderBy('external_id')
+                ->orderBy('name')
+                ->get(['id', 'external_id', 'name', 'email', 'department_id'])
+                ->map(static fn (User $record): array => [
+                    'value' => $record->external_id,
+                    'label' => trim(sprintf(
+                        '%s - %s%s',
+                        $record->external_id,
+                        $record->name,
+                        $record->email ? " ({$record->email})" : '',
+                    )),
+                    'external_id' => $record->external_id,
+                    'name' => $record->name,
+                    'email' => $record->email,
+                    'department_name' => $record->department?->name,
+                ])
+                ->all()
+            : [];
 
         return [
             'module' => [
@@ -132,6 +136,10 @@ class B3StoragePageService
                     'email' => $user->email,
                     'department_name' => $user->department?->name,
                 ],
+            ],
+            'capabilities' => [
+                'select_initiator_user' => $canSelectInitiatorUser,
+                'view_monthly_report' => $user->can('b3storage.monthly-report.view'),
             ],
             'options' => [
                 'movement_types' => [

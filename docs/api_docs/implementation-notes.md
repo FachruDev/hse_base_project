@@ -64,11 +64,11 @@ Backend menyimpan kode:
 - `NOT_OK`
 - `NA`
 
-Label profesional yang disarankan di Flutter:
+Label checklist harian harus mengikuti web:
 
-- `OK`: `Berfungsi`
-- `NOT_OK`: `Tidak Berfungsi`
-- `NA`: `Tidak Berlaku`
+- `OK`: `Ya`
+- `NOT_OK`: `Tidak`
+- Kosong/null: belum dipilih.
 
 ## B3 Movement Labels
 
@@ -82,7 +82,7 @@ Backend menyimpan kode:
 IPAL:
 
 1. Load `/master/checklist` dan `/master/process`.
-2. Tampilkan checklist pemeriksaan unit.
+2. Tampilkan checklist pemeriksaan unit seperti web: Perlengkapan, Kondisi Standar, Status Ya/Tidak default kosong, Catatan optional, dan Lampiran foto optional.
 3. Tampilkan catatan proses.
 4. Tampilkan batch mixing sebagai section optional.
 5. Save draft dengan `action = DRAFT` atau submit dengan `action = SUBMIT`.

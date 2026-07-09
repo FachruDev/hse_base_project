@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
             ['department' => 'Quality Assurance', 'name' => 'Meti Aprianti', 'external_id' => 'meti.a', 'email' => 'meti.a@galenium.local'],
             ['department' => 'R&D Pharma', 'name' => 'Santi Rika D', 'external_id' => 's.rikadwirani', 'email' => 's.rikadwirani@galenium.local'],
             ['department' => 'R&D Kosmetik', 'name' => 'Ira Murtisari', 'external_id' => 'ira.m', 'email' => 'ira.m@galenium.local'],
-            ['department' => 'R&D Andev', 'name' => 'Dina Gantina', 'external_id' => 'dina.g', 'email' => 'dina.g@galenium.local'],
+            ['department' => 'R&D Andev', 'name' => 'Dina Gantiha', 'external_id' => 'dina.g', 'email' => 'dina.g@galenium.local'],
             ['department' => 'DSP-Ware House', 'name' => 'Kolter Sembiring', 'external_id' => 'k.sembiring', 'email' => 'k.sembiring@galenium.local'],
             ['department' => 'Engineering', 'name' => 'Salomo P', 'external_id' => 'salomo.pm', 'email' => 'salomo.pm@galenium.local'],
             ['department' => 'General Affair', 'name' => 'Angki P', 'external_id' => 'angki.p', 'email' => 'angki.p@galenium.local'],
@@ -40,7 +40,7 @@ class UserSeeder extends Seeder
                 ],
             );
 
-            $user->syncRoles(['supervisor']);
+            $user->syncRoles(['non_hse_operator']);
         }
 
         $superAdmin = User::query()->updateOrCreate(

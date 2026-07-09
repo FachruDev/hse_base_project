@@ -419,6 +419,10 @@ export type B3StorageEntryPayload = {
             department_name?: string | null;
         };
     };
+    capabilities: {
+        select_initiator_user: boolean;
+        view_monthly_report: boolean;
+    };
     options: {
         movement_types: B3StorageOption[];
         waste_types: B3StorageOption[];

@@ -41,6 +41,7 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('entryForm.entry.operator.email', $operatorA->email)
+                ->where('entryForm.capabilities.select_initiator_user', true)
                 ->has('entryForm.options.initiator_users')
                 ->etc()
             );
@@ -251,6 +252,70 @@ class B3StorageMonthlyWorkflowTest extends TestCase
 
     }
 
+    public function test_non_hse_b3_user_can_create_without_initiator_user_selection_or_listing_access(): void
+    {
+        Inertia::disableSsr();
+        Carbon::setTestNow('2026-07-09 10:00:00');
+
+        $nonHseUser = User::factory()->create([
+            'external_id' => 'non.hse.b3',
+            'name' => 'Non HSE B3',
+            'is_active' => true,
+        ]);
+        $initiatorUser = User::factory()->create([
+            'external_id' => 'selected.user',
+            'is_active' => true,
+        ]);
+
+        $this->givePermissions($nonHseUser, [
+            'b3storage.master.view',
+            'b3storage.logs.create',
+        ]);
+
+        $masterData = $this->createMasterData();
+        $wasteType = $masterData[0];
+        $department = $masterData[2];
+
+        $this->get('/dashboard/forms/penyimpanan-limbah-b3/create?user_id=non.hse.b3')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entryForm.capabilities.select_initiator_user', false)
+                ->where('entryForm.capabilities.view_monthly_report', false)
+                ->has('entryForm.options.initiator_users', 0)
+                ->etc()
+            );
+
+        $this->get('/dashboard/forms/penyimpanan-limbah-b3?user_id=non.hse.b3')
+            ->assertForbidden();
+
+        $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=non.hse.b3', [
+            'movement_date' => '2026-07-09',
+            'movement_time' => '08:30',
+            'movement_type' => 'MASUK',
+            'waste_type_id' => $wasteType->id,
+            'initiator_department_id' => $department->id,
+            'weight_kg' => 5.25,
+            'document_number' => '01/ENG/VII/26',
+        ])->assertRedirect('/dashboard/forms/penyimpanan-limbah-b3/create?user_id=non.hse.b3');
+
+        $this->assertDatabaseHas('b3_storage_logs', [
+            'document_number' => '01/ENG/VII/26',
+            'operator_id' => $nonHseUser->id,
+            'initiator_user_id' => $nonHseUser->id,
+        ]);
+
+        $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=non.hse.b3', [
+            'movement_date' => '2026-07-09',
+            'movement_time' => '09:30',
+            'movement_type' => 'MASUK',
+            'waste_type_id' => $wasteType->id,
+            'initiator_department_id' => $department->id,
+            'weight_kg' => 3.25,
+            'document_number' => '02/ENG/VII/26',
+            'initiator_user_external_id' => $initiatorUser->external_id,
+        ])->assertForbidden();
+    }
+
     protected function tearDown(): void
     {
         Carbon::setTestNow();
@@ -265,6 +330,7 @@ class B3StorageMonthlyWorkflowTest extends TestCase
     {
         $permissions = [
             'b3storage.logs.create',
+            'b3storage.logs.select-user',
             'b3storage.logs.view',
             'b3storage.monthly-report.view',
             'b3storage.monthly-approval.approve',
@@ -309,11 +375,13 @@ class B3StorageMonthlyWorkflowTest extends TestCase
 
         $operatorA->givePermissionTo([
             'b3storage.logs.create',
+            'b3storage.logs.select-user',
             'b3storage.logs.view',
             'b3storage.monthly-report.view',
         ]);
         $operatorB->givePermissionTo([
             'b3storage.logs.create',
+            'b3storage.logs.select-user',
             'b3storage.logs.view',
             'b3storage.monthly-report.view',
         ]);
@@ -360,5 +428,20 @@ class B3StorageMonthlyWorkflowTest extends TestCase
         ]);
 
         return [$solidWasteType, $liquidWasteType, $qcDepartment, $qaDepartment];
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    private function givePermissions(User $user, array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::query()->firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

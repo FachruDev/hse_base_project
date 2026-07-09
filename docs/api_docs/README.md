@@ -1,6 +1,6 @@
 # HSE Mobile API Docs
 
-Dokumentasi ini untuk implementasi frontend Flutter. Semua endpoint memakai JSON, kecuali upload foto B3 yang memakai `multipart/form-data`.
+Dokumentasi ini untuk implementasi frontend Flutter. Semua endpoint memakai JSON, kecuali upload foto B3 dan lampiran foto checklist IPAL yang memakai `multipart/form-data`.
 
 ## Base URL
 

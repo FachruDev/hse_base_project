@@ -46,6 +46,7 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
     const [initiatorSelection, setInitiatorSelection] = React.useState<string>('');
     const [verificationOpen, setVerificationOpen] = React.useState(false);
     const [selectedInitiatorUser, setSelectedInitiatorUser] = React.useState<string>(SELF_INITIATOR_VALUE);
+    const canSelectInitiatorUser = entryForm.capabilities.select_initiator_user;
 
     const form = useForm<B3FormState>({
         movement_date: entryForm.entry.tanggal_default,
@@ -105,7 +106,13 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        setVerificationOpen(true);
+        if (canSelectInitiatorUser) {
+            setVerificationOpen(true);
+
+            return;
+        }
+
+        handleConfirmSubmit();
     };
 
     const handleConfirmSubmit = () => {
@@ -127,7 +134,10 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                 });
             },
             onError: () => {
-                setVerificationOpen(true);
+                if (canSelectInitiatorUser) {
+                    setVerificationOpen(true);
+                }
+
                 showAlert({
                     icon: 'error',
                     title: 'Gagal Menyimpan',
@@ -149,10 +159,12 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                                 <CardTitle className="text-2xl">{entryForm.module.title}</CardTitle>
                                 <CardDescription>{entryForm.module.subtitle}</CardDescription>
                             </div>
-                            <Button variant="outline" render={<a href={b3StorageIndex.url({ query: { user_id: userId } })} />}>
-                                <ArrowLeft className="size-4" />
-                                Kembali ke Listing
-                            </Button>
+                            {entryForm.capabilities.view_monthly_report ? (
+                                <Button variant="outline" render={<a href={b3StorageIndex.url({ query: { user_id: userId } })} />}>
+                                    <ArrowLeft className="size-4" />
+                                    Kembali ke Listing
+                                </Button>
+                            ) : null}
                         </div>
                     </CardHeader>
                 </Card>
@@ -410,7 +422,8 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                     </CardContent>
                 </Card>
             </div>
-            <Dialog open={verificationOpen} onOpenChange={setVerificationOpen}>
+            {canSelectInitiatorUser ? (
+                <Dialog open={verificationOpen} onOpenChange={setVerificationOpen}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Verifikasi Petugas Dept. Inisiator</DialogTitle>
@@ -475,7 +488,8 @@ export function PenyimpananLimbahB3Entry({ flash, entryForm, userId }: Penyimpan
                         </Button>
                     </DialogFooter>
                 </DialogContent>
-            </Dialog>
+                </Dialog>
+            ) : null}
         </div>
     );
 }

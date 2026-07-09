@@ -37,14 +37,16 @@ Catatan proses memiliki struktur:
 - `items[].standard_condition`: kondisi standar.
 - `items[].input_type`: menentukan komponen input kondisi aktual.
 - `process.values[].note`: keterangan.
+- `process.values[].attachment`: foto optional per uraian proses, sama seperti input foto di web.
 
-Checklist harian memiliki struktur:
+Checklist harian memiliki struktur yang sama seperti web:
 
-- `items[].category`: kategori/perlengkapan.
-- `items[].name`: nama item pemeriksaan.
-- `items[].standard_condition`: kondisi standar.
-- `checklist.values[].status`: status aktual.
-- `checklist.values[].note`: catatan.
+- Perlengkapan: `items[].name`.
+- Kondisi Standar: `items[].standard_condition`.
+- Status: Ya/Tidak dengan default kosong/null. Kirim `OK` untuk Ya dan `NOT_OK` untuk Tidak.
+- Catatan: optional, kirim lewat `checklist.values[].note`.
+- Lampiran: foto optional, kirim lewat `checklist.values[].attachment`.
+- `items[].category`: kategori/perlengkapan untuk pengelompokan.
 
 Batch mixing memiliki struktur:
 
@@ -92,7 +94,7 @@ Response berupa pagination Laravel. Field penting per row:
 
 Permission backend/UI: `ipal.logs.create`.
 
-Membuat log IPAL harian.
+Membuat log IPAL harian. Gunakan `multipart/form-data` jika mengirim lampiran foto checklist atau catatan proses.
 
 Request draft dengan checklist + proses:
 
@@ -106,12 +108,14 @@ Request draft dengan checklist + proses:
       {
         "item_id": 1,
         "status": "OK",
-        "note": null
+        "note": null,
+        "attachment": null
       },
       {
         "item_id": 2,
         "status": "NOT_OK",
-        "note": "Filter perlu dibersihkan"
+        "note": "Filter perlu dibersihkan",
+        "attachment": "@foto-checklist.jpg"
       }
     ]
   },
@@ -122,7 +126,8 @@ Request draft dengan checklist + proses:
         "item_id": 10,
         "value_number": 7.1,
         "value_text": null,
-        "note": null
+        "note": null,
+        "attachment": "@foto-process.jpg"
       },
       {
         "item_id": 11,
@@ -204,6 +209,7 @@ Catatan:
 - `action = DRAFT` menyimpan sebagai draft.
 - `action = SUBMIT` langsung menandatangani operator dan status proses menjadi `SUBMITTED`.
 - Untuk hari non-operasional, API akan mengisi checklist sebagai `NA` dan tidak bisa submit harian.
+- Lampiran checklist optional per item memakai field `checklist[values][0][attachment]`, `checklist[values][1][attachment]`, dan seterusnya saat multipart.
 
 ## GET /ipal/logs/{log}
 

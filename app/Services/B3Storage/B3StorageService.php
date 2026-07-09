@@ -7,6 +7,7 @@ use App\Models\B3Storage\B3StorageMonthlyApproval;
 use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\User;
 use App\Services\Ipal\IpalLogService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -340,6 +341,10 @@ class B3StorageService
             : null;
 
         if ($initiatorUserExternalId !== null && $initiatorUserExternalId !== '') {
+            if (! $operator->can('b3storage.logs.select-user')) {
+                throw new AuthorizationException('User tidak memiliki izin memilih petugas dept. inisiator.');
+            }
+
             $initiatorUser = User::query()
                 ->where('external_id', $initiatorUserExternalId)
                 ->where('is_active', true)

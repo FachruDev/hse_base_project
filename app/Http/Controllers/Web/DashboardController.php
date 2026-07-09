@@ -468,12 +468,18 @@ class DashboardController extends Controller
             $request->file('photo'),
         );
 
+        $redirectRoute = $user->can('b3storage.monthly-report.view')
+            ? 'dashboard.forms.penyimpanan-limbah-b3.index'
+            : 'dashboard.forms.penyimpanan-limbah-b3.create';
+        $redirectQuery = ['user_id' => $user->external_id];
+
+        if ($user->can('b3storage.monthly-report.view')) {
+            $redirectQuery['month'] = now()->month;
+            $redirectQuery['year'] = now()->year;
+        }
+
         return redirect()
-            ->route('dashboard.forms.penyimpanan-limbah-b3.index', [
-                'user_id' => $user->external_id,
-                'month' => now()->month,
-                'year' => now()->year,
-            ])
+            ->route($redirectRoute, $redirectQuery)
             ->with('success', 'Log penyimpanan limbah B3 berhasil disimpan.');
     }
 

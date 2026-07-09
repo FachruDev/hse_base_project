@@ -10,7 +10,9 @@ use App\Models\Master\ProcessSection;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -20,6 +22,8 @@ class IpalWorkflowTest extends TestCase
 
     public function test_can_execute_draft_submit_approve_workflow(): void
     {
+        Storage::fake('public');
+
         $operator = User::factory()->create([
             'external_id' => 'operator.01',
             'name' => 'Operator 01',
@@ -103,6 +107,7 @@ class IpalWorkflowTest extends TestCase
                         'item_id' => $checklistItem->id,
                         'status' => 'OK',
                         'note' => 'Normal',
+                        'attachment' => UploadedFile::fake()->image('checklist.jpg'),
                     ],
                 ],
             ],
@@ -113,6 +118,7 @@ class IpalWorkflowTest extends TestCase
                         'item_id' => $processNumberItem->id,
                         'value_number' => 7.1200,
                         'note' => 'Stabil',
+                        'attachment' => UploadedFile::fake()->image('process.jpg'),
                     ],
                     [
                         'item_id' => $processTextItem->id,
@@ -137,13 +143,22 @@ class IpalWorkflowTest extends TestCase
             ],
         ];
 
-        $createResponse = $this->postJson('/api/ipal/logs?userid=operator.01', $payload);
+        $createResponse = $this->post('/api/ipal/logs?userid=operator.01', $payload, [
+            'Accept' => 'application/json',
+        ]);
         $createResponse
             ->assertCreated()
             ->assertJsonPath('data.checklist.values.0.status_label', 'Berfungsi')
             ->assertJsonPath('data.process_log.status', 'DRAFT');
 
         $logId = $createResponse->json('data.id');
+        $attachmentPath = DB::table('ipal_checklist_value_attachments')->value('file_path');
+        $processAttachmentPath = DB::table('ipal_process_value_attachments')->value('file_path');
+
+        $this->assertNotNull($attachmentPath);
+        $this->assertNotNull($processAttachmentPath);
+        Storage::disk('public')->assertExists((string) $attachmentPath);
+        Storage::disk('public')->assertExists((string) $processAttachmentPath);
 
         $submitResponse = $this->postJson("/api/ipal/logs/{$logId}/submit?userid=operator.01");
         $submitResponse

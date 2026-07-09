@@ -14,13 +14,15 @@ Permission backend/UI: `master.checklist.view`.
 
 Mengambil template dan item checklist pemeriksaan unit IPAL.
 
-Dipakai untuk Form 2: Checklist Pemeriksaan Harian. Field yang perlu ditampilkan:
+Dipakai untuk Form 2: Checklist Pemeriksaan Harian. Cara pengisiannya mengikuti web. Setiap baris checklist menampilkan:
 
-- `items[].category`: pengelompokan/perlengkapan proses.
-- `items[].name`: nama perlengkapan.
-- `items[].standard_condition`: kondisi standar.
-- Status input user: `OK`, `NOT_OK`, atau `NA`.
-- `note`: catatan optional saat submit.
+- Perlengkapan: `items[].name`.
+- Kondisi Standar: `items[].standard_condition`.
+- Status: pilihan Ya/Tidak, default kosong/null sampai user memilih.
+- Catatan: optional, dikirim sebagai `checklist.values[].note`.
+- Lampiran: foto optional per baris, dikirim sebagai `checklist.values[].attachment`.
+
+`items[].category` tetap dipakai untuk pengelompokan/perlengkapan proses.
 
 Response:
 
@@ -49,9 +51,9 @@ Response:
 
 Status checklist yang dikirim saat submit IPAL:
 
-- `OK`: Berfungsi
-- `NOT_OK`: Tidak Berfungsi
-- `NA`: Tidak Berlaku
+- `OK`: Ya
+- `NOT_OK`: Tidak
+- Kosong/null: belum dipilih, jangan dikirim saat submit final.
 
 ## GET /master/process
 

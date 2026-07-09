@@ -4,6 +4,7 @@ namespace App\Services\Ipal;
 
 use App\Models\Ipal\IpalBatch;
 use App\Models\Ipal\IpalChecklistApproval;
+use App\Models\Ipal\IpalChecklistValue;
 use App\Models\Ipal\IpalChecklistValueAttachment;
 use App\Models\Ipal\IpalDailyLog;
 use App\Models\Ipal\IpalProcessApproval;
@@ -97,11 +98,16 @@ class IpalLogService
                         ]);
                     }
 
-                    $checklist->values()->create([
+                    $createdValue = $checklist->values()->create([
                         'item_id' => $itemId,
                         'status' => $value['status'],
                         'note' => $value['note'] ?? null,
                     ]);
+
+                    $attachment = $value['attachment'] ?? null;
+                    if ($attachment instanceof UploadedFile) {
+                        $this->storeChecklistValueAttachment($createdValue, $attachment, $logDate);
+                    }
                 }
             }
 
@@ -125,24 +131,7 @@ class IpalLogService
                     ]);
                 }
 
-                $processItems = ProcessItem::query()
-                    ->select(['m_process_items.id', 'm_process_items.input_type'])
-                    ->join('m_process_sections', 'm_process_sections.id', '=', 'm_process_items.section_id')
-                    ->where('m_process_sections.template_id', $processTemplateId)
-                    ->get()
-                    ->keyBy('id');
-
-                foreach ($processPayload['values'] as $value) {
-                    $item = $processItems->get($value['item_id']);
-
-                    if ($item === null) {
-                        throw ValidationException::withMessages([
-                            'process.values' => ['Process item tidak sesuai template proses.'],
-                        ]);
-                    }
-
-                    $this->validateAndCreateProcessValue($processLog, $item->input_type, $value);
-                }
+                $this->replaceProcessValues($processLog, $processPayload['values'], true, $payload['tanggal']);
 
                 $batchItems = BatchItem::query()->select(['id', 'input_type'])->get()->keyBy('id');
 
@@ -261,16 +250,7 @@ class IpalLogService
                     $createdValue = $createdValues->get($index);
                     if ($createdValue !== null) {
                         $logDate = Carbon::parse($payload['tanggal']);
-                        $path = $attachment->store(
-                            'ipal/checklist/'.$logDate->year.'/'.$logDate->month,
-                            'public',
-                        );
-                        IpalChecklistValueAttachment::query()->where('checklist_value_id', $createdValue->id)->delete();
-                        IpalChecklistValueAttachment::query()->create([
-                            'checklist_value_id' => $createdValue->id,
-                            'file_path' => $path,
-                            'original_name' => $attachment->getClientOriginalName(),
-                        ]);
+                        $this->storeChecklistValueAttachment($createdValue, $attachment, $logDate);
                     }
                 }
             }
@@ -778,6 +758,27 @@ class IpalLogService
                 'note' => $payload['note'] ?? null,
             ]
         );
+    }
+
+    private function storeChecklistValueAttachment(
+        IpalChecklistValue $checklistValue,
+        UploadedFile $attachment,
+        Carbon $logDate,
+    ): void {
+        $path = $attachment->store(
+            'ipal/checklist/'.$logDate->year.'/'.$logDate->month,
+            'public',
+        );
+
+        IpalChecklistValueAttachment::query()
+            ->where('checklist_value_id', $checklistValue->id)
+            ->delete();
+
+        IpalChecklistValueAttachment::query()->create([
+            'checklist_value_id' => $checklistValue->id,
+            'file_path' => $path,
+            'original_name' => $attachment->getClientOriginalName(),
+        ]);
     }
 
     /**
