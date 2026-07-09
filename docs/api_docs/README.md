@@ -26,6 +26,8 @@ Authorization: Bearer {access_token}
 
 Auth query lama `?user_id=...` atau `?userid=...` masih didukung untuk kompatibilitas internal, tetapi mobile sebaiknya memakai bearer token.
 
+Login mobile memakai payload `login` dan `password`. `login` boleh berisi user ID/external ID atau email. Default awal rollout untuk user lama/seeder adalah `Gpl12345!`, lalu admin bisa menggantinya dari Management User.
+
 ## Standard Response
 
 Single resource:

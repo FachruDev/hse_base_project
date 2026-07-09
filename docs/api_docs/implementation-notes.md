@@ -2,7 +2,7 @@
 
 ## Checklist Minimum
 
-1. Login dengan `POST /auth/login`.
+1. Login dengan `POST /auth/login` memakai `login` dan `password`.
 2. Simpan token di secure storage.
 3. Tambahkan interceptor HTTP untuk header `Authorization: Bearer {token}`.
 4. Jika response 401, hapus token lokal dan arahkan user ke login.
@@ -13,6 +13,8 @@
 ## Permission
 
 Response login dan `/auth/me` mengembalikan `permissions`. Frontend bisa memakai ini untuk menampilkan/menyembunyikan tombol. Detail matriks endpoint ada di `permissions.md`.
+
+Default awal rollout untuk user lama/seeder adalah `Gpl12345!`. Password berikutnya dikelola admin dari Management User.
 
 - `master.checklist.view`: baca master checklist IPAL.
 - `master.process.view`: baca master catatan proses IPAL.
@@ -90,7 +92,7 @@ IPAL:
 2. Tampilkan checklist pemeriksaan unit seperti web: Perlengkapan, Kondisi Standar, Status Ya/Tidak default kosong, Catatan optional, dan Lampiran foto optional.
 3. Tampilkan catatan proses.
 4. Tampilkan batch mixing sebagai section optional.
-5. Save draft dengan `action = DRAFT` atau submit dengan `action = SUBMIT`.
+5. Draft disimpan lokal di aplikasi; submit server memakai `action = SUBMIT`.
 
 B3:
 

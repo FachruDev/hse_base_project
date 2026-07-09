@@ -30,7 +30,7 @@ export type ManagementFieldOption = {
 export type ManagementField = {
     name: string;
     label: string;
-    type: 'text' | 'number' | 'select' | 'boolean-select' | 'multi-checkbox';
+    type: 'text' | 'password' | 'number' | 'select' | 'boolean-select' | 'multi-checkbox';
     required: boolean;
     options?: ManagementFieldOption[];
 };

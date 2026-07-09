@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -27,6 +28,29 @@ class AdminManagementAuthorizationTest extends TestCase
 
         $this->getJson('/api/admin/users?user_id='.$user->external_id)
             ->assertOk();
+    }
+
+    public function test_admin_users_api_can_create_user_with_password(): void
+    {
+        $user = User::factory()->create([
+            'external_id' => 'user.admin',
+            'is_active' => true,
+        ]);
+
+        Permission::query()->create(['name' => 'admin.users.create', 'guard_name' => 'web']);
+        $user->givePermissionTo('admin.users.create');
+
+        $this->postJson('/api/admin/users?user_id='.$user->external_id, [
+            'external_id' => 'mobile.user',
+            'email' => 'mobile.user@example.test',
+            'password' => 'Secret123!',
+            'name' => 'Mobile User',
+            'is_active' => true,
+        ])->assertCreated();
+
+        $createdUser = User::query()->where('external_id', 'mobile.user')->firstOrFail();
+
+        $this->assertTrue(Hash::check('Secret123!', $createdUser->password));
     }
 
     public function test_admin_roles_api_requires_create_permission(): void

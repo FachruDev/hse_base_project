@@ -5,6 +5,7 @@ namespace Tests\Feature\Web;
 use App\Models\Master\Department;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -81,6 +82,7 @@ class ManagementCrudTest extends TestCase
         $response = $this->post('/dashboard/management/users?user_id='.$viewer->external_id, [
             'external_id' => 'new.operator',
             'email' => 'new.operator@example.test',
+            'password' => 'Secret123!',
             'name' => 'New Operator',
             'department_id' => $department->id,
             'roles' => ['operator'],
@@ -93,6 +95,48 @@ class ManagementCrudTest extends TestCase
 
         $this->assertSame($department->id, $createdUser->department_id);
         $this->assertTrue($createdUser->hasRole('operator'));
+        $this->assertTrue(Hash::check('Secret123!', $createdUser->password));
+    }
+
+    public function test_user_password_is_optional_on_edit_and_can_be_replaced(): void
+    {
+        $viewer = $this->createUserWithPermissions('admin.users.editor', [
+            'admin.users.view',
+            'admin.users.update',
+        ]);
+        $user = User::factory()->create([
+            'external_id' => 'editable.operator',
+            'email' => 'editable.operator@example.test',
+            'name' => 'Editable Operator',
+            'password' => 'OldSecret123!',
+        ]);
+        $oldPasswordHash = $user->password;
+
+        $this->patch("/dashboard/management/users/{$user->id}?user_id={$viewer->external_id}", [
+            'external_id' => 'editable.operator',
+            'email' => 'editable.operator@example.test',
+            'password' => '',
+            'name' => 'Editable Operator Updated',
+            'department_id' => null,
+            'roles' => [],
+            'is_active' => true,
+        ])->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertSame($oldPasswordHash, $user->password);
+
+        $this->patch("/dashboard/management/users/{$user->id}?user_id={$viewer->external_id}", [
+            'external_id' => 'editable.operator',
+            'email' => 'editable.operator@example.test',
+            'password' => 'NewSecret123!',
+            'name' => 'Editable Operator Updated',
+            'department_id' => null,
+            'roles' => [],
+            'is_active' => true,
+        ])->assertRedirect();
+
+        $this->assertTrue(Hash::check('NewSecret123!', $user->refresh()->password));
     }
 
     public function test_can_create_role_and_sync_permissions(): void

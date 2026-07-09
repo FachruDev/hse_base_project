@@ -26,7 +26,7 @@ class UserController extends Controller
     {
         abort_unless($request->user()?->can('admin.users.create'), 403);
 
-        $user = User::query()->create($request->validated());
+        $user = User::query()->create($this->userPayload($request));
 
         return response()->json([
             'message' => 'User berhasil dibuat.',
@@ -47,7 +47,7 @@ class UserController extends Controller
     {
         abort_unless($request->user()?->can('admin.users.update'), 403);
 
-        $user->update($request->validated());
+        $user->update($this->userPayload($request));
 
         return response()->json([
             'message' => 'User berhasil diperbarui.',
@@ -64,5 +64,19 @@ class UserController extends Controller
         return response()->json([
             'message' => 'User berhasil dihapus.',
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function userPayload(SaveUserRequest $request): array
+    {
+        $payload = $request->validated();
+
+        if (($payload['password'] ?? null) === null || $payload['password'] === '') {
+            unset($payload['password']);
+        }
+
+        return $payload;
     }
 }

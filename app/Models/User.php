@@ -29,9 +29,19 @@ class User extends Authenticatable
     protected $fillable = [
         'external_id',
         'email',
+        'password',
         'name',
         'department_id',
         'is_active',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
     ];
 
     /**
@@ -45,6 +55,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'department_id' => 'integer',
             'created_at' => 'datetime',
+            'password' => 'hashed',
         ];
     }
 

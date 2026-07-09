@@ -40,6 +40,7 @@ class UserSeeder extends Seeder
                 ],
             );
 
+            $this->ensureDefaultPassword($user);
             $user->syncRoles(['non_hse_operator']);
         }
 
@@ -53,6 +54,18 @@ class UserSeeder extends Seeder
             ],
         );
 
+        $this->ensureDefaultPassword($superAdmin);
         $superAdmin->syncRoles(['superadmin']);
+    }
+
+    private function ensureDefaultPassword(User $user): void
+    {
+        if (is_string($user->password) && $user->password !== '') {
+            return;
+        }
+
+        $user->forceFill([
+            'password' => 'Gpl12345!',
+        ])->save();
     }
 }

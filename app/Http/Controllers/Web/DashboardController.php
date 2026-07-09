@@ -59,6 +59,8 @@ class DashboardController extends Controller
         IpalEntryDateRequest $request,
         CatatanPengolahanLimbahAirPageService $pageService,
     ): Response {
+        abort_unless($request->user()?->can('ipal.logs.create'), 403);
+
         return Inertia::render('dashboard/forms/catatan-pengolahan-limbah-air/create', [
             'entryForm' => $pageService->buildForm($this->authenticatedUser($request), $request->entryDate()),
         ]);
@@ -286,6 +288,8 @@ class DashboardController extends Controller
         SaveIpalChecklistRequest $request,
         IpalLogService $ipalLogService,
     ): RedirectResponse {
+        abort_unless($request->user()?->can('ipal.logs.create'), 403);
+
         $user = $this->authenticatedUser($request);
         $ipalLogService->upsertChecklist($request->validated(), $user);
 
@@ -301,6 +305,8 @@ class DashboardController extends Controller
         SaveIpalProcessRequest $request,
         IpalLogService $ipalLogService,
     ): RedirectResponse {
+        abort_unless($request->user()?->can('ipal.logs.create'), 403);
+
         $user = $this->authenticatedUser($request);
         $isSubmit = ($request->validated()['action'] ?? 'DRAFT') === 'SUBMIT';
 

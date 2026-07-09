@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -250,6 +251,12 @@ class ManagementCrudService
             }
         }
 
+        foreach ($definition['nullable_empty_fields'] ?? [] as $field) {
+            if (array_key_exists($field, $payload) && ($payload[$field] === null || $payload[$field] === '')) {
+                unset($payload[$field]);
+            }
+        }
+
         return [
             'attributes' => $payload,
             'relations' => $relations,
@@ -280,9 +287,11 @@ class ManagementCrudService
                 'integer_fields' => ['department_id'],
                 'boolean_fields' => ['is_active'],
                 'relation_fields' => ['roles'],
+                'nullable_empty_fields' => ['password'],
                 'defaults' => [
                     'external_id' => '',
                     'email' => '',
+                    'password' => '',
                     'name' => '',
                     'department_id' => null,
                     'roles' => [],
@@ -291,6 +300,11 @@ class ManagementCrudService
                 'rules' => fn (?int $recordId): array => [
                     'external_id' => ['required', 'string', 'max:100', Rule::unique('users', 'external_id')->ignore($recordId)],
                     'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($recordId)],
+                    'password' => [
+                        $recordId === null ? 'required' : 'nullable',
+                        'string',
+                        Password::min(8),
+                    ],
                     'name' => ['required', 'string', 'max:255'],
                     'department_id' => ['nullable', 'integer', 'exists:m_departments,id'],
                     'roles' => ['sometimes', 'array'],
@@ -329,6 +343,7 @@ class ManagementCrudService
                 'form_values' => fn (User $record): array => [
                     'external_id' => $record->external_id,
                     'email' => $record->email,
+                    'password' => '',
                     'name' => $record->name,
                     'department_id' => $record->department_id,
                     'roles' => $record->roles->pluck('name')->values()->all(),
@@ -337,6 +352,7 @@ class ManagementCrudService
                 'fields' => fn (): array => [
                     ['name' => 'external_id', 'label' => 'External ID', 'type' => 'text', 'required' => true],
                     ['name' => 'email', 'label' => 'Email', 'type' => 'text', 'required' => false],
+                    ['name' => 'password', 'label' => 'Password Mobile (wajib saat tambah)', 'type' => 'password', 'required' => false],
                     ['name' => 'name', 'label' => 'Nama', 'type' => 'text', 'required' => true],
                     ['name' => 'department_id', 'label' => 'Departemen', 'type' => 'select', 'required' => false, 'options' => $this->departmentOptions()],
                     ['name' => 'roles', 'label' => 'Role', 'type' => 'multi-checkbox', 'required' => false, 'options' => $this->roleOptions()],

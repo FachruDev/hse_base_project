@@ -69,6 +69,10 @@ export function ManagementPage({ flash, management, userId }: ManagementPageProp
                 if (management.form.mode === 'create') {
                     form.setData(management.form.values);
                 }
+
+                if ('password' in form.data) {
+                    form.setData('password', '');
+                }
             },
         };
 
@@ -396,6 +400,18 @@ function ManagementFieldInput({
                 type="number"
                 value={typeof value === 'number' ? value : typeof value === 'string' ? value : ''}
                 onChange={(event) => form.setData(field.name, event.target.value === '' ? '' : Number(event.target.value))}
+            />
+        );
+    }
+
+    if (field.type === 'password') {
+        return (
+            <Input
+                id={field.name}
+                type="password"
+                autoComplete="new-password"
+                value={typeof value === 'string' ? value : ''}
+                onChange={(event) => form.setData(field.name, event.target.value)}
             />
         );
     }

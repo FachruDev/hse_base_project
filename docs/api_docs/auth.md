@@ -2,14 +2,16 @@
 
 ## POST /auth/login
 
-Login mobile memakai kombinasi `user_id` dan `email`. Tidak memakai password.
+Login mobile memakai `login` dan `password`. Field `login` boleh berisi `user_id`/`external_id` atau email.
+
+Default awal rollout untuk user lama dan user seeder adalah `Gpl12345!`. Setelah itu admin dapat mengganti password dari halaman Management User.
 
 Request:
 
 ```json
 {
-  "user_id": "irvan.m",
-  "email": "irvan.m@galenium.local",
+  "login": "irvan.m",
+  "password": "Gpl12345!",
   "device_name": "flutter-android"
 }
 ```
@@ -39,11 +41,11 @@ Response 200:
 }
 ```
 
-Response 401 jika kombinasi `user_id` dan `email` salah, atau user tidak aktif:
+Response 401 jika login/password salah, password belum diset, atau user tidak aktif:
 
 ```json
 {
-  "message": "User ID atau email tidak sesuai, atau user tidak aktif."
+  "message": "Login atau password tidak sesuai, atau user tidak aktif."
 }
 ```
 

@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class SaveUserRequest extends FormRequest
 {
@@ -42,6 +43,9 @@ class SaveUserRequest extends FormRequest
                 Rule::unique('users', 'email')->ignore($ignoreId),
             ],
             'name' => ['required', 'string', 'max:255'],
+            'password' => $ignoreId === null
+                ? ['required', 'string', Password::min(8)]
+                : ['nullable', 'string', Password::min(8)],
             'department_id' => ['nullable', 'integer', 'exists:m_departments,id'],
             'is_active' => ['sometimes', 'boolean'],
         ];

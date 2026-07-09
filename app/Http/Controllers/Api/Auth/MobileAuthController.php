@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class MobileAuthController extends Controller
@@ -16,17 +17,21 @@ class MobileAuthController extends Controller
     public function login(MobileLoginRequest $request): JsonResponse
     {
         $validated = $request->validated();
+        $login = trim((string) $validated['login']);
 
         $user = User::query()
             ->with('department:id,name')
-            ->where('external_id', $validated['user_id'])
-            ->where('email', $validated['email'])
+            ->where(function ($query) use ($login): void {
+                $query
+                    ->where('external_id', $login)
+                    ->orWhere('email', $login);
+            })
             ->where('is_active', true)
             ->first();
 
-        if (! $user instanceof User) {
+        if (! $user instanceof User || ! is_string($user->password) || ! Hash::check($validated['password'], $user->password)) {
             return response()->json([
-                'message' => 'User ID atau email tidak sesuai, atau user tidak aktif.',
+                'message' => 'Login atau password tidak sesuai, atau user tidak aktif.',
             ], Response::HTTP_UNAUTHORIZED);
         }
 

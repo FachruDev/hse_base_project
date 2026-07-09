@@ -1,6 +1,6 @@
 import { ArrowRight, ClipboardPenLine, FileStack, FileWarning, Sparkles } from 'lucide-react';
 
-import { b3StorageIndex, catatanPengolahanLimbahAirIndex } from '@/actions/App/Http/Controllers/Web/DashboardController';
+import { b3StorageCreate, catatanPengolahanLimbahAirCreate } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DashboardFormItem, DashboardPayload } from '@/modules/dashboard/types';
@@ -42,7 +42,7 @@ export function DashboardFormWorkspace({ dashboard, userId }: DashboardFormWorks
                     <div className="flex items-center justify-between gap-3">
                         <div>
                             <h2 className="text-lg font-semibold">Daftar Form</h2>
-                            <p className="text-sm text-muted-foreground">Klik kartu untuk masuk ke halaman listing form.</p>
+                            <p className="text-sm text-muted-foreground">Klik kartu untuk langsung mengisi form hari ini.</p>
                         </div>
                         <Badge variant="outline">{dashboard.hero.today}</Badge>
                     </div>
@@ -87,10 +87,10 @@ function FormModuleCard({ form, userId }: { form: DashboardFormItem; userId: str
 
 function resolveFormHref(formKey: string, userId: string): string {
     if (formKey === 'penyimpanan-limbah-b3') {
-        return b3StorageIndex.url({ query: { user_id: userId } });
+        return b3StorageCreate.url({ query: { user_id: userId } });
     }
 
-    return catatanPengolahanLimbahAirIndex.url({ query: { user_id: userId } });
+    return catatanPengolahanLimbahAirCreate.url({ query: { user_id: userId } });
 }
 
 function SummaryBox({

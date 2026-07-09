@@ -12,7 +12,9 @@ import {
     weekendIndex as configurationWeekendIndex,
 } from '@/actions/App/Http/Controllers/Web/ConfigurationController';
 import {
+    b3StorageCreate,
     b3StorageIndex,
+    catatanPengolahanLimbahAirCreate,
     catatanPengolahanLimbahAirIndex,
     index as dashboardIndex,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
@@ -50,7 +52,8 @@ import {
 import {
     configurationNavigation,
     dashboardNavigation,
-    formNavigation,
+    formEntryNavigation,
+    formManagementNavigation,
     managementNavigation,
     masterDataNavigation,
 } from '@/modules/dashboard/config/navigation';
@@ -103,6 +106,7 @@ export function DashboardSidebar({
     // Menggunakan custom hook. Nilai false menjadi default agar sidebar tidak terlalu penuh saat pertama kali dibuka.
     const [managementOpen, setManagementOpen] = useSidebarState('sidebar-management-open', false);
     const [formsOpen, setFormsOpen] = useSidebarState('sidebar-forms-open', false);
+    const [formManagementOpen, setFormManagementOpen] = useSidebarState('sidebar-form-management-open', false);
     const [masterDataOpen, setMasterDataOpen] = useSidebarState('sidebar-master-open', false);
     const [configurationOpen, setConfigurationOpen] = useSidebarState('sidebar-config-open', false);
 
@@ -115,7 +119,11 @@ export function DashboardSidebar({
         );
     }), [permissions]);
 
-    const formItems = React.useMemo(() => formNavigation.filter((item) =>
+    const formEntryItems = React.useMemo(() => formEntryNavigation.filter((item) =>
+        permissions.includes(item.permission)
+    ), [permissions]);
+
+    const formManagementItems = React.useMemo(() => formManagementNavigation.filter((item) =>
         permissions.includes(item.permission)
     ), [permissions]);
 
@@ -181,7 +189,7 @@ export function DashboardSidebar({
                                 </SidebarMenuItem>
                             ))}
 
-                            {formItems.length > 0 && (
+                            {formEntryItems.length > 0 && (
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Form Operasional"
@@ -196,11 +204,44 @@ export function DashboardSidebar({
 
                                     {formsOpen && (
                                         <SidebarMenuSub>
-                                            {formItems.map((item) => (
+                                            {formEntryItems.map((item) => (
                                                 <SidebarMenuSubItem key={item.key}>
                                                     <SidebarMenuSubButton
                                                         href={buildFormHref(
                                                             item.target as any,
+                                                            userId,
+                                                        )}
+                                                    >
+                                                        <item.icon />
+                                                        <span>{item.label}</span>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            ))}
+                                        </SidebarMenuSub>
+                                    )}
+                                </SidebarMenuItem>
+                            )}
+
+                            {formManagementItems.length > 0 && (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        tooltip="Management Form"
+                                        onClick={() => setFormManagementOpen((current) => !current)}
+                                    >
+                                        <LayoutGrid className="size-4" />
+                                        <span>Management Form</span>
+                                        <ChevronRight
+                                            className={`ml-auto transition-transform ${formManagementOpen ? 'rotate-90' : ''}`}
+                                        />
+                                    </SidebarMenuButton>
+
+                                    {formManagementOpen && (
+                                        <SidebarMenuSub>
+                                            {formManagementItems.map((item) => (
+                                                <SidebarMenuSubItem key={item.key}>
+                                                    <SidebarMenuSubButton
+                                                        href={buildFormHref(
+                                                            item.target,
                                                             userId,
                                                         )}
                                                     >
@@ -425,10 +466,24 @@ function buildWorkspaceHref(
 }
 
 function buildFormHref(
-    target: 'catatan-pengolahan-limbah-air' | 'penyimpanan-limbah-b3',
+    target:
+        | 'catatan-pengolahan-limbah-air-create'
+        | 'penyimpanan-limbah-b3-create'
+        | 'catatan-pengolahan-limbah-air-index'
+        | 'penyimpanan-limbah-b3-index',
     userId: string,
 ): string {
-    if (target === 'catatan-pengolahan-limbah-air') {
+    if (target === 'catatan-pengolahan-limbah-air-create') {
+        return catatanPengolahanLimbahAirCreate.url({
+            query: { user_id: userId },
+        });
+    }
+
+    if (target === 'penyimpanan-limbah-b3-create') {
+        return b3StorageCreate.url({ query: { user_id: userId } });
+    }
+
+    if (target === 'catatan-pengolahan-limbah-air-index') {
         return catatanPengolahanLimbahAirIndex.url({
             query: { user_id: userId },
         });

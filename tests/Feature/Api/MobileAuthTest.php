@@ -13,7 +13,7 @@ class MobileAuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_mobile_user_can_login_with_user_id_and_email(): void
+    public function test_mobile_user_can_login_with_user_id_and_password(): void
     {
         $user = User::factory()->create([
             'external_id' => 'irvan.m',
@@ -25,8 +25,8 @@ class MobileAuthTest extends TestCase
         $user->givePermissionTo('master.checklist.view');
 
         $response = $this->postJson('/api/auth/login', [
-            'user_id' => 'irvan.m',
-            'email' => 'irvan.m@galenium.local',
+            'login' => 'irvan.m',
+            'password' => 'Gpl12345!',
             'device_name' => 'flutter-debug',
         ]);
 
@@ -46,7 +46,22 @@ class MobileAuthTest extends TestCase
         $this->assertNotSame($response->json('data.access_token'), MobileApiToken::query()->first()?->token_hash);
     }
 
-    public function test_mobile_login_rejects_invalid_email_pair(): void
+    public function test_mobile_user_can_login_with_email_and_password(): void
+    {
+        User::factory()->create([
+            'external_id' => 'irvan.m',
+            'email' => 'irvan.m@galenium.local',
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'irvan.m@galenium.local',
+            'password' => 'Gpl12345!',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.user.user_id', 'irvan.m');
+    }
+
+    public function test_mobile_login_rejects_invalid_password(): void
     {
         User::factory()->create([
             'external_id' => 'irvan.m',
@@ -54,13 +69,28 @@ class MobileAuthTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/auth/login', [
-            'user_id' => 'irvan.m',
-            'email' => 'wrong@galenium.local',
+            'login' => 'irvan.m',
+            'password' => 'wrong-password',
         ]);
 
         $response
             ->assertUnauthorized()
-            ->assertJsonPath('message', 'User ID atau email tidak sesuai, atau user tidak aktif.');
+            ->assertJsonPath('message', 'Login atau password tidak sesuai, atau user tidak aktif.');
+    }
+
+    public function test_mobile_login_rejects_inactive_user(): void
+    {
+        User::factory()->inactive()->create([
+            'external_id' => 'inactive.user',
+            'email' => 'inactive.user@galenium.local',
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'inactive.user',
+            'password' => 'Gpl12345!',
+        ])
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Login atau password tidak sesuai, atau user tidak aktif.');
     }
 
     public function test_bearer_token_can_access_api_and_logout_invalidates_token(): void
@@ -80,8 +110,8 @@ class MobileAuthTest extends TestCase
         ]);
 
         $loginResponse = $this->postJson('/api/auth/login', [
-            'user_id' => 'irvan.m',
-            'email' => 'irvan.m@galenium.local',
+            'login' => 'irvan.m',
+            'password' => 'Gpl12345!',
         ]);
 
         $token = $loginResponse->json('data.access_token');

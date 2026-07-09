@@ -452,6 +452,12 @@ class IpalMonthlyWorkflowTest extends TestCase
             'name' => 'ipal.logs.approve',
             'guard_name' => 'web',
         ]);
+        Permission::query()->create([
+            'name' => 'ipal.logs.create',
+            'guard_name' => 'web',
+        ]);
+        $operatorA->givePermissionTo('ipal.logs.create');
+        $operatorB->givePermissionTo('ipal.logs.create');
         $hseHead->givePermissionTo('ipal.logs.approve');
 
         return [$operatorA, $operatorB, $hseHead];

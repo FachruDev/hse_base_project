@@ -5,6 +5,7 @@ import {
     ClipboardCheck,
     ClipboardPenLine,
     Database,
+    FileStack,
     Layers3,
     LayoutGrid,
     ListTodo,
@@ -15,7 +16,11 @@ import {
 } from 'lucide-react';
 
 export type DashboardNavTarget = 'dashboard' | 'catatan-pengolahan-limbah-air';
-export type FormNavTarget = 'catatan-pengolahan-limbah-air' | 'penyimpanan-limbah-b3';
+export type FormNavTarget =
+    | 'catatan-pengolahan-limbah-air-create'
+    | 'penyimpanan-limbah-b3-create'
+    | 'catatan-pengolahan-limbah-air-index'
+    | 'penyimpanan-limbah-b3-index';
 
 export type DashboardNavItem = {
     key: string;
@@ -65,20 +70,37 @@ export const dashboardNavigation: DashboardNavItem[] = [
     },
 ];
 
-export const formNavigation: FormNavItem[] = [
+export const formEntryNavigation: FormNavItem[] = [
     {
-        key: 'catatan-pengolahan-limbah-air',
-        label: 'Catatan Proses IPAL',
+        key: 'catatan-pengolahan-limbah-air-create',
+        label: 'Form IPAL Hari Ini',
         icon: ClipboardPenLine,
-        target: 'catatan-pengolahan-limbah-air',
+        target: 'catatan-pengolahan-limbah-air-create',
+        permission: 'ipal.logs.create',
+    },
+    {
+        key: 'penyimpanan-limbah-b3-create',
+        label: 'Form B3 Hari Ini',
+        icon: ClipboardPenLine,
+        target: 'penyimpanan-limbah-b3-create',
+        permission: 'b3storage.logs.create',
+    },
+];
+
+export const formManagementNavigation: FormNavItem[] = [
+    {
+        key: 'catatan-pengolahan-limbah-air-index',
+        label: 'Manage IPAL',
+        icon: FileStack,
+        target: 'catatan-pengolahan-limbah-air-index',
         permission: 'ipal.logs.view',
     },
     {
-        key: 'penyimpanan-limbah-b3',
-        label: 'Penyimpanan Limbah B3',
-        icon: ClipboardPenLine,
-        target: 'penyimpanan-limbah-b3',
-        permission: 'b3storage.logs.view',
+        key: 'penyimpanan-limbah-b3-index',
+        label: 'Manage B3',
+        icon: FileStack,
+        target: 'penyimpanan-limbah-b3-index',
+        permission: 'b3storage.monthly-report.view',
     },
 ];
 

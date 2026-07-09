@@ -23,8 +23,8 @@ class MobileLoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'login' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
             'device_name' => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }

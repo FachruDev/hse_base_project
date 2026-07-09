@@ -28,6 +28,7 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
             'external_id' => 'operator.split.01',
             'is_active' => true,
         ]);
+        $this->giveIpalCreatePermission($operator);
 
         $checklistTemplate = ChecklistTemplate::query()->create([
             'name' => 'Checklist Split',
@@ -212,10 +213,11 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
 
     public function test_process_draft_does_not_require_each_value_to_be_filled_by_form_request(): void
     {
-        User::factory()->create([
+        $operator = User::factory()->create([
             'external_id' => 'operator.draft.01',
             'is_active' => true,
         ]);
+        $this->giveIpalCreatePermission($operator);
 
         $checklistTemplate = ChecklistTemplate::query()->create([
             'name' => 'Checklist Draft',
@@ -271,10 +273,11 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
 
     public function test_integer_process_item_rejects_decimal_values(): void
     {
-        User::factory()->create([
+        $operator = User::factory()->create([
             'external_id' => 'operator.integer.01',
             'is_active' => true,
         ]);
+        $this->giveIpalCreatePermission($operator);
 
         $checklistTemplate = ChecklistTemplate::query()->create([
             'name' => 'Checklist Integer',
@@ -341,6 +344,7 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
             'external_id' => 'operator.attachment.01',
             'is_active' => true,
         ]);
+        $this->giveIpalCreatePermission($operator);
         $supervisor = User::factory()->create([
             'external_id' => 'supervisor.attachment.01',
             'is_active' => true,
@@ -455,5 +459,15 @@ class CatatanPengolahanLimbahAirSplitEntryTest extends TestCase
         $this->assertIsString($supervisorProcessUrl);
         $this->assertStringContainsString('user_id=supervisor.attachment.01', $supervisorProcessUrl);
         $this->get($supervisorProcessUrl)->assertOk();
+    }
+
+    private function giveIpalCreatePermission(User $user): void
+    {
+        Permission::query()->firstOrCreate([
+            'name' => 'ipal.logs.create',
+            'guard_name' => 'web',
+        ]);
+
+        $user->givePermissionTo('ipal.logs.create');
     }
 }

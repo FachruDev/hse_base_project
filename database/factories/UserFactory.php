@@ -20,6 +20,7 @@ class UserFactory extends Factory
         return [
             'external_id' => strtoupper(fake()->bothify('USR####')),
             'email' => fake()->unique()->safeEmail(),
+            'password' => 'Gpl12345!',
             'name' => fake()->name(),
             'is_active' => true,
         ];
