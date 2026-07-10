@@ -175,7 +175,7 @@ class B3StorageMonthlyWorkflowTest extends TestCase
 
         $this->get('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/6/excel?user_id=operator.b3.a&date_from=2026-06-16&date_to=2026-08-16')
             ->assertOk()
-            ->assertDownload('penyimpanan-limbah-b3-2026-6.xlsx');
+            ->assertDownload('fm038-penyimpanan-limbah-b3-2026-6.xlsx');
 
         Pdf::fake();
 
@@ -183,10 +183,11 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             ->assertOk();
 
         Pdf::assertRespondedWithPdf(fn (PdfBuilder $pdf): bool => $pdf->viewName === 'pdf.b3-storage.monthly-detail'
-            && $pdf->downloadName === 'penyimpanan-limbah-b3-2026-6.pdf'
+            && $pdf->downloadName === 'fm038-penyimpanan-limbah-b3-2026-6.pdf'
             && $pdf->orientation === 'Landscape'
             && ($pdf->viewData['monthlyDetail']['period']['date_from'] ?? null) === '2026-06-16'
-            && count($pdf->viewData['monthlyDetail']['rows'] ?? []) === 1);
+            && count($pdf->viewData['monthlyDetail']['rows'] ?? []) === 1
+            && ($pdf->viewData['monthlyDetail']['rows'][0]['weights_by_waste_type'][$liquidWasteType->id] ?? null) == 4.52);
 
         $operatorBLogId = B3StorageLog::query()
             ->where('document_number', '02/QA/VI/26')

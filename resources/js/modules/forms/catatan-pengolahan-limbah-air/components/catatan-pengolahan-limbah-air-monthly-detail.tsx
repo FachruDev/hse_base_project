@@ -5,6 +5,7 @@ import {
     CheckCircle2,
     ClipboardCheck,
     Droplets,
+    FileSpreadsheet,
     FlaskConical,
     Paperclip,
     Printer,
@@ -17,7 +18,9 @@ import {
     catatanPengolahanLimbahAirApproveMonthlyChecklist,
     catatanPengolahanLimbahAirIndex,
     catatanPengolahanLimbahAirLogShow,
+    catatanPengolahanLimbahAirMonthlyBatchMixingExcel,
     catatanPengolahanLimbahAirMonthlyBatchMixingPdf,
+    catatanPengolahanLimbahAirMonthlyChecklistExcel,
     catatanPengolahanLimbahAirMonthlyChecklistPdf,
 } from '@/actions/App/Http/Controllers/Web/DashboardController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -174,7 +177,42 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                     }
                                 >
                                     <Printer className="size-4" />
-                                    Checklist PDF
+                                    FM070 PDF
+                                </Button>
+                                <Button
+                                    nativeButton={false}
+                                    variant="outline"
+                                    className="no-print"
+                                    render={
+                                        <a
+                                            href={catatanPengolahanLimbahAirMonthlyChecklistExcel.url(
+                                                {
+                                                    year: monthlyDetail.period
+                                                        .year,
+                                                    month: monthlyDetail.period
+                                                        .month,
+                                                },
+                                                {
+                                                    query: {
+                                                        user_id: userId,
+                                                        date_from:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_from ||
+                                                            undefined,
+                                                        date_to:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_to ||
+                                                            undefined,
+                                                    },
+                                                },
+                                            )}
+                                        />
+                                    }
+                                >
+                                    <FileSpreadsheet className="size-4" />
+                                    FM070 Excel
                                 </Button>
                                 <Button
                                     nativeButton={false}
@@ -211,7 +249,42 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                     }
                                 >
                                     <Printer className="size-4" />
-                                    Batch Mixing PDF
+                                    FM071 PDF
+                                </Button>
+                                <Button
+                                    nativeButton={false}
+                                    variant="outline"
+                                    className="no-print"
+                                    render={
+                                        <a
+                                            href={catatanPengolahanLimbahAirMonthlyBatchMixingExcel.url(
+                                                {
+                                                    year: monthlyDetail.period
+                                                        .year,
+                                                    month: monthlyDetail.period
+                                                        .month,
+                                                },
+                                                {
+                                                    query: {
+                                                        user_id: userId,
+                                                        date_from:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_from ||
+                                                            undefined,
+                                                        date_to:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_to ||
+                                                            undefined,
+                                                    },
+                                                },
+                                            )}
+                                        />
+                                    }
+                                >
+                                    <FileSpreadsheet className="size-4" />
+                                    FM071 Excel
                                 </Button>
                                 {monthlyDetail.capabilities
                                     .approve_checklist ? (

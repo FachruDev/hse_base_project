@@ -101,7 +101,36 @@ class DashboardController extends Controller
             ->landscape()
             ->format('a4')
             ->margins(8, 8, 10, 8)
-            ->name("checklist-ipal-{$request->year()}-{$request->month()}.pdf");
+            ->name("fm070-ipal-{$request->year()}-{$request->month()}.pdf");
+    }
+
+    public function catatanPengolahanLimbahAirMonthlyChecklistExcel(
+        IpalMonthlyPeriodRequest $request,
+        CatatanPengolahanLimbahAirPageService $pageService,
+        IpalLogService $ipalLogService,
+        SimpleXlsx $simpleXlsx,
+    ): SymfonyResponse {
+        $detail = $pageService->buildMonthlyPdfDetail(
+            $this->authenticatedUser($request),
+            $request->year(),
+            $request->month(),
+            $ipalLogService,
+            $request->filters(),
+        );
+
+        $directory = storage_path('app/exports');
+        File::ensureDirectoryExists($directory);
+
+        $filename = "fm070-ipal-{$request->year()}-{$request->month()}.xlsx";
+        $path = $directory.DIRECTORY_SEPARATOR.uniqid('ipal-fm070-', true).'.xlsx';
+
+        $simpleXlsx->store($pageService->buildFm070ExcelRows($detail), $path, 'FM070');
+
+        return response()
+            ->download($path, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])
+            ->deleteFileAfterSend();
     }
 
     public function catatanPengolahanLimbahAirMonthlyBatchMixingPdf(
@@ -123,7 +152,36 @@ class DashboardController extends Controller
             ->landscape()
             ->format('a4')
             ->margins(8, 8, 10, 8)
-            ->name("batch-mixing-ipal-{$request->year()}-{$request->month()}.pdf");
+            ->name("fm071-ipal-{$request->year()}-{$request->month()}.pdf");
+    }
+
+    public function catatanPengolahanLimbahAirMonthlyBatchMixingExcel(
+        IpalMonthlyPeriodRequest $request,
+        CatatanPengolahanLimbahAirPageService $pageService,
+        IpalLogService $ipalLogService,
+        SimpleXlsx $simpleXlsx,
+    ): SymfonyResponse {
+        $detail = $pageService->buildMonthlyPdfDetail(
+            $this->authenticatedUser($request),
+            $request->year(),
+            $request->month(),
+            $ipalLogService,
+            $request->filters(),
+        );
+
+        $directory = storage_path('app/exports');
+        File::ensureDirectoryExists($directory);
+
+        $filename = "fm071-ipal-{$request->year()}-{$request->month()}.xlsx";
+        $path = $directory.DIRECTORY_SEPARATOR.uniqid('ipal-fm071-', true).'.xlsx';
+
+        $simpleXlsx->store($pageService->buildFm071ExcelRows($detail), $path, 'FM071');
+
+        return response()
+            ->download($path, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])
+            ->deleteFileAfterSend();
     }
 
     public function catatanPengolahanLimbahAirChecklistAttachment(
@@ -378,7 +436,7 @@ class DashboardController extends Controller
             ->landscape()
             ->format('a4')
             ->margins(8, 8, 10, 8)
-            ->name("penyimpanan-limbah-b3-{$request->year()}-{$request->month()}.pdf");
+            ->name("fm038-penyimpanan-limbah-b3-{$request->year()}-{$request->month()}.pdf");
     }
 
     public function b3StorageMonthlyExcel(
@@ -402,10 +460,10 @@ class DashboardController extends Controller
         $directory = storage_path('app/exports');
         File::ensureDirectoryExists($directory);
 
-        $filename = "penyimpanan-limbah-b3-{$request->year()}-{$request->month()}.xlsx";
+        $filename = "fm038-penyimpanan-limbah-b3-{$request->year()}-{$request->month()}.xlsx";
         $path = $directory.DIRECTORY_SEPARATOR.uniqid('b3-storage-', true).'.xlsx';
 
-        $simpleXlsx->store($pageService->buildMonthlyExcelRows($detail), $path);
+        $simpleXlsx->store($pageService->buildMonthlyExcelRows($detail), $path, 'FM038');
 
         return response()
             ->download($path, $filename, [

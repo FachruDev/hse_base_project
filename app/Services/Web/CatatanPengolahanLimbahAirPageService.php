@@ -11,6 +11,7 @@ use App\Models\Master\ChecklistTemplate;
 use App\Models\Master\ProcessTemplate;
 use App\Models\User;
 use App\Services\Ipal\IpalLogService;
+use App\Support\Reports\FmReportFormatter;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
@@ -114,6 +115,7 @@ class CatatanPengolahanLimbahAirPageService
                 'checklist.values.attachments',
                 'processLog.approval.operator:id,name,external_id',
                 'processLog.approval.supervisor:id,name,external_id',
+                'processLog.values.item.section:id,name,order_no',
                 'processLog.batches:id,process_log_id,batch_no',
                 'processLog.batches.values.item.section:id,name,order_no',
             ])
@@ -323,7 +325,7 @@ class CatatanPengolahanLimbahAirPageService
                     : [],
             ],
             'batch' => [
-                'max_batch_no' => 7,
+                'max_batch_no' => 9,
                 'sections' => $batchSections->map(fn (BatchSection $section): array => [
                     'id' => $section->id,
                     'name' => $section->name,
@@ -363,6 +365,9 @@ class CatatanPengolahanLimbahAirPageService
             ->with([
                 'operator:id,name,external_id,department_id',
                 'operator.department:id,name',
+                'processLog.approval.operator:id,name,external_id',
+                'processLog.approval.supervisor:id,name,external_id',
+                'processLog.values.item.section:id,name,order_no',
                 'processLog.batches.values.item.section:id,name,order_no',
             ])
             ->whereYear('tanggal', $year)
@@ -374,9 +379,112 @@ class CatatanPengolahanLimbahAirPageService
             ->orderBy('id')
             ->get();
 
+        $detail['process_detail_rows'] = $this->mapMonthlyProcessDetailRows($logs);
         $detail['batch_rows'] = $this->mapMonthlyBatchRows($logs);
 
         return $detail;
+    }
+
+    /**
+     * @param  array<string, mixed>  $monthlyDetail
+     * @return array<int, array<int, string|null>>
+     */
+    public function buildFm070ExcelRows(array $monthlyDetail): array
+    {
+        $rows = [
+            ['FM.HSE.070.02', 'CEKLIST PEMERIKSAAN HARIAN UNIT INSTALASI PENGOLAHAN AIR LIMBAH'],
+            ['Tanggal Berlaku', '25 APR 2018'],
+            ['Periode', (string) ($monthlyDetail['period']['label'] ?? '-')],
+            ['Rentang Data', ($monthlyDetail['period']['date_from'] ?? '-').' s/d '.($monthlyDetail['period']['date_to'] ?? '-')],
+            [],
+        ];
+
+        $header = ['No', 'Perlengkapan'];
+        foreach ($monthlyDetail['period']['days'] ?? [] as $day) {
+            $header[] = (string) ($day['day'] ?? '-');
+        }
+        $header[] = 'Kondisi Standar';
+        $rows[] = $header;
+
+        foreach ($monthlyDetail['checklist_matrix'] ?? [] as $index => $row) {
+            $line = [$index + 1, (string) ($row['name'] ?? '-')];
+            foreach ($row['cells'] ?? [] as $cell) {
+                $line[] = $this->formatChecklistCellStatus($cell['status'] ?? null);
+            }
+            $line[] = (string) ($row['standard_condition'] ?? '-');
+            $rows[] = $line;
+        }
+
+        $rows[] = [];
+        $rows[] = ['Catatan'];
+        $rows[] = ['Tanggal', 'Nama Proses / Unit', 'Operator', 'Catatan'];
+
+        foreach ($monthlyDetail['checklist_note_rows'] ?? [] as $noteRow) {
+            $rows[] = [
+                (string) ($noteRow['date'] ?? '-'),
+                (string) ($noteRow['item_name'] ?? '-'),
+                (string) ($noteRow['operator'] ?? '-'),
+                (string) ($noteRow['note'] ?? '-'),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, mixed>  $monthlyDetail
+     * @return array<int, array<int, string|null>>
+     */
+    public function buildFm071ExcelRows(array $monthlyDetail): array
+    {
+        $rows = [
+            ['FM.HSE.071.02', 'CATATAN PROSES PENGOLAHAN AIR LIMBAH'],
+            ['Tgl. Berlaku', '25 APR 2018'],
+            ['Periode', (string) ($monthlyDetail['period']['label'] ?? '-')],
+            ['Rentang Data', ($monthlyDetail['period']['date_from'] ?? '-').' s/d '.($monthlyDetail['period']['date_to'] ?? '-')],
+            [],
+        ];
+
+        $batchRows = collect($monthlyDetail['batch_rows'] ?? [])->keyBy('tanggal');
+
+        foreach ($monthlyDetail['process_detail_rows'] ?? [] as $processRow) {
+            $rows[] = ['Hari / Tanggal', (string) ($processRow['tanggal'] ?? '-')];
+            $rows[] = ['Operator', (string) ($processRow['operator']['name'] ?? '-')];
+            $rows[] = ['UNIT PROSES', 'URAIAN PROSES', 'KONDISI STANDAR', 'KONDISI', 'KETERANGAN'];
+
+            foreach ($processRow['sections'] ?? [] as $section) {
+                foreach ($section['items'] ?? [] as $item) {
+                    $rows[] = [
+                        (string) ($section['name'] ?? '-'),
+                        (string) ($item['name'] ?? '-'),
+                        (string) ($item['standard_condition'] ?? '-'),
+                        (string) ($item['display_value'] ?? '-'),
+                        (string) ($item['note'] ?? '-'),
+                    ];
+                }
+            }
+
+            $rows[] = [];
+            $rows[] = ['CATATAN PROSES MIXING'];
+            $rows[] = ['UNIT PROSES', 'URAIAN PROSES', 'Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5', 'Batch 6', 'Batch 7', 'Batch 8', 'Batch 9'];
+
+            $batchRow = $batchRows->get($processRow['tanggal'] ?? '');
+            foreach (($batchRow['mixing_rows'] ?? []) as $mixingRow) {
+                $rows[] = [
+                    (string) ($mixingRow['section_name'] ?? '-'),
+                    (string) ($mixingRow['item_name'] ?? '-'),
+                    ...array_map('strval', $mixingRow['batch_values'] ?? []),
+                ];
+            }
+
+            $rows[] = [];
+        }
+
+        if (count($rows) === 5) {
+            $rows[] = ['Tidak ada catatan proses pada periode ini.'];
+        }
+
+        return $rows;
     }
 
     /**
@@ -680,6 +788,55 @@ class CatatanPengolahanLimbahAirPageService
      * @param  Collection<int, IpalDailyLog>  $logs
      * @return array<int, array<string, mixed>>
      */
+    private function mapMonthlyProcessDetailRows(Collection $logs): array
+    {
+        return $logs
+            ->filter(fn (IpalDailyLog $log): bool => $log->processLog !== null)
+            ->map(fn (IpalDailyLog $log): array => [
+                'tanggal' => $log->tanggal?->format('Y-m-d'),
+                'operator' => [
+                    'name' => $log->operator?->name,
+                    'external_id' => $log->operator?->external_id,
+                    'department_name' => $log->operator?->department?->name,
+                ],
+                'checked_by' => $log->processLog?->approval?->supervisor?->name,
+                'checked_at' => $log->processLog?->approval?->supervisor_signed_at?->format('Y-m-d H:i:s'),
+                'sections' => $log->processLog?->values
+                    ->filter(fn ($value): bool => $value->item !== null)
+                    ->sortBy(fn ($value): string => sprintf(
+                        '%04d-%04d-%08d',
+                        $value->item?->section?->order_no ?? 999,
+                        $value->item?->order_no ?? 999,
+                        $value->item?->id ?? 0,
+                    ))
+                    ->groupBy(fn ($value): string => (string) ($value->item?->section_id ?? 0))
+                    ->map(fn (Collection $values): array => [
+                        'name' => $values->first()?->item?->section?->name ?? '-',
+                        'items' => $values->map(fn ($value): array => [
+                            'name' => $value->item?->name,
+                            'standard_condition' => $value->item?->standard_condition,
+                            'input_type' => $value->item?->input_type,
+                            'value_text' => $value->value_text,
+                            'value_number' => $value->value_number,
+                            'display_value' => FmReportFormatter::displayValue(
+                                $value->value_text,
+                                $value->value_number,
+                                $this->processItemUnit($value->item?->name),
+                            ),
+                            'note' => $value->note,
+                        ])->values()->all(),
+                    ])
+                    ->values()
+                    ->all() ?? [],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, IpalDailyLog>  $logs
+     * @return array<int, array<string, mixed>>
+     */
     private function mapMonthlyBatchRows(Collection $logs): array
     {
         return $logs
@@ -712,6 +869,11 @@ class CatatanPengolahanLimbahAirPageService
                                     'unit' => $this->batchItemUnit($value->item?->name),
                                     'value_text' => $value->value_text,
                                     'value_number' => $value->value_number,
+                                    'display_value' => FmReportFormatter::displayValue(
+                                        $value->value_text,
+                                        $value->value_number,
+                                        $this->batchItemUnit($value->item?->name),
+                                    ),
                                 ])->values()->all(),
                             ])
                             ->values()
@@ -720,8 +882,44 @@ class CatatanPengolahanLimbahAirPageService
                     ->values()
                     ->all() ?? [],
             ])
+            ->map(fn (array $row): array => [
+                ...$row,
+                'mixing_rows' => $this->mapFm071MixingRows($row['batches']),
+            ])
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $batches
+     * @return array<int, array<string, mixed>>
+     */
+    private function mapFm071MixingRows(array $batches): array
+    {
+        $rows = [];
+
+        foreach ($batches as $batch) {
+            foreach ($batch['sections'] ?? [] as $section) {
+                foreach ($section['values'] ?? [] as $value) {
+                    $key = ($section['name'] ?? '-').'|'.($value['name'] ?? '-');
+
+                    if (! array_key_exists($key, $rows)) {
+                        $rows[$key] = [
+                            'section_name' => $section['name'] ?? '-',
+                            'item_name' => $value['name'] ?? '-',
+                            'batch_values' => array_fill(0, 9, '-'),
+                        ];
+                    }
+
+                    $batchNo = (int) ($batch['batch_no'] ?? 0);
+                    if ($batchNo >= 1 && $batchNo <= 9) {
+                        $rows[$key]['batch_values'][$batchNo - 1] = $value['display_value'] ?? '-';
+                    }
+                }
+            }
+        }
+
+        return array_values($rows);
     }
 
     /**
@@ -847,7 +1045,38 @@ class CatatanPengolahanLimbahAirPageService
 
     private function batchItemUnit(?string $name): ?string
     {
-        return trim(mb_strtolower((string) $name)) === 'jumlah chemical' ? 'Liter' : null;
+        $normalizedName = trim(mb_strtolower((string) $name));
+
+        if ($normalizedName === 'jumlah chemical') {
+            return 'Liter';
+        }
+
+        if (str_contains($normalizedName, 'durasi')) {
+            return 'menit';
+        }
+
+        return null;
+    }
+
+    private function processItemUnit(?string $name): ?string
+    {
+        $normalizedName = trim(mb_strtolower((string) $name));
+
+        if (str_contains($normalizedName, '(kg)')) {
+            return 'Kg';
+        }
+
+        return null;
+    }
+
+    private function formatChecklistCellStatus(?string $status): string
+    {
+        return match ($status) {
+            'OK' => 'OK',
+            'NOT_OK' => 'NG',
+            'NA' => 'NA',
+            default => '-',
+        };
     }
 
     /**

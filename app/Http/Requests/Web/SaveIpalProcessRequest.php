@@ -30,7 +30,7 @@ class SaveIpalProcessRequest extends FormRequest
             'process.values.*.note' => ['nullable', 'string'],
             'process.values.*.attachment' => ['nullable', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'batch' => ['nullable', 'array', 'required_if:has_mixing,1'],
-            'batch.*.batch_no' => ['required_with:batch', 'integer', 'between:1,7', 'distinct'],
+            'batch.*.batch_no' => ['required_with:batch', 'integer', 'between:1,9', 'distinct'],
             'batch.*.values' => ['required_with:batch', 'array', 'min:1'],
             'batch.*.values.*.item_id' => ['required', 'integer', 'exists:m_batch_items,id'],
             'batch.*.values.*.value_text' => ['nullable', 'string'],

@@ -192,7 +192,7 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                     }
                                 >
                                     <Printer className="size-4" />
-                                    Print PDF
+                                    FM038 PDF
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -226,7 +226,7 @@ export function PenyimpananLimbahB3MonthlyDetail({
                                     }
                                 >
                                     <FileSpreadsheet className="size-4" />
-                                    Export Excel
+                                    FM038 Excel
                                 </Button>
                                 <Button
                                     className="no-print"

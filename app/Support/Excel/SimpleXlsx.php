@@ -10,7 +10,7 @@ class SimpleXlsx
     /**
      * @param  array<int, array<int, bool|float|int|string|null>>  $rows
      */
-    public function store(array $rows, string $path): void
+    public function store(array $rows, string $path, string $sheetName = 'Sheet1'): void
     {
         $zip = new ZipArchive;
 
@@ -20,7 +20,7 @@ class SimpleXlsx
 
         $zip->addFromString('[Content_Types].xml', $this->contentTypes());
         $zip->addFromString('_rels/.rels', $this->rootRelationships());
-        $zip->addFromString('xl/workbook.xml', $this->workbook());
+        $zip->addFromString('xl/workbook.xml', $this->workbook($sheetName));
         $zip->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelationships());
         $zip->addFromString('xl/styles.xml', $this->styles());
         $zip->addFromString('xl/worksheets/sheet1.xml', $this->worksheet($rows));
@@ -51,13 +51,15 @@ XML;
 XML;
     }
 
-    private function workbook(): string
+    private function workbook(string $sheetName): string
     {
-        return <<<'XML'
+        $escapedSheetName = htmlspecialchars(mb_substr($sheetName, 0, 31), ENT_XML1 | ENT_COMPAT, 'UTF-8');
+
+        return <<<XML
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
     <sheets>
-        <sheet name="Penyimpanan Limbah B3" sheetId="1" r:id="rId1"/>
+        <sheet name="{$escapedSheetName}" sheetId="1" r:id="rId1"/>
     </sheets>
 </workbook>
 XML;

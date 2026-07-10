@@ -9,6 +9,7 @@ use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\User;
 use App\Services\B3Storage\B3StorageService;
 use App\Services\Ipal\IpalLogService;
+use App\Support\Reports\FmReportFormatter;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -189,45 +190,84 @@ class B3StoragePageService
      */
     public function buildMonthlyExcelRows(array $monthlyDetail): array
     {
-        $rows = [[
+        $wasteTypes = $monthlyDetail['columns']['waste_types'] ?? [];
+        $rows = [
+            ['FM.HSE.038.02', 'PENYIMPANAN LIMBAH B3'],
+            ['Tgl. Berlaku', '23 April 2018'],
+            ['Bulan', (string) ($monthlyDetail['period']['label'] ?? '-')],
+            ['Rentang Data', ($monthlyDetail['period']['date_from'] ?? '-').' s/d '.($monthlyDetail['period']['date_to'] ?? '-')],
+            [],
+        ];
+
+        $header = [
             'No',
-            'Tipe Pergerakan',
             'Tanggal',
-            'Jam',
-            'Jenis Limbah',
-            'Berat (Kg)',
+        ];
+
+        foreach ($wasteTypes as $wasteType) {
+            $header[] = (string) ($wasteType['name'] ?? '-').' (Kg)';
+        }
+
+        if (($monthlyDetail['columns']['has_other_column'] ?? false) === true) {
+            $header[] = 'Lain-lain (Kg)';
+        }
+
+        array_push(
+            $header,
             'No. Dokumen',
             'Dept. Inisiator',
-            'User Dept. Inisiator',
-            'Operator TPS LB3',
-            'Catatan',
-            'Dibuat',
-        ]];
+            'Paraf Petugas Dept. Inisiator',
+            'Paraf Operator TPS LB3',
+            'Approval Environment SPV',
+            'Approval HSE Dept Head',
+        );
+
+        $rows[] = $header;
 
         foreach ($monthlyDetail['rows'] as $row) {
-            $rows[] = [
+            $line = [
                 $row['no'],
-                $row['movement_type'] ?? '-',
                 $row['movement_date'] ?? '-',
-                $row['jam'] ?? '-',
-                $row['waste_type_name'] ?? '-',
-                (float) ($row['weight_kg'] ?? 0),
+            ];
+
+            foreach ($wasteTypes as $wasteType) {
+                $wasteTypeId = $wasteType['id'] ?? null;
+                $line[] = FmReportFormatter::decimal($row['weights_by_waste_type'][$wasteTypeId] ?? null);
+            }
+
+            if (($monthlyDetail['columns']['has_other_column'] ?? false) === true) {
+                $line[] = FmReportFormatter::decimal($row['weight_other'] ?? null);
+            }
+
+            array_push(
+                $line,
                 $row['document_number'] ?? '-',
                 $row['initiator_department'] ?? '-',
                 $row['initiator_user_name'] ?? '-',
                 $row['operator_name'] ?? '-',
-                $row['note'] ?? '-',
-                $row['created_at'] ?? '-',
-            ];
+                $monthlyDetail['approval']['environment_supervisor']['name'] ?? '-',
+                $monthlyDetail['approval']['hse_department_head']['name'] ?? '-',
+            );
+
+            $rows[] = $line;
         }
 
-        $rows[] = [
+        $totalRow = [
             'TOTAL',
             '',
-            '',
-            '',
-            '',
-            (float) ($monthlyDetail['totals']['overall'] ?? 0),
+        ];
+
+        foreach ($wasteTypes as $wasteType) {
+            $wasteTypeId = $wasteType['id'] ?? null;
+            $totalRow[] = FmReportFormatter::decimal($monthlyDetail['totals']['by_waste_type'][$wasteTypeId] ?? 0);
+        }
+
+        if (($monthlyDetail['columns']['has_other_column'] ?? false) === true) {
+            $totalRow[] = FmReportFormatter::decimal($monthlyDetail['totals']['other'] ?? 0);
+        }
+
+        $totalRow = [
+            ...$totalRow,
             '',
             '',
             '',
@@ -235,6 +275,8 @@ class B3StoragePageService
             '',
             '',
         ];
+
+        $rows[] = $totalRow;
 
         return $rows;
     }

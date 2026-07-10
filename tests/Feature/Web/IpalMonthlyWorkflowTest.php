@@ -117,6 +117,7 @@ class IpalMonthlyWorkflowTest extends TestCase
                 ->where('entryForm.entry.mode', 'lihat')
                 ->where('entryForm.entry.read_only', true)
                 ->where('entryForm.process.read_only', true)
+                ->where('entryForm.batch.max_batch_no', 9)
                 ->etc()
             );
 
@@ -204,7 +205,7 @@ class IpalMonthlyWorkflowTest extends TestCase
             ->assertOk();
 
         Pdf::assertRespondedWithPdf(fn (PdfBuilder $pdf): bool => $pdf->viewName === 'pdf.ipal.monthly-checklist'
-            && $pdf->downloadName === 'checklist-ipal-2026-6.pdf'
+            && $pdf->downloadName === 'fm070-ipal-2026-6.pdf'
             && $pdf->orientation === 'Landscape'
             && ($pdf->viewData['monthlyDetail']['period']['month'] ?? null) === 6
             && count($pdf->viewData['monthlyDetail']['checklist_note_rows'] ?? []) === 2
@@ -212,13 +213,23 @@ class IpalMonthlyWorkflowTest extends TestCase
             && ($pdf->viewData['monthlyDetail']['checklist_note_rows'][0]['item_name'] ?? null) === 'Water meter inlet'
             && ($pdf->viewData['monthlyDetail']['checklist_note_rows'][0]['note'] ?? null) === 'Normal');
 
+        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/checklist.xlsx?user_id=operator.monthly.a')
+            ->assertOk()
+            ->assertDownload('fm070-ipal-2026-6.xlsx');
+
         $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/batch-mixing.pdf?user_id=operator.monthly.a')
             ->assertOk();
 
         Pdf::assertRespondedWithPdf(fn (PdfBuilder $pdf): bool => $pdf->viewName === 'pdf.ipal.monthly-batch-mixing'
-            && $pdf->downloadName === 'batch-mixing-ipal-2026-6.pdf'
+            && $pdf->downloadName === 'fm071-ipal-2026-6.pdf'
             && $pdf->orientation === 'Landscape'
-            && count($pdf->viewData['monthlyDetail']['batch_rows'] ?? []) === 1);
+            && count($pdf->viewData['monthlyDetail']['process_detail_rows'] ?? []) === 2
+            && count($pdf->viewData['monthlyDetail']['batch_rows'] ?? []) === 1
+            && ($pdf->viewData['monthlyDetail']['batch_rows'][0]['mixing_rows'][0]['batch_values'][0] ?? null) === '2,50 Liter');
+
+        $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/batch-mixing.xlsx?user_id=operator.monthly.a')
+            ->assertOk()
+            ->assertDownload('fm071-ipal-2026-6.xlsx');
 
         Pdf::fake();
 

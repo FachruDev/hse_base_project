@@ -2,130 +2,181 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <title>Batch Mixing IPAL - {{ $monthlyDetail['period']['label'] }}</title>
+    <title>FM071 Catatan Proses IPAL - {{ $monthlyDetail['period']['label'] }}</title>
     <style>
         @page { size: A4 landscape; margin: 8mm; }
         * { box-sizing: border-box; }
-        body { margin: 0; color: #172033; font-family: Arial, sans-serif; font-size: 9.5px; line-height: 1.35; }
-        .document { border: 1.4px solid #172033; min-height: 190mm; }
-        .masthead { display: grid; grid-template-columns: 160px 1fr 210px; border-bottom: 1.4px solid #172033; }
-        .brand, .doc-title, .doc-meta { padding: 10px 12px; }
-        .brand { border-right: 1.4px solid #172033; font-weight: 700; font-size: 15px; letter-spacing: .5px; }
-        .doc-title { text-align: center; border-right: 1.4px solid #172033; }
-        .doc-title h1 { margin: 0; font-size: 17px; letter-spacing: .4px; text-transform: uppercase; }
-        .doc-title p { margin: 4px 0 0; color: #475569; font-size: 10px; }
-        .doc-meta table { width: 100%; border-collapse: collapse; }
-        .doc-meta td { padding: 1px 0; border: 0; }
-        .doc-meta td:first-child { width: 78px; color: #64748b; }
-        .content { padding: 10px 12px 12px; }
-        .summary { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #cbd5e1; margin-bottom: 10px; }
-        .summary > div { padding: 7px 8px; border-right: 1px solid #cbd5e1; }
-        .summary > div:last-child { border-right: 0; }
-        .label { color: #64748b; font-size: 8.5px; text-transform: uppercase; letter-spacing: .3px; }
-        .value { display: block; margin-top: 2px; font-weight: 700; font-size: 12px; color: #172033; }
-        .day-block { border: 1px solid #cbd5e1; margin-bottom: 9px; page-break-inside: avoid; }
-        .day-head { display: grid; grid-template-columns: 150px 1fr 90px; background: #e8eef7; border-bottom: 1px solid #cbd5e1; }
-        .day-head div { padding: 6px 8px; border-right: 1px solid #cbd5e1; }
-        .day-head div:last-child { border-right: 0; text-align: center; }
-        .batch-row { padding: 8px; border-top: 1px solid #e2e8f0; }
-        .batch-row:first-of-type { border-top: 0; }
-        .batch-title { margin: 0 0 6px; font-size: 11.5px; text-transform: uppercase; }
-        .section-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; align-items: start; }
-        .section { border: 1px solid #cbd5e1; page-break-inside: avoid; }
-        .section h3 { margin: 0; padding: 5px 6px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; font-size: 10px; }
-        .section table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .section td { border-bottom: 1px solid #e2e8f0; padding: 4px 6px; vertical-align: top; }
-        .section tr:last-child td { border-bottom: 0; }
-        .section td:first-child { width: 58%; color: #475569; }
-        .section td:last-child { font-weight: 700; }
-        .empty { border: 1px solid #cbd5e1; padding: 18px; text-align: center; color: #64748b; }
-        .approval { display: grid; grid-template-columns: 1fr 280px; gap: 12px; margin-top: 12px; }
-        .approval > div { border: 1px solid #cbd5e1; padding: 8px; min-height: 58px; }
+        body { margin: 0; color: #111827; font-family: Arial, sans-serif; font-size: 8.5px; line-height: 1.25; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #111827; padding: 3px 4px; vertical-align: middle; }
+        th { text-align: center; font-weight: 700; }
+        .page { border: 1px solid #111827; min-height: 190mm; page-break-after: always; }
+        .page:last-child { page-break-after: auto; }
+        .header { display: grid; grid-template-columns: 120px 1fr 180px; border-bottom: 1px solid #111827; }
+        .header > div { padding: 7px 8px; border-right: 1px solid #111827; min-height: 54px; }
+        .header > div:last-child { border-right: 0; }
+        .brand { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; text-align: center; }
+        .title { text-align: center; }
+        .title h1 { margin: 7px 0 0; font-size: 14px; text-transform: uppercase; }
+        .meta td { border: 0; padding: 1px 0; }
+        .content { padding: 8px; }
+        .identity { margin-bottom: 6px; }
+        .identity td { border: 0; padding: 1px 0; }
+        .unit { width: 130px; }
+        .process { width: 180px; }
+        .standard { width: 185px; }
+        .condition { width: 135px; }
+        .note { width: 160px; }
+        .section-title { margin: 8px 0 4px; font-weight: 700; text-transform: uppercase; }
+        .batch-head { width: 58px; }
+        .signature { margin-top: 8px; page-break-inside: avoid; }
+        .signature td { height: 44px; text-align: center; vertical-align: bottom; }
+        .center { text-align: center; }
+        .muted { color: #6b7280; }
+        .footer { position: fixed; right: 8mm; bottom: 4mm; font-size: 8px; }
     </style>
 </head>
 <body>
-    <main class="document">
-        <section class="masthead">
-            <div class="brand">HSE</div>
-            <div class="doc-title">
-                <h1>Form Catatan Batch Mixing IPAL</h1>
-                <p>Dokumen rekap bulanan - bukan tampilan form aplikasi</p>
+@php
+    $processRows = $monthlyDetail['process_detail_rows'] ?? [];
+    $batchRows = collect($monthlyDetail['batch_rows'] ?? [])->keyBy('tanggal');
+@endphp
+
+@forelse ($processRows as $processRow)
+    @php
+        $batchRow = $batchRows->get($processRow['tanggal'] ?? '');
+    @endphp
+    <main class="page">
+        <section class="header">
+            <div class="brand">GALENIUM<br>PHARMASIA</div>
+            <div class="title">
+                <h1>CATATAN PROSES PENGOLAHAN AIR LIMBAH</h1>
             </div>
-            <div class="doc-meta">
-                <table>
-                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }} ({{ $monthlyDetail['period']['date_from'] }} s/d {{ $monthlyDetail['period']['date_to'] }})</td></tr>
-                    <tr><td>Tanggal</td><td>: {{ now()->format('Y-m-d H:i') }}</td></tr>
-                    <tr><td>Total</td><td>: {{ $monthlyDetail['summary']['batch_mixing_logs_count'] }} log batch</td></tr>
+            <div>
+                <table class="meta">
+                    <tr><td>No. Form</td><td>: FM.HSE.071.02</td></tr>
+                    <tr><td>Tgl. Berlaku</td><td>: 25 APR 2018</td></tr>
+                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }}</td></tr>
                 </table>
             </div>
         </section>
 
         <section class="content">
-            <div class="summary">
-                <div><span class="label">Nama dokumen</span><span class="value">Rekap Batch Mixing</span></div>
-                <div><span class="label">Periode</span><span class="value">{{ $monthlyDetail['period']['label'] }} ({{ $monthlyDetail['period']['date_from'] }} s/d {{ $monthlyDetail['period']['date_to'] }})</span></div>
-                <div><span class="label">Hari ada batch</span><span class="value">{{ count($monthlyDetail['batch_rows'] ?? []) }} hari</span></div>
-                <div><span class="label">Approval checklist</span><span class="value">{{ $monthlyDetail['approval']['status'] === 'APPROVED' ? 'Approved' : 'Pending' }}</span></div>
-            </div>
+            <table class="identity">
+                <tr>
+                    <td style="width: 90px;">Hari / Tanggal</td>
+                    <td>: {{ $processRow['tanggal'] ?? '-' }}</td>
+                    <td style="width: 80px;">Operator</td>
+                    <td>: {{ $processRow['operator']['name'] ?? '-' }}</td>
+                </tr>
+            </table>
 
-            @forelse (($monthlyDetail['batch_rows'] ?? []) as $row)
-                <article class="day-block">
-                    <div class="day-head">
-                        <div><strong>{{ $row['tanggal'] ?? '-' }}</strong></div>
-                        <div>Operator: <strong>{{ $row['operator']['name'] ?? '-' }}</strong> - {{ $row['operator']['department_name'] ?? '-' }}</div>
-                        <div>{{ count($row['batches']) }} batch</div>
-                    </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="unit">UNIT PROSES</th>
+                        <th class="process">URAIAN PROSES</th>
+                        <th class="standard">KONDISI STANDAR</th>
+                        <th class="condition">KONDISI</th>
+                        <th class="note">KETERANGAN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse (($processRow['sections'] ?? []) as $section)
+                        @foreach (($section['items'] ?? []) as $item)
+                            <tr>
+                                <td>{{ $section['name'] ?? '-' }}</td>
+                                <td>{{ $item['name'] ?? '-' }}</td>
+                                <td>{{ $item['standard_condition'] ?? '-' }}</td>
+                                <td>{{ $item['display_value'] ?? '-' }}</td>
+                                <td>{{ $item['note'] ?? '-' }}</td>
+                            </tr>
+                        @endforeach
+                    @empty
+                        <tr><td colspan="5" class="center muted">Tidak ada catatan proses pada tanggal ini.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
 
-                    @foreach ($row['batches'] as $batch)
-                        <div class="batch-row">
-                            <h2 class="batch-title">Batch {{ $batch['batch_no'] }}</h2>
-                            <div class="section-grid">
-                                @foreach ($batch['sections'] as $section)
-                                    <section class="section">
-                                        <h3>{{ $section['name'] }}</h3>
-                                        <table>
-                                            <tbody>
-                                                @foreach ($section['values'] as $value)
-                                                    <tr>
-                                                        <td>{{ $value['name'] ?? '-' }}</td>
-                                                        <td>
-                                                            @if ($value['value_number'] !== null)
-                                                                {{ rtrim(rtrim(number_format((float) $value['value_number'], 2, ',', '.'), '0'), ',') }}
-                                                            @elseif ($value['value_text'] !== null && $value['value_text'] !== '')
-                                                                {{ $value['value_text'] }}
-                                                            @else
-                                                                -
-                                                            @endif
-                                                            @if ($value['unit'] ?? null)
-                                                                {{ $value['unit'] }}
-                                                            @endif
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </section>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </article>
-            @empty
-                <div class="empty">Belum ada data batch mixing pada periode ini.</div>
-            @endforelse
-
-            <div class="approval">
-                <div>
-                    <span class="label">Catatan</span>
-                    <p>Dokumen ini dibuat dari data batch mixing IPAL pada periode {{ $monthlyDetail['period']['label'] }}.</p>
-                </div>
-                <div>
-                    <span class="label">Diperiksa oleh</span>
-                    <p><strong>{{ $monthlyDetail['approval']['approved_by']['name'] ?? '-' }}</strong></p>
-                    <p>{{ $monthlyDetail['approval']['approved_at'] ?? 'Belum approved' }}</p>
-                </div>
-            </div>
         </section>
     </main>
+
+    <main class="page">
+        <section class="header">
+            <div class="brand">GALENIUM<br>PHARMASIA</div>
+            <div class="title">
+                <h1>CATATAN PROSES PENGOLAHAN AIR LIMBAH</h1>
+            </div>
+            <div>
+                <table class="meta">
+                    <tr><td>No. Form</td><td>: FM.HSE.071.02</td></tr>
+                    <tr><td>Tgl. Berlaku</td><td>: 25 APR 2018</td></tr>
+                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }}</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section class="content">
+            <table class="identity">
+                <tr>
+                    <td style="width: 90px;">Hari / Tanggal</td>
+                    <td>: {{ $processRow['tanggal'] ?? '-' }}</td>
+                    <td style="width: 80px;">Operator</td>
+                    <td>: {{ $processRow['operator']['name'] ?? '-' }}</td>
+                </tr>
+            </table>
+
+            <div class="section-title">CATATAN PROSES MIXING</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="unit">UNIT PROSES</th>
+                        <th class="process">URAIAN PROSES</th>
+                        @for ($batchNo = 1; $batchNo <= 9; $batchNo++)
+                            <th class="batch-head">Batch {{ $batchNo }}</th>
+                        @endfor
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse (($batchRow['mixing_rows'] ?? []) as $mixingRow)
+                        <tr>
+                            <td>{{ $mixingRow['section_name'] ?? '-' }}</td>
+                            <td>{{ $mixingRow['item_name'] ?? '-' }}</td>
+                            @foreach (($mixingRow['batch_values'] ?? []) as $value)
+                                <td class="center">{{ $value }}</td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr><td colspan="11" class="center muted">Tidak ada batch mixing pada tanggal ini.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <table class="signature">
+                <tr>
+                    <td>Dibuat Oleh,<br>WWTP Operator<br><strong>{{ $processRow['operator']['name'] ?? '-' }}</strong></td>
+                    <td>Diperiksa Oleh,<br>Environment SPV<br><strong>{{ $processRow['checked_by'] ?? '-' }}</strong><br><span class="muted">{{ $processRow['checked_at'] ?? 'Belum diperiksa' }}</span></td>
+                </tr>
+            </table>
+        </section>
+    </main>
+@empty
+    <main class="page">
+        <section class="header">
+            <div class="brand">GALENIUM<br>PHARMASIA</div>
+            <div class="title"><h1>CATATAN PROSES PENGOLAHAN AIR LIMBAH</h1></div>
+            <div>
+                <table class="meta">
+                    <tr><td>No. Form</td><td>: FM.HSE.071.02</td></tr>
+                    <tr><td>Tgl. Berlaku</td><td>: 25 APR 2018</td></tr>
+                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }}</td></tr>
+                </table>
+            </div>
+        </section>
+        <section class="content center muted">Tidak ada catatan proses pada periode ini.</section>
+    </main>
+@endforelse
+
+<div class="footer">FM.HSE.071.02/Tgl. berlaku: 25 APR 2018</div>
 </body>
 </html>
