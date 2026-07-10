@@ -77,6 +77,7 @@ class DashboardController extends Controller
                 $request->year(),
                 $request->month(),
                 $ipalLogService,
+                $request->filters(),
             ),
         ]);
     }
@@ -91,6 +92,7 @@ class DashboardController extends Controller
             $request->year(),
             $request->month(),
             $ipalLogService,
+            $request->filters(),
         );
 
         return Pdf::view('pdf.ipal.monthly-checklist', [
@@ -112,6 +114,7 @@ class DashboardController extends Controller
             $request->year(),
             $request->month(),
             $ipalLogService,
+            $request->filters(),
         );
 
         return Pdf::view('pdf.ipal.monthly-batch-mixing', [

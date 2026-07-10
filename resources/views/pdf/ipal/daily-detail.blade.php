@@ -23,12 +23,14 @@
 <body>
 @php
     $formatValue = static function (array $item): string {
+        $unit = isset($item['unit']) && $item['unit'] !== null ? ' '.$item['unit'] : '';
+
         if (isset($item['value_number']) && $item['value_number'] !== null && $item['value_number'] !== '') {
-            return (string) $item['value_number'];
+            return (string) $item['value_number'].$unit;
         }
 
         if (isset($item['value_text']) && trim((string) $item['value_text']) !== '') {
-            return (string) $item['value_text'];
+            return (string) $item['value_text'].$unit;
         }
 
         return '-';

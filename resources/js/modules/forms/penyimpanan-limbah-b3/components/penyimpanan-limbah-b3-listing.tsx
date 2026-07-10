@@ -67,6 +67,10 @@ export function PenyimpananLimbahB3Listing({
         { value: 'PARTIALLY_APPROVED', label: 'Menunggu HSE' },
         { value: 'APPROVED', label: 'Approved' },
     ];
+    const activeDateRangeLabel =
+        listing.filters.date_from || listing.filters.date_to
+            ? `${listing.filters.date_from || 'Awal periode'} s/d ${listing.filters.date_to || 'Akhir periode'}`
+            : null;
 
     const submitFilters = (
         nextSearch: string,
@@ -106,6 +110,11 @@ export function PenyimpananLimbahB3Listing({
                                 <CardDescription>
                                     {listing.module.subtitle}
                                 </CardDescription>
+                                {activeDateRangeLabel ? (
+                                    <Badge variant="secondary">
+                                        Filter tanggal: {activeDateRangeLabel}
+                                    </Badge>
+                                ) : null}
                             </div>
                             {listing.capabilities.create_log ? (
                                 <Button
@@ -156,13 +165,21 @@ export function PenyimpananLimbahB3Listing({
                     <CardHeader className="gap-4 border-b border-border/60 bg-muted/20">
                         <div className="flex items-center gap-2">
                             <Filter className="size-4 text-muted-foreground" />
-                            <CardTitle className="text-base">Filter Listing</CardTitle>
+                            <CardTitle className="text-base">
+                                Filter Listing
+                            </CardTitle>
                         </div>
                         <form
                             className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_130px_auto_auto]"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                submitFilters(search, status, year, dateFrom, dateTo);
+                                submitFilters(
+                                    search,
+                                    status,
+                                    year,
+                                    dateFrom,
+                                    dateTo,
+                                );
                             }}
                         >
                             <div className="relative">
@@ -184,7 +201,13 @@ export function PenyimpananLimbahB3Listing({
                                     const nextValue = value ?? 'ALL';
 
                                     setStatus(nextValue);
-                                    submitFilters(search, nextValue, year, dateFrom, dateTo);
+                                    submitFilters(
+                                        search,
+                                        nextValue,
+                                        year,
+                                        dateFrom,
+                                        dateTo,
+                                    );
                                 }}
                             >
                                 <SelectTrigger className="w-full">
@@ -204,7 +227,9 @@ export function PenyimpananLimbahB3Listing({
 
                             <Input
                                 value={year}
-                                onChange={(event) => setYear(event.target.value)}
+                                onChange={(event) =>
+                                    setYear(event.target.value)
+                                }
                                 type="number"
                                 min={2000}
                                 max={2100}
@@ -212,7 +237,9 @@ export function PenyimpananLimbahB3Listing({
                             />
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-muted-foreground">Dari</label>
+                                <label className="text-xs text-muted-foreground">
+                                    Dari
+                                </label>
                                 <Input
                                     type="date"
                                     value={dateFrom}
@@ -223,7 +250,9 @@ export function PenyimpananLimbahB3Listing({
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-muted-foreground">Sampai</label>
+                                <label className="text-xs text-muted-foreground">
+                                    Sampai
+                                </label>
                                 <Input
                                     type="date"
                                     value={dateTo}
@@ -281,7 +310,7 @@ export function PenyimpananLimbahB3Listing({
                                     {listing.table.data.length > 0 ? (
                                         listing.table.data.map((row) => (
                                             <TableRow
-                                                className='transition-colors odd:bg-primary/10 hover:bg-primary/15'
+                                                className="transition-colors odd:bg-primary/10 hover:bg-primary/15"
                                                 key={`${row.year}-${row.month}`}
                                             >
                                                 <TableCell className="px-4 font-medium">
@@ -291,10 +320,12 @@ export function PenyimpananLimbahB3Listing({
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {row.incoming_logs_count} log
+                                                    {row.incoming_logs_count}{' '}
+                                                    log
                                                 </TableCell>
                                                 <TableCell>
-                                                    {row.outgoing_logs_count} log
+                                                    {row.outgoing_logs_count}{' '}
+                                                    log
                                                 </TableCell>
                                                 <TableCell>
                                                     {formatWeight(
@@ -366,7 +397,9 @@ export function PenyimpananLimbahB3Listing({
                                                                 }}
                                                             >
                                                                 <CheckCircle className="mr-2 size-4" />
-                                                                {row.next_approval_label}
+                                                                {
+                                                                    row.next_approval_label
+                                                                }
                                                             </Button>
                                                         ) : row.approval_blocked_label ? (
                                                             <Badge variant="secondary">
@@ -474,7 +507,7 @@ function SummaryCard({
         <Card className={`${toneClass[tone]} border-none shadow-sm ring-1`}>
             <CardContent className="flex items-center justify-between gap-3 p-4">
                 <div>
-                    <p className="text-xs font-medium opacity-75 uppercase">
+                    <p className="text-xs font-medium uppercase opacity-75">
                         {label}
                     </p>
                     <p className="text-lg font-semibold">{value}</p>

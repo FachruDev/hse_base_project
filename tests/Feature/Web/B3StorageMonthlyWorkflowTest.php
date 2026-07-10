@@ -42,7 +42,7 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('entryForm.entry.operator.email', $operatorA->email)
                 ->where('entryForm.capabilities.select_initiator_user', true)
-                ->has('entryForm.options.initiator_users')
+                ->has('entryForm.options.initiator_users', 0)
                 ->etc()
             );
 
@@ -56,12 +56,14 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'document_number' => '01/QC/VI/26',
             'photo' => UploadedFile::fake()->image('bukti-a.jpg'),
             'note' => 'Masuk TPS',
+            'initiator_user_name' => 'QC Operator Tablet',
         ])->assertRedirect();
 
         $this->assertDatabaseHas('b3_storage_logs', [
             'document_number' => '01/QC/VI/26',
             'operator_id' => $operatorA->id,
             'initiator_user_id' => $operatorA->id,
+            'initiator_user_name' => 'QC Operator Tablet',
         ]);
 
         $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.b', [
@@ -74,25 +76,15 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'document_number' => '02/QA/VI/26',
             'photo' => UploadedFile::fake()->image('bukti-b.jpg'),
             'note' => 'Keluar TPS',
-            'initiator_user_external_id' => 'qc.initiator',
+            'initiator_user_name' => 'QA Operator Lapangan',
         ])->assertRedirect();
 
         $this->assertDatabaseHas('b3_storage_logs', [
             'document_number' => '02/QA/VI/26',
             'operator_id' => $operatorB->id,
-            'initiator_user_id' => $initiatorUser->id,
+            'initiator_user_id' => $operatorB->id,
+            'initiator_user_name' => 'QA Operator Lapangan',
         ]);
-
-        $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a', [
-            'movement_date' => '2026-06-21',
-            'movement_time' => '11:10',
-            'movement_type' => 'MASUK',
-            'waste_type_id' => $solidWasteType->id,
-            'initiator_department_id' => $qcDepartment->id,
-            'weight_kg' => 2.1,
-            'document_number' => 'INVALID/USER/VI/26',
-            'initiator_user_external_id' => 'missing.user',
-        ])->assertSessionHasErrors(['initiator_user_external_id']);
 
         $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=operator.b3.a', [
             'movement_date' => '2026-07-02',
@@ -174,6 +166,7 @@ class B3StorageMonthlyWorkflowTest extends TestCase
         $this->assertSame('KELUAR', $monthlyDetail['rows'][0]['movement_type']);
         $this->assertSame('2026-06-20', $monthlyDetail['rows'][0]['movement_date']);
         $this->assertSame('Produk/Bahan Awal Cair', $monthlyDetail['rows'][0]['waste_type_name']);
+        $this->assertSame('QA Operator Lapangan', $monthlyDetail['rows'][0]['initiator_user_name']);
         $this->assertSame(4.52, (float) $monthlyDetail['rows'][0]['weight_kg']);
         $this->assertIsString($monthlyDetail['rows'][0]['created_at']);
         $this->assertSame(4.52, (float) $monthlyDetail['totals']['overall']);
@@ -249,6 +242,14 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'environment_supervisor_id' => $environmentSupervisor->id,
             'hse_department_head_id' => $hseDepartmentHead->id,
         ]);
+
+        $approvedDetailResponse = $this->get('/dashboard/forms/penyimpanan-limbah-b3/monthly/2026/6?user_id=hse.head');
+        $approvedDetailResponse->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('monthlyDetail.approval.environment_supervisor.signed_at', '2026-06-30')
+                ->where('monthlyDetail.approval.hse_department_head.signed_at', '2026-06-30')
+                ->etc()
+            );
 
     }
 

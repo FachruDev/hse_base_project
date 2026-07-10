@@ -71,6 +71,10 @@ export function CatatanPengolahanLimbahAirListing({
         { value: 'SUBMITTED', label: 'Menunggu approval' },
         { value: 'APPROVED', label: 'Proses bulanan approved' },
     ];
+    const activeDateRangeLabel =
+        listing.filters.date_from || listing.filters.date_to
+            ? `${listing.filters.date_from || 'Awal periode'} s/d ${listing.filters.date_to || 'Akhir periode'}`
+            : null;
 
     const submitFilters = (
         nextSearch: string,
@@ -112,6 +116,11 @@ export function CatatanPengolahanLimbahAirListing({
                                 <CardDescription>
                                     {listing.module.subtitle}
                                 </CardDescription>
+                                {activeDateRangeLabel ? (
+                                    <Badge variant="secondary">
+                                        Filter tanggal: {activeDateRangeLabel}
+                                    </Badge>
+                                ) : null}
                             </div>
                             <Button
                                 nativeButton={false}
@@ -169,7 +178,13 @@ export function CatatanPengolahanLimbahAirListing({
                             className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_140px_auto_auto]"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                submitFilters(search, status, year, dateFrom, dateTo);
+                                submitFilters(
+                                    search,
+                                    status,
+                                    year,
+                                    dateFrom,
+                                    dateTo,
+                                );
                             }}
                         >
                             <div className="relative">
@@ -190,7 +205,13 @@ export function CatatanPengolahanLimbahAirListing({
                                 onValueChange={(value) => {
                                     const nextValue = value ?? 'ALL';
                                     setStatus(nextValue);
-                                    submitFilters(search, nextValue, year, dateFrom, dateTo);
+                                    submitFilters(
+                                        search,
+                                        nextValue,
+                                        year,
+                                        dateFrom,
+                                        dateTo,
+                                    );
                                 }}
                             >
                                 <SelectTrigger className="w-full">
@@ -224,7 +245,9 @@ export function CatatanPengolahanLimbahAirListing({
                             />
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-muted-foreground">Dari</label>
+                                <label className="text-xs text-muted-foreground">
+                                    Dari
+                                </label>
                                 <Input
                                     type="date"
                                     value={dateFrom}
@@ -235,7 +258,9 @@ export function CatatanPengolahanLimbahAirListing({
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-muted-foreground">Sampai</label>
+                                <label className="text-xs text-muted-foreground">
+                                    Sampai
+                                </label>
                                 <Input
                                     type="date"
                                     value={dateTo}
@@ -290,7 +315,7 @@ export function CatatanPengolahanLimbahAirListing({
                                 {listing.table.data.length > 0 ? (
                                     listing.table.data.map((row) => (
                                         <TableRow
-                                            className='transition-colors odd:bg-primary/10 hover:bg-primary/15'
+                                            className="transition-colors odd:bg-primary/10 hover:bg-primary/15"
                                             key={`${row.year}-${row.month}`}
                                         >
                                             <TableCell className="px-4 font-medium">
@@ -342,7 +367,8 @@ export function CatatanPengolahanLimbahAirListing({
                                                     {listing.capabilities
                                                         .can_approve_process_monthly &&
                                                     row.can_approve_period &&
-                                                    row.process_logs_count > 0 &&
+                                                    row.process_logs_count >
+                                                        0 &&
                                                     row.process_draft_count ===
                                                         0 &&
                                                     row.process_approval_status !==
@@ -401,8 +427,7 @@ export function CatatanPengolahanLimbahAirListing({
                                                             }}
                                                         >
                                                             <RotateCcw className="mr-2 size-4" />
-                                                            Buka Approval
-                                                            Proses
+                                                            Buka Approval Proses
                                                         </Button>
                                                     ) : null}
                                                     <Button
@@ -420,6 +445,16 @@ export function CatatanPengolahanLimbahAirListing({
                                                                         query: {
                                                                             user_id:
                                                                                 userId,
+                                                                            date_from:
+                                                                                listing
+                                                                                    .filters
+                                                                                    .date_from ||
+                                                                                undefined,
+                                                                            date_to:
+                                                                                listing
+                                                                                    .filters
+                                                                                    .date_to ||
+                                                                                undefined,
                                                                         },
                                                                     },
                                                                 )}
@@ -467,15 +502,14 @@ function SummaryCard({ icon: Icon, tone, label, value }: SummaryCardProps) {
         emerald:
             'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40',
         amber: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
-        violet:
-            'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
+        violet: 'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
     };
 
     return (
         <Card className={`${toneClass[tone]} border-none shadow-sm ring-1`}>
             <CardContent className="flex items-center justify-between gap-3 p-4">
                 <div>
-                    <p className="text-xs font-medium opacity-75 uppercase">
+                    <p className="text-xs font-medium uppercase opacity-75">
                         {label}
                     </p>
                     <p className="text-lg font-semibold">{value}</p>
@@ -517,7 +551,10 @@ function ProcessApprovalBadge({
 }) {
     if (row.process_approval_status === 'APPROVED') {
         return (
-            <Badge variant="default" title={row.process_approved_by ?? undefined}>
+            <Badge
+                variant="default"
+                title={row.process_approved_by ?? undefined}
+            >
                 Bulanan approved
             </Badge>
         );

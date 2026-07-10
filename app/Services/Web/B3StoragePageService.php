@@ -99,29 +99,6 @@ class B3StoragePageService
             ])
             ->all();
 
-        $initiatorUserOptions = $canSelectInitiatorUser
-            ? User::query()
-                ->with('department:id,name')
-                ->where('is_active', true)
-                ->orderBy('external_id')
-                ->orderBy('name')
-                ->get(['id', 'external_id', 'name', 'email', 'department_id'])
-                ->map(static fn (User $record): array => [
-                    'value' => $record->external_id,
-                    'label' => trim(sprintf(
-                        '%s - %s%s',
-                        $record->external_id,
-                        $record->name,
-                        $record->email ? " ({$record->email})" : '',
-                    )),
-                    'external_id' => $record->external_id,
-                    'name' => $record->name,
-                    'email' => $record->email,
-                    'department_name' => $record->department?->name,
-                ])
-                ->all()
-            : [];
-
         return [
             'module' => [
                 'title' => 'Form Penyimpanan Limbah B3',
@@ -148,7 +125,7 @@ class B3StoragePageService
                 ],
                 'waste_types' => $wasteTypeOptions,
                 'initiator_departments' => $initiatorDepartmentOptions,
-                'initiator_users' => $initiatorUserOptions,
+                'initiator_users' => [],
             ],
         ];
     }
@@ -194,7 +171,7 @@ class B3StoragePageService
             ],
             ...$report,
             'summary' => $this->mapMonthlyDetailSummary($report),
-            'approval' => $this->mapMonthlyApprovalPayload($report['approval']),
+            'approval' => $this->mapMonthlyApprovalPayload($report['approval'], $ipalLogService, $year, $month),
             'filters' => $filters,
             'capabilities' => [
                 'can_approve_period' => $canApprovePeriod,
@@ -283,7 +260,7 @@ class B3StoragePageService
             'weight_kg' => $log->weight_kg,
             'document_number' => $log->document_number,
             'initiator_department' => $log->initiatorDepartment?->name ?? $log->initiator_department_other,
-            'initiator_user_name' => $log->initiatorUser?->name,
+            'initiator_user_name' => $log->initiator_user_name ?? $log->initiatorUser?->name,
             'operator_name' => $log->operator?->name,
             'operator_external_id' => $log->operator?->external_id,
             'note' => $log->note,
@@ -329,9 +306,13 @@ class B3StoragePageService
             'approval_status' => $approvalStatus,
             'approval_status_label' => $this->resolveApprovalStatusLabel($approvalStatus),
             'environment_supervisor' => $approval?->environmentSupervisor?->name,
-            'environment_supervisor_signed_at' => $approval?->environment_supervisor_signed_at?->format('Y-m-d H:i:s'),
+            'environment_supervisor_signed_at' => $approval?->environment_supervisor_signed_at !== null
+                ? $ipalLogService->monthlyApprovalEffectiveDate($year, $month)->format('Y-m-d')
+                : null,
             'hse_department_head' => $approval?->hseDepartmentHead?->name,
-            'hse_department_head_signed_at' => $approval?->hse_department_head_signed_at?->format('Y-m-d H:i:s'),
+            'hse_department_head_signed_at' => $approval?->hse_department_head_signed_at !== null
+                ? $ipalLogService->monthlyApprovalEffectiveDate($year, $month)->format('Y-m-d')
+                : null,
             'can_approve_period' => $canApprovePeriod,
             'can_approve_monthly' => $user->can('b3storage.monthly-approval.approve') && $canApprovePeriod && $canApproveForUser && $monthLogs->isNotEmpty(),
             'next_approval_role' => $nextApprovalRole,
@@ -374,6 +355,10 @@ class B3StoragePageService
                     return false;
                 }
             }
+
+            if ((int) $row['total_logs_count'] === 0) {
+                return false;
+            }
         }
 
         if ($filters['status'] !== '') {
@@ -404,7 +389,7 @@ class B3StoragePageService
      * @param  array<string, mixed>  $approval
      * @return array<string, mixed>
      */
-    private function mapMonthlyApprovalPayload(array $approval): array
+    private function mapMonthlyApprovalPayload(array $approval, IpalLogService $ipalLogService, int $year, int $month): array
     {
         return [
             'status' => $approval['status'],
@@ -412,12 +397,16 @@ class B3StoragePageService
             'environment_supervisor' => [
                 'id' => $approval['environment_supervisor']['id'],
                 'name' => $approval['environment_supervisor']['name'],
-                'signed_at' => $this->formatDateTime($approval['environment_supervisor']['signed_at']),
+                'signed_at' => $approval['environment_supervisor']['signed_at'] !== null
+                    ? $ipalLogService->monthlyApprovalEffectiveDate($year, $month)->format('Y-m-d')
+                    : null,
             ],
             'hse_department_head' => [
                 'id' => $approval['hse_department_head']['id'],
                 'name' => $approval['hse_department_head']['name'],
-                'signed_at' => $this->formatDateTime($approval['hse_department_head']['signed_at']),
+                'signed_at' => $approval['hse_department_head']['signed_at'] !== null
+                    ? $ipalLogService->monthlyApprovalEffectiveDate($year, $month)->format('Y-m-d')
+                    : null,
             ],
             'note' => $approval['note'],
         ];
@@ -524,18 +513,5 @@ class B3StoragePageService
         }
 
         return $this->resolveApprovalBlockedReason($user, $status, $nextApprovalRole);
-    }
-
-    private function formatDateTime(mixed $value): ?string
-    {
-        if ($value instanceof Carbon) {
-            return $value->format('Y-m-d H:i:s');
-        }
-
-        if ($value === null) {
-            return null;
-        }
-
-        return (string) $value;
     }
 }

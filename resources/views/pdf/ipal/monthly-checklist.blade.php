@@ -72,7 +72,7 @@
             </div>
             <div class="doc-meta">
                 <table>
-                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }}</td></tr>
+                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }} ({{ $monthlyDetail['period']['date_from'] }} s/d {{ $monthlyDetail['period']['date_to'] }})</td></tr>
                     <tr><td>Tanggal</td><td>: {{ now()->format('Y-m-d H:i') }}</td></tr>
                     <tr><td>Status</td><td>: {{ $monthlyDetail['approval']['status'] === 'APPROVED' ? 'Approved' : 'Belum approved' }}</td></tr>
                 </table>
@@ -172,7 +172,7 @@
                 </div>
                 <div class="audit-meta">
                     <table>
-                        <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }}</td></tr>
+                        <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }} ({{ $monthlyDetail['period']['date_from'] }} s/d {{ $monthlyDetail['period']['date_to'] }})</td></tr>
                         <tr><td>Total</td><td>: {{ count($checklistNoteRows) }} catatan</td></tr>
                         <tr><td>Lampiran</td><td>: Tidak disertakan</td></tr>
                     </table>

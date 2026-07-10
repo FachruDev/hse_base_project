@@ -269,7 +269,7 @@ class IpalLogService
     {
         if (! $this->isMonthlyProcessApprovalDay($year, $month)) {
             throw ValidationException::withMessages([
-                'period' => ['Approval bulanan checklist hanya dapat dilakukan pada hari kerja terakhir bulan berjalan.'],
+                'period' => ['Approval bulanan checklist hanya dapat dilakukan mulai hari kerja terakhir periode.'],
             ]);
         }
 
@@ -473,7 +473,7 @@ class IpalLogService
     {
         if (! $this->isMonthlyProcessApprovalDay($year, $month)) {
             throw ValidationException::withMessages([
-                'period' => ['Approval bulanan catatan proses hanya dapat dilakukan pada hari kerja terakhir bulan berjalan.'],
+                'period' => ['Approval bulanan catatan proses hanya dapat dilakukan mulai hari kerja terakhir periode.'],
             ]);
         }
 
@@ -611,19 +611,19 @@ class IpalLogService
     {
         $today = now()->startOfDay();
         $periodStart = Carbon::create($year, $month, 1)->startOfDay();
-        $periodEnd = $periodStart->copy()->endOfMonth()->startOfDay();
 
-        if ($today->lt($periodStart) || $today->gt($periodEnd)) {
+        if ($today->lt($periodStart)) {
             return false;
         }
 
+        return $today->greaterThanOrEqualTo($this->monthlyApprovalEffectiveDate($year, $month));
+    }
+
+    public function monthlyApprovalEffectiveDate(int $year, int $month): Carbon
+    {
         $lastOperationalDay = $this->findLastOperationalDayOfMonth($year, $month);
 
-        if ($lastOperationalDay === null) {
-            return false;
-        }
-
-        return $today->isSameDay($lastOperationalDay);
+        return ($lastOperationalDay ?? Carbon::create($year, $month, 1)->endOfMonth())->startOfDay();
     }
 
     /**
@@ -834,6 +834,12 @@ class IpalLogService
 
     private function assertValidNumberForInputType(string $inputType, mixed $numberValue, string $errorKey): void
     {
+        if (InputType::canonical($inputType) === InputType::Decimal2 && ! $this->hasValidDecimalScale($numberValue, 2)) {
+            throw ValidationException::withMessages([
+                $errorKey => ['Item tipe desimal wajib diisi maksimal 2 angka di belakang koma.'],
+            ]);
+        }
+
         if (! InputType::requiresInteger($inputType)) {
             return;
         }
@@ -845,6 +851,18 @@ class IpalLogService
         throw ValidationException::withMessages([
             $errorKey => ['Item tipe angka bulat wajib diisi tanpa desimal.'],
         ]);
+    }
+
+    private function hasValidDecimalScale(mixed $numberValue, int $scale): bool
+    {
+        if (! is_numeric($numberValue)) {
+            return false;
+        }
+
+        $value = rtrim(rtrim((string) $numberValue, '0'), '.');
+        $decimalPosition = strpos($value, '.');
+
+        return $decimalPosition === false || strlen($value) - $decimalPosition - 1 <= $scale;
     }
 
     /**

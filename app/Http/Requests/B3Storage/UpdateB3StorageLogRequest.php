@@ -36,6 +36,7 @@ class UpdateB3StorageLogRequest extends FormRequest
             'document_number' => ['required', 'string', 'max:255'],
             'photo' => ['nullable', 'image', 'max:5120'],
             'note' => ['nullable', 'string'],
+            'initiator_user_name' => ['nullable', 'string', 'max:255'],
         ];
     }
 

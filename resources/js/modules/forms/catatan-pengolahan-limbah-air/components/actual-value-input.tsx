@@ -45,6 +45,21 @@ function roundToDecimals(value: string, decimals: number): string {
     return number.toFixed(decimals);
 }
 
+function limitDecimalPlaces(value: string, decimals: number): string {
+    if (value === '') {
+        return value;
+    }
+
+    const normalized = value.replace(',', '.');
+    const [wholePart, decimalPart] = normalized.split('.');
+
+    if (decimalPart === undefined) {
+        return normalized;
+    }
+
+    return `${wholePart}.${decimalPart.slice(0, decimals)}`;
+}
+
 function roundToInteger(value: string): string {
     const number = parseFloat(value);
 
@@ -83,7 +98,10 @@ export function ActualValueInput({
                     }
                 }}
                 onChange={(event) => {
-                    onChange({ value_number: event.target.value, value_text: '' });
+                    onChange({
+                        value_number: limitDecimalPlaces(event.target.value, 2),
+                        value_text: '',
+                    });
                 }}
             />
         );
@@ -108,7 +126,10 @@ export function ActualValueInput({
                     }
                 }}
                 onChange={(event) => {
-                    onChange({ value_number: event.target.value, value_text: '' });
+                    onChange({
+                        value_number: event.target.value,
+                        value_text: '',
+                    });
                 }}
             />
         );
@@ -133,7 +154,10 @@ export function ActualValueInput({
                     }
                 }}
                 onChange={(event) => {
-                    onChange({ value_number: event.target.value, value_text: '' });
+                    onChange({
+                        value_number: event.target.value,
+                        value_text: '',
+                    });
                 }}
             />
         );
@@ -155,7 +179,13 @@ export function ActualValueInput({
         return (
             <div className="flex w-full flex-col items-start gap-2">
                 <StandardWithManualToggle
-                    value={valueText === 'Standar' ? 'Standar' : valueText ? 'Lainnya' : ''}
+                    value={
+                        valueText === 'Standar'
+                            ? 'Standar'
+                            : valueText
+                              ? 'Lainnya'
+                              : ''
+                    }
                     disabled={readOnly}
                     onChange={(nextMode) => {
                         onChange({
@@ -209,7 +239,9 @@ function StandardToggle({ value, disabled = false, onChange }: ToggleProps) {
             <button
                 type="button"
                 disabled={disabled}
-                onClick={() => onChange(value === 'Tidak Standar' ? '' : 'Tidak Standar')}
+                onClick={() =>
+                    onChange(value === 'Tidak Standar' ? '' : 'Tidak Standar')
+                }
                 className={[
                     'flex min-w-[110px] items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 select-none',
                     !disabled && 'cursor-pointer',
@@ -247,7 +279,11 @@ function StandardToggle({ value, disabled = false, onChange }: ToggleProps) {
     );
 }
 
-function StandardWithManualToggle({ value, disabled = false, onChange }: ToggleProps) {
+function StandardWithManualToggle({
+    value,
+    disabled = false,
+    onChange,
+}: ToggleProps) {
     return (
         <div className="inline-flex overflow-hidden rounded-lg border border-border shadow-sm">
             <button

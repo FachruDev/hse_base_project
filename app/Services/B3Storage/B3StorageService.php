@@ -188,7 +188,7 @@ class B3StorageService
                 'document_number' => $log->document_number,
                 'initiator_department' => $log->initiatorDepartment?->name ?? $log->initiator_department_other,
                 'initiator_user_id' => $log->initiator_user_id,
-                'initiator_user_name' => $log->initiatorUser?->name,
+                'initiator_user_name' => $log->initiator_user_name ?? $log->initiatorUser?->name,
                 'operator_name' => $log->operator?->name,
                 'photo_path' => $log->photo_path,
                 'note' => $log->note,
@@ -372,6 +372,9 @@ class B3StorageService
         }
 
         $initiatorUserId = $currentLog?->initiator_user_id ?? $operator->id;
+        $initiatorUserName = isset($payload['initiator_user_name'])
+            ? trim((string) $payload['initiator_user_name'])
+            : null;
         $initiatorUserExternalId = isset($payload['initiator_user_external_id'])
             ? trim((string) $payload['initiator_user_external_id'])
             : null;
@@ -386,8 +389,13 @@ class B3StorageService
                 ->where('is_active', true)
                 ->first();
             $initiatorUserId = $initiatorUser?->id;
+            $initiatorUserName = $initiatorUser?->name;
         } elseif ($initiatorUserExternalId === '') {
             $initiatorUserId = $operator->id;
+        }
+
+        if ($initiatorUserName === null || $initiatorUserName === '') {
+            $initiatorUserName = $operator->name;
         }
 
         $photoPath = $currentLog?->photo_path;
@@ -408,6 +416,7 @@ class B3StorageService
             'initiator_department_id' => $initiatorDepartmentId,
             'initiator_department_other' => $initiatorDepartmentOther !== '' ? $initiatorDepartmentOther : null,
             'initiator_user_id' => $initiatorUserId,
+            'initiator_user_name' => $initiatorUserName,
             'weight_kg' => $payload['weight_kg'],
             'document_number' => $payload['document_number'],
             'photo_path' => $photoPath,

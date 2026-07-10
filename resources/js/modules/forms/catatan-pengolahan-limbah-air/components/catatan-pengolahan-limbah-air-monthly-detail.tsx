@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
-
 import {
     catatanPengolahanLimbahAirApproveMonthlyChecklist,
     catatanPengolahanLimbahAirIndex,
@@ -97,6 +96,10 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                 <Badge variant="outline">
                                     Periode {monthlyDetail.period.label}
                                 </Badge>
+                                <Badge variant="secondary">
+                                    {monthlyDetail.period.date_from} s/d{' '}
+                                    {monthlyDetail.period.date_to}
+                                </Badge>
                                 <CardTitle className="text-xl sm:text-2xl">
                                     {monthlyDetail.module.title}
                                 </CardTitle>
@@ -117,6 +120,16 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                                         user_id: userId,
                                                         year: monthlyDetail
                                                             .period.year,
+                                                        date_from:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_from ||
+                                                            undefined,
+                                                        date_to:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_to ||
+                                                            undefined,
                                                     },
                                                 },
                                             )}
@@ -134,10 +147,26 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                         <a
                                             href={catatanPengolahanLimbahAirMonthlyChecklistPdf.url(
                                                 {
-                                                    year: monthlyDetail.period.year,
-                                                    month: monthlyDetail.period.month,
+                                                    year: monthlyDetail.period
+                                                        .year,
+                                                    month: monthlyDetail.period
+                                                        .month,
                                                 },
-                                                { query: { user_id: userId } },
+                                                {
+                                                    query: {
+                                                        user_id: userId,
+                                                        date_from:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_from ||
+                                                            undefined,
+                                                        date_to:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_to ||
+                                                            undefined,
+                                                    },
+                                                },
                                             )}
                                             target="_blank"
                                             rel="noreferrer"
@@ -155,10 +184,26 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                         <a
                                             href={catatanPengolahanLimbahAirMonthlyBatchMixingPdf.url(
                                                 {
-                                                    year: monthlyDetail.period.year,
-                                                    month: monthlyDetail.period.month,
+                                                    year: monthlyDetail.period
+                                                        .year,
+                                                    month: monthlyDetail.period
+                                                        .month,
                                                 },
-                                                { query: { user_id: userId } },
+                                                {
+                                                    query: {
+                                                        user_id: userId,
+                                                        date_from:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_from ||
+                                                            undefined,
+                                                        date_to:
+                                                            monthlyDetail
+                                                                .filters
+                                                                .date_to ||
+                                                            undefined,
+                                                    },
+                                                },
                                             )}
                                             target="_blank"
                                             rel="noreferrer"
@@ -278,12 +323,12 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                                                             : '',
                                                     ].join(' ')}
                                                 >
-                                                    <span className="block font-bold leading-none">
+                                                    <span className="block leading-none font-bold">
                                                         {day.day}
                                                     </span>
                                                     <span
                                                         className={[
-                                                            'block text-[10px] font-normal leading-tight',
+                                                            'block text-[10px] leading-tight font-normal',
                                                             isWeekend(day.date)
                                                                 ? 'text-rose-500'
                                                                 : 'text-muted-foreground',
@@ -492,7 +537,10 @@ export function CatatanPengolahanLimbahAirMonthlyDetail({
                             <TableBody>
                                 {monthlyDetail.process_rows.length > 0 ? (
                                     monthlyDetail.process_rows.map((row) => (
-                                        <TableRow className='transition-colors odd:bg-primary/10 hover:bg-primary/15' key={row.id}>
+                                        <TableRow
+                                            className="transition-colors odd:bg-primary/10 hover:bg-primary/15"
+                                            key={row.id}
+                                        >
                                             <TableCell className="px-4 font-medium">
                                                 {row.tanggal ?? '-'}
                                             </TableCell>
@@ -606,8 +654,7 @@ function SummaryCard({
         emerald:
             'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40',
         amber: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
-        violet:
-            'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
+        violet: 'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
     };
 
     return (
@@ -615,7 +662,7 @@ function SummaryCard({
             <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <p className="text-xs font-medium opacity-75 uppercase">
+                        <p className="text-xs font-medium uppercase opacity-75">
                             {label}
                         </p>
                         <p className="mt-2 text-lg font-semibold">{value}</p>
@@ -664,9 +711,11 @@ function ChecklistCell({
                     NA
                 </span>
             )}
-            {status === null && <span className="text-muted-foreground">-</span>}
+            {status === null && (
+                <span className="text-muted-foreground">-</span>
+            )}
             {(hasNotes || hasAttachments) && (
-                <span className="absolute -top-1 -right-2 inline-flex size-3 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold leading-none text-white">
+                <span className="absolute -top-1 -right-2 inline-flex size-3 items-center justify-center rounded-full bg-amber-500 text-[8px] leading-none font-bold text-white">
                     !
                 </span>
             )}

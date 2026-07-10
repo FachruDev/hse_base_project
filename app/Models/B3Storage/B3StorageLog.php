@@ -22,6 +22,7 @@ class B3StorageLog extends Model
         'initiator_department_id',
         'initiator_department_other',
         'initiator_user_id',
+        'initiator_user_name',
         'weight_kg',
         'document_number',
         'photo_path',

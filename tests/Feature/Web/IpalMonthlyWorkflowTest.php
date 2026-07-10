@@ -61,6 +61,32 @@ class IpalMonthlyWorkflowTest extends TestCase
 
         $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/process?user_id=operator.monthly.a', [
             'tanggal' => '2026-06-03',
+            'action' => 'DRAFT',
+            'has_mixing' => true,
+            'process' => [
+                'template_id' => $processTemplate->id,
+                'values' => [
+                    [
+                        'item_id' => $processItem->id,
+                        'value_number' => 7.1,
+                    ],
+                ],
+            ],
+            'batch' => [
+                [
+                    'batch_no' => 1,
+                    'values' => [
+                        [
+                            'item_id' => $batchItem->id,
+                            'value_number' => 2.555,
+                        ],
+                    ],
+                ],
+            ],
+        ])->assertSessionHasErrors(['batch.values']);
+
+        $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/process?user_id=operator.monthly.a', [
+            'tanggal' => '2026-06-03',
             'action' => 'SUBMIT',
             'has_mixing' => true,
             'process' => [
@@ -109,6 +135,15 @@ class IpalMonthlyWorkflowTest extends TestCase
         $this->assertSame(1, $juneListingRow['checklist_days_count']);
         $this->assertSame(2, $juneListingRow['process_logs_count']);
         $this->assertSame(1, $juneListingRow['batch_mixing_days_count']);
+
+        $filteredListingResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air?user_id=operator.monthly.a&year=2026&date_from=2026-06-04&date_to=2026-06-30');
+        $this->assertNull(collect($filteredListingResponse->inertiaProps('listing.table.data'))->firstWhere('month', 6));
+
+        $singleDayListingResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air?user_id=operator.monthly.a&year=2026&date_from=2026-06-03&date_to=2026-06-03');
+        $singleDayJuneListingRow = collect($singleDayListingResponse->inertiaProps('listing.table.data'))
+            ->firstWhere('month', 6);
+
+        $this->assertSame(1, $singleDayJuneListingRow['batch_mixing_days_count']);
 
         $detailResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=operator.monthly.a');
         $detailResponse->assertOk()
@@ -218,7 +253,7 @@ class IpalMonthlyWorkflowTest extends TestCase
         ])->assertSessionHasErrors(['tanggal']);
     }
 
-    public function test_monthly_process_approval_is_limited_to_last_working_day_and_can_be_reopened_by_superadmin(): void
+    public function test_monthly_process_approval_starts_on_last_working_day_and_can_be_reopened_by_superadmin(): void
     {
         Inertia::disableSsr();
         Carbon::setTestNow('2026-06-29 10:00:00');
@@ -302,7 +337,7 @@ class IpalMonthlyWorkflowTest extends TestCase
         $this->assertTrue($superadmin->can('ipal.logs.reopen-monthly'));
     }
 
-    public function test_monthly_checklist_approval_is_limited_to_last_working_day(): void
+    public function test_monthly_checklist_approval_starts_on_last_working_day_and_uses_period_effective_date_for_display(): void
     {
         Inertia::disableSsr();
         Carbon::setTestNow('2026-06-29 10:00:00');
@@ -321,7 +356,7 @@ class IpalMonthlyWorkflowTest extends TestCase
         $this->post('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6/checklist-approval?user_id=hse.head')
             ->assertSessionHasErrors(['period']);
 
-        Carbon::setTestNow('2026-06-30 10:00:00');
+        Carbon::setTestNow('2026-07-01 10:00:00');
 
         $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=hse.head')
             ->assertOk()
@@ -339,6 +374,13 @@ class IpalMonthlyWorkflowTest extends TestCase
             'year' => 2026,
             'supervisor_id' => $hseHead->id,
         ]);
+
+        $approvedDetailResponse = $this->get('/dashboard/forms/catatan-pengolahan-limbah-air/monthly/2026/6?user_id=hse.head');
+        $approvedDetailResponse->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('monthlyDetail.approval.approved_at', '2026-06-30')
+                ->etc()
+            );
     }
 
     public function test_daily_process_approval_does_not_mark_monthly_process_approval(): void

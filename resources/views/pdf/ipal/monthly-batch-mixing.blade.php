@@ -53,7 +53,7 @@
             </div>
             <div class="doc-meta">
                 <table>
-                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }}</td></tr>
+                    <tr><td>Periode</td><td>: {{ $monthlyDetail['period']['label'] }} ({{ $monthlyDetail['period']['date_from'] }} s/d {{ $monthlyDetail['period']['date_to'] }})</td></tr>
                     <tr><td>Tanggal</td><td>: {{ now()->format('Y-m-d H:i') }}</td></tr>
                     <tr><td>Total</td><td>: {{ $monthlyDetail['summary']['batch_mixing_logs_count'] }} log batch</td></tr>
                 </table>
@@ -63,7 +63,7 @@
         <section class="content">
             <div class="summary">
                 <div><span class="label">Nama dokumen</span><span class="value">Rekap Batch Mixing</span></div>
-                <div><span class="label">Periode</span><span class="value">{{ $monthlyDetail['period']['label'] }}</span></div>
+                <div><span class="label">Periode</span><span class="value">{{ $monthlyDetail['period']['label'] }} ({{ $monthlyDetail['period']['date_from'] }} s/d {{ $monthlyDetail['period']['date_to'] }})</span></div>
                 <div><span class="label">Hari ada batch</span><span class="value">{{ count($monthlyDetail['batch_rows'] ?? []) }} hari</span></div>
                 <div><span class="label">Approval checklist</span><span class="value">{{ $monthlyDetail['approval']['status'] === 'APPROVED' ? 'Approved' : 'Pending' }}</span></div>
             </div>
@@ -95,6 +95,9 @@
                                                                 {{ $value['value_text'] }}
                                                             @else
                                                                 -
+                                                            @endif
+                                                            @if ($value['unit'] ?? null)
+                                                                {{ $value['unit'] }}
                                                             @endif
                                                         </td>
                                                     </tr>

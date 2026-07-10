@@ -234,10 +234,16 @@ export type IpalMonthlyDetailPayload = {
         month: number;
         year: number;
         label: string;
+        date_from: string;
+        date_to: string;
         days: Array<{
             date: string;
             day: number;
         }>;
+    };
+    filters: {
+        date_from: string;
+        date_to: string;
     };
     summary: {
         checklist_days_count: number;
@@ -273,7 +279,11 @@ export type B3StorageMonthlyListingRow = {
     total_weight_kg: number;
     waste_types_count: number;
     departments_count: number;
-    approval_status: 'NOT_SUBMITTED' | 'PARTIALLY_APPROVED' | 'APPROVED' | string;
+    approval_status:
+        | 'NOT_SUBMITTED'
+        | 'PARTIALLY_APPROVED'
+        | 'APPROVED'
+        | string;
     approval_status_label: string;
     environment_supervisor: string | null;
     environment_supervisor_signed_at: string | null;
@@ -385,7 +395,10 @@ export type B3StorageMonthlyDetailPayload = {
     capabilities: {
         can_approve_period: boolean;
         approve_monthly: boolean;
-        next_approval_role: 'ENVIRONMENT_SUPERVISOR' | 'HSE_DEPARTMENT_HEAD' | null;
+        next_approval_role:
+            | 'ENVIRONMENT_SUPERVISOR'
+            | 'HSE_DEPARTMENT_HEAD'
+            | null;
         next_approval_label: string | null;
         approval_blocked_reason: string | null;
     };
