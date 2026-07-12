@@ -7,7 +7,6 @@ use App\Models\B3Storage\B3StorageMonthlyApproval;
 use App\Models\B3Storage\B3StorageWasteType;
 use App\Models\User;
 use App\Services\Ipal\IpalLogService;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -371,28 +370,10 @@ class B3StorageService
             $initiatorDepartmentOther = null;
         }
 
-        $initiatorUserId = $currentLog?->initiator_user_id ?? $operator->id;
+        $initiatorUserId = $operator->id;
         $initiatorUserName = isset($payload['initiator_user_name'])
             ? trim((string) $payload['initiator_user_name'])
             : null;
-        $initiatorUserExternalId = isset($payload['initiator_user_external_id'])
-            ? trim((string) $payload['initiator_user_external_id'])
-            : null;
-
-        if ($initiatorUserExternalId !== null && $initiatorUserExternalId !== '') {
-            if (! $operator->can('b3storage.logs.select-user')) {
-                throw new AuthorizationException('User tidak memiliki izin memilih petugas dept. inisiator.');
-            }
-
-            $initiatorUser = User::query()
-                ->where('external_id', $initiatorUserExternalId)
-                ->where('is_active', true)
-                ->first();
-            $initiatorUserId = $initiatorUser?->id;
-            $initiatorUserName = $initiatorUser?->name;
-        } elseif ($initiatorUserExternalId === '') {
-            $initiatorUserId = $operator->id;
-        }
 
         if ($initiatorUserName === null || $initiatorUserName === '') {
             $initiatorUserName = $operator->name;

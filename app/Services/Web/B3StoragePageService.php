@@ -76,8 +76,6 @@ class B3StoragePageService
      */
     public function buildForm(User $user): array
     {
-        $canSelectInitiatorUser = $user->can('b3storage.logs.select-user');
-
         $wasteTypeOptions = B3StorageWasteType::query()
             ->where('is_active', true)
             ->orderBy('order_no')
@@ -116,7 +114,6 @@ class B3StoragePageService
                 ],
             ],
             'capabilities' => [
-                'select_initiator_user' => $canSelectInitiatorUser,
                 'view_monthly_report' => $user->can('b3storage.monthly-report.view'),
             ],
             'options' => [
@@ -126,7 +123,6 @@ class B3StoragePageService
                 ],
                 'waste_types' => $wasteTypeOptions,
                 'initiator_departments' => $initiatorDepartmentOptions,
-                'initiator_users' => [],
             ],
         ];
     }

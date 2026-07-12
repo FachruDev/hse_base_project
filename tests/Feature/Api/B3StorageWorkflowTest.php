@@ -281,10 +281,11 @@ class B3StorageWorkflowTest extends TestCase
             ->assertJsonPath('total', 2);
     }
 
-    public function test_b3_storage_create_rejects_initiator_user_override_without_select_permission(): void
+    public function test_b3_storage_create_uses_freetext_initiator_name_without_select_user_permission(): void
     {
         $operator = User::factory()->create([
             'external_id' => 'non.hse.b3',
+            'name' => 'Non HSE B3',
             'is_active' => true,
         ]);
         $initiatorUser = User::factory()->create([
@@ -313,16 +314,16 @@ class B3StorageWorkflowTest extends TestCase
             'initiator_department_id' => $department->id,
             'weight_kg' => 5.25,
             'document_number' => '01/ENG/VII/26',
+            'initiator_user_name' => 'Engineering Operator Lapangan',
         ];
 
         $this->postJson('/api/b3-storage/logs?userid=non.hse.b3', [
             ...$payload,
             'initiator_user_external_id' => $initiatorUser->external_id,
-        ])->assertForbidden();
-
-        $this->postJson('/api/b3-storage/logs?userid=non.hse.b3', $payload)
+        ])
             ->assertCreated()
-            ->assertJsonPath('data.initiator_user_id', $operator->id);
+            ->assertJsonPath('data.initiator_user_id', $operator->id)
+            ->assertJsonPath('data.initiator_user_name', 'Engineering Operator Lapangan');
     }
 
     /**

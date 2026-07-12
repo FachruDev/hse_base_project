@@ -41,8 +41,6 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('entryForm.entry.operator.email', $operatorA->email)
-                ->where('entryForm.capabilities.select_initiator_user', true)
-                ->has('entryForm.options.initiator_users', 0)
                 ->etc()
             );
 
@@ -264,11 +262,6 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'name' => 'Non HSE B3',
             'is_active' => true,
         ]);
-        $initiatorUser = User::factory()->create([
-            'external_id' => 'selected.user',
-            'is_active' => true,
-        ]);
-
         $this->givePermissions($nonHseUser, [
             'b3storage.master.view',
             'b3storage.logs.create',
@@ -281,9 +274,7 @@ class B3StorageMonthlyWorkflowTest extends TestCase
         $this->get('/dashboard/forms/penyimpanan-limbah-b3/create?user_id=non.hse.b3')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('entryForm.capabilities.select_initiator_user', false)
                 ->where('entryForm.capabilities.view_monthly_report', false)
-                ->has('entryForm.options.initiator_users', 0)
                 ->etc()
             );
 
@@ -298,24 +289,15 @@ class B3StorageMonthlyWorkflowTest extends TestCase
             'initiator_department_id' => $department->id,
             'weight_kg' => 5.25,
             'document_number' => '01/ENG/VII/26',
+            'initiator_user_name' => 'Engineering Operator Lapangan',
         ])->assertRedirect('/dashboard/forms/penyimpanan-limbah-b3/create?user_id=non.hse.b3');
 
         $this->assertDatabaseHas('b3_storage_logs', [
             'document_number' => '01/ENG/VII/26',
             'operator_id' => $nonHseUser->id,
             'initiator_user_id' => $nonHseUser->id,
+            'initiator_user_name' => 'Engineering Operator Lapangan',
         ]);
-
-        $this->post('/dashboard/forms/penyimpanan-limbah-b3?user_id=non.hse.b3', [
-            'movement_date' => '2026-07-09',
-            'movement_time' => '09:30',
-            'movement_type' => 'MASUK',
-            'waste_type_id' => $wasteType->id,
-            'initiator_department_id' => $department->id,
-            'weight_kg' => 3.25,
-            'document_number' => '02/ENG/VII/26',
-            'initiator_user_external_id' => $initiatorUser->external_id,
-        ])->assertForbidden();
     }
 
     protected function tearDown(): void
@@ -332,7 +314,6 @@ class B3StorageMonthlyWorkflowTest extends TestCase
     {
         $permissions = [
             'b3storage.logs.create',
-            'b3storage.logs.select-user',
             'b3storage.logs.view',
             'b3storage.monthly-report.view',
             'b3storage.monthly-approval.approve',
@@ -377,13 +358,11 @@ class B3StorageMonthlyWorkflowTest extends TestCase
 
         $operatorA->givePermissionTo([
             'b3storage.logs.create',
-            'b3storage.logs.select-user',
             'b3storage.logs.view',
             'b3storage.monthly-report.view',
         ]);
         $operatorB->givePermissionTo([
             'b3storage.logs.create',
-            'b3storage.logs.select-user',
             'b3storage.logs.view',
             'b3storage.monthly-report.view',
         ]);

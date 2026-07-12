@@ -37,6 +37,10 @@ class B3StorageNonHseUserSeederTest extends TestCase
             'angki.p',
         ];
 
+        $this->assertDatabaseMissing('permissions', [
+            'name' => 'b3storage.logs.select-user',
+        ]);
+
         foreach ($externalIds as $externalId) {
             $user = User::query()->where('external_id', $externalId)->firstOrFail();
 
@@ -44,7 +48,6 @@ class B3StorageNonHseUserSeederTest extends TestCase
             $this->assertTrue($user->can('b3storage.master.view'));
             $this->assertTrue($user->can('b3storage.logs.create'));
             $this->assertTrue($user->can('b3storage.logs.view-own'));
-            $this->assertFalse($user->can('b3storage.logs.select-user'));
             $this->assertFalse($user->can('b3storage.logs.view-all'));
             $this->assertFalse($user->can('b3storage.logs.view'));
             $this->assertFalse($user->can('b3storage.logs.update'));

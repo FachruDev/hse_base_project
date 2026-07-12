@@ -78,7 +78,6 @@ class PermissionSeeder extends Seeder
                 'b3storage.master.view',
                 'b3storage.master.manage',
                 'b3storage.logs.create',
-                'b3storage.logs.select-user',
                 'b3storage.logs.view-own',
                 'b3storage.logs.view-all',
                 'b3storage.logs.view',

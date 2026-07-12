@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { ArrowLeft, Save, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import * as React from 'react';
 import { showAlert } from '@/lib/sweetalert';
 
@@ -17,14 +17,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import {
     Field,
     FieldContent,
@@ -67,21 +59,6 @@ type B3FormState = {
     note: string;
 };
 
-function resolveSelectedInitiatorDepartmentLabel(
-    selectedValue: string,
-    departments: B3StorageEntryPayload['options']['initiator_departments'],
-    otherDepartment: string,
-): string {
-    if (selectedValue === 'OTHER') {
-        return otherDepartment.trim() || 'Dept lain belum diisi';
-    }
-
-    return (
-        departments.find((item) => String(item.value) === selectedValue)
-            ?.label ?? 'Dept belum dipilih'
-    );
-}
-
 export function PenyimpananLimbahB3Entry({
     flash,
     entryForm,
@@ -91,8 +68,6 @@ export function PenyimpananLimbahB3Entry({
         React.useState<string>('');
     const [initiatorSelection, setInitiatorSelection] =
         React.useState<string>('');
-    const [verificationOpen, setVerificationOpen] = React.useState(false);
-    const canSelectInitiatorUser = entryForm.capabilities.select_initiator_user;
 
     const form = useForm<B3FormState>({
         movement_date: entryForm.entry.tanggal_default,
@@ -120,22 +95,14 @@ export function PenyimpananLimbahB3Entry({
             label: item.label,
         })),
     ];
-    const initiatorItems = [
-        { value: 'OTHER', label: 'Yang lain' },
-        ...entryForm.options.initiator_departments.map((item) => ({
+    const initiatorItems = entryForm.options.initiator_departments.map(
+        (item) => ({
             value: String(item.value),
             label: item.label,
-        })),
-    ];
+        }),
+    );
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
-        if (canSelectInitiatorUser) {
-            setVerificationOpen(true);
-
-            return;
-        }
-
         handleConfirmSubmit();
     };
 
@@ -150,7 +117,6 @@ export function PenyimpananLimbahB3Entry({
         form.post(b3StorageStore.url({ query: { user_id: userId } }), {
             preserveScroll: true,
             onSuccess: () => {
-                setVerificationOpen(false);
                 showAlert({
                     icon: 'success',
                     title: 'Berhasil',
@@ -160,10 +126,6 @@ export function PenyimpananLimbahB3Entry({
                 });
             },
             onError: () => {
-                if (canSelectInitiatorUser) {
-                    setVerificationOpen(true);
-                }
-
                 showAlert({
                     icon: 'error',
                     title: 'Gagal Menyimpan',
@@ -485,15 +447,6 @@ export function PenyimpananLimbahB3Entry({
                                                     return;
                                                 }
 
-                                                if (value === 'OTHER') {
-                                                    form.setData(
-                                                        'initiator_department_id',
-                                                        null,
-                                                    );
-
-                                                    return;
-                                                }
-
                                                 form.setData(
                                                     'initiator_department_id',
                                                     Number(value),
@@ -511,9 +464,6 @@ export function PenyimpananLimbahB3Entry({
                                                 <SelectValue placeholder="Pilih dept inisiator" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="OTHER">
-                                                    Yang lain
-                                                </SelectItem>
                                                 {entryForm.options.initiator_departments.map(
                                                     (item) => (
                                                         <SelectItem
@@ -538,34 +488,33 @@ export function PenyimpananLimbahB3Entry({
                                         </FieldError>
                                     </FieldContent>
                                 </Field>
-                                {initiatorSelection === 'OTHER' ? (
-                                    <Field>
-                                        <FieldLabel htmlFor="initiator_department_other">
-                                            Dept Inisiator (Yang Lain)
-                                        </FieldLabel>
-                                        <FieldContent>
-                                            <Input
-                                                id="initiator_department_other"
-                                                value={
-                                                    form.data
-                                                        .initiator_department_other
-                                                }
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'initiator_department_other',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                            />
-                                            <FieldError>
-                                                {
-                                                    form.errors
-                                                        .initiator_department_other
-                                                }
-                                            </FieldError>
-                                        </FieldContent>
-                                    </Field>
-                                ) : null}
+                                <Field>
+                                    <FieldLabel htmlFor="initiator_user_name">
+                                        Nama Petugas Dept. Inisiator{' '}
+                                        <span className="text-destructive">
+                                            *
+                                        </span>
+                                    </FieldLabel>
+                                    <FieldContent>
+                                        <Input
+                                            id="initiator_user_name"
+                                            value={
+                                                form.data.initiator_user_name
+                                            }
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'initiator_user_name',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Nama petugas dept. inisiator"
+                                            required
+                                        />
+                                        <FieldError>
+                                            {form.errors.initiator_user_name}
+                                        </FieldError>
+                                    </FieldContent>
+                                </Field>
 
                                 <Field>
                                     <FieldLabel htmlFor="weight_kg">
@@ -648,100 +597,6 @@ export function PenyimpananLimbahB3Entry({
                     </CardContent>
                 </Card>
             </div>
-            {canSelectInitiatorUser ? (
-                <Dialog
-                    open={verificationOpen}
-                    onOpenChange={setVerificationOpen}
-                >
-                    <DialogContent className="sm:max-w-lg">
-                        <DialogHeader>
-                            <DialogTitle>
-                                Verifikasi Petugas Dept. Inisiator
-                            </DialogTitle>
-                            <DialogDescription>
-                                Isi nama petugas departemen inisiator. Operator
-                                TPS LB3 tetap menggunakan akun login saat ini.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <Field>
-                                <FieldLabel htmlFor="initiator_user_name">
-                                    Petugas Dept. Inisiator
-                                </FieldLabel>
-                                <FieldContent>
-                                    <Input
-                                        id="initiator_user_name"
-                                        value={form.data.initiator_user_name}
-                                        onChange={(event) =>
-                                            form.setData(
-                                                'initiator_user_name',
-                                                event.target.value,
-                                            )
-                                        }
-                                        placeholder="Nama petugas dept. inisiator"
-                                    />
-                                    <FieldError>
-                                        {form.errors.initiator_user_name}
-                                    </FieldError>
-                                </FieldContent>
-                            </Field>
-                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100">
-                                <div className="flex items-start gap-3">
-                                    <ShieldCheck className="mt-0.5 size-5 shrink-0" />
-                                    <div className="space-y-1 text-sm">
-                                        <p className="font-semibold">
-                                            {form.data.initiator_user_name.trim() ||
-                                                entryForm.entry.operator.name}
-                                        </p>
-                                        <p className="text-xs">
-                                            Operator TPS LB3:{' '}
-                                            {
-                                                entryForm.entry.operator
-                                                    .external_id
-                                            }{' '}
-                                            - {entryForm.entry.operator.name}
-                                        </p>
-                                        <p className="text-xs">
-                                            Dept:{' '}
-                                            {resolveSelectedInitiatorDepartmentLabel(
-                                                initiatorSelection,
-                                                entryForm.options
-                                                    .initiator_departments,
-                                                form.data
-                                                    .initiator_department_other,
-                                            )}
-                                        </p>
-                                        <Badge
-                                            variant="outline"
-                                            className="border-emerald-300 bg-white/60 text-emerald-900"
-                                        >
-                                            Terverifikasi Sistem
-                                        </Badge>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setVerificationOpen(false)}
-                                disabled={form.processing}
-                            >
-                                Batal
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={handleConfirmSubmit}
-                                disabled={form.processing}
-                            >
-                                <Save className="size-4" />
-                                Konfirmasi & Simpan
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            ) : null}
         </div>
     );
 }
