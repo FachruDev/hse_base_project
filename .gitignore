@@ -16,7 +16,7 @@
 .env.dev
 .env.backup
 .env.production
-!.env.docker.example
+!/docker-server-dev/.env
 .phpactor.json
 .phpunit.result.cache
 Homestead.json

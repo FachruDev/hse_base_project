@@ -1,0 +1,60 @@
+name: hse-project-dev
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${DOCKER_APP_PORT:-8081}:80"
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: unless-stopped
+
+  queue:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      RUN_MIGRATIONS: "false"
+      RUN_SEEDERS: "false"
+      RUN_STORAGE_LINK: "false"
+    command: php artisan queue:work --tries=3 --sleep=3 --timeout=90
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      app:
+        condition: service_started
+    restart: unless-stopped
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: HseDev2026!Pass
+    ports:
+      - "${DOCKER_DB_FORWARD_PORT:-14333}:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - (/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1") || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  app-storage:
+  sqlserver-data:
