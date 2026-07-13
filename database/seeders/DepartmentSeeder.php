@@ -24,6 +24,7 @@ class DepartmentSeeder extends Seeder
             'DSP-Ware House',
             'Engineering',
             'General Affair',
+            'HSE',
         ];
 
         foreach ($departments as $departmentName) {

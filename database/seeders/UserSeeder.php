@@ -14,17 +14,20 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $rows = [
-            ['department' => 'Produksi Pharma', 'name' => 'Irvan Maulana', 'external_id' => 'irvan.m', 'email' => 'irvan.m@galenium.local'],
-            ['department' => 'Produksi Kosmetik', 'name' => 'Desi Susilowati', 'external_id' => 'desi.sw', 'email' => 'desi.sw@galenium.local'],
-            ['department' => 'MPP', 'name' => 'Slamet Karyadi', 'external_id' => 'slamet.k', 'email' => 'slamet.k@galenium.local'],
-            ['department' => 'Quality Control', 'name' => 'Hermawansyah', 'external_id' => 'hermawansyah.i', 'email' => 'hermawansyah.i@galenium.local'],
-            ['department' => 'Quality Assurance', 'name' => 'Meti Aprianti', 'external_id' => 'meti.a', 'email' => 'meti.a@galenium.local'],
-            ['department' => 'R&D Pharma', 'name' => 'Santi Rika D', 'external_id' => 's.rikadwirani', 'email' => 's.rikadwirani@galenium.local'],
-            ['department' => 'R&D Kosmetik', 'name' => 'Ira Murtisari', 'external_id' => 'ira.m', 'email' => 'ira.m@galenium.local'],
-            ['department' => 'R&D Andev', 'name' => 'Dina Gantiha', 'external_id' => 'dina.g', 'email' => 'dina.g@galenium.local'],
-            ['department' => 'DSP-Ware House', 'name' => 'Kolter Sembiring', 'external_id' => 'k.sembiring', 'email' => 'k.sembiring@galenium.local'],
-            ['department' => 'Engineering', 'name' => 'Salomo P', 'external_id' => 'salomo.pm', 'email' => 'salomo.pm@galenium.local'],
-            ['department' => 'General Affair', 'name' => 'Angki P', 'external_id' => 'angki.p', 'email' => 'angki.p@galenium.local'],
+            ['department' => 'Produksi Pharma', 'name' => 'Irvan Maulana', 'external_id' => 'irvan.m', 'email' => 'irvan.m@galenium.com'],
+            ['department' => 'Produksi Kosmetik', 'name' => 'Desi Susilowati', 'external_id' => 'desi.sw', 'email' => 'desi.sw@galenium.com'],
+            ['department' => 'MPP', 'name' => 'Slamet Karyadi', 'external_id' => 'slamet.k', 'email' => 'slamet.k@galenium.com'],
+            ['department' => 'Quality Control', 'name' => 'Hermawansyah', 'external_id' => 'hermawansyah.i', 'email' => 'hermawansyah.i@galenium.com'],
+            ['department' => 'Quality Assurance', 'name' => 'Meti Aprianti', 'external_id' => 'meti.a', 'email' => 'meti.a@galenium.com'],
+            ['department' => 'R&D Pharma', 'name' => 'Santi Rika D', 'external_id' => 's.rikadwirani', 'email' => 's.rikadwirani@galenium.com'],
+            ['department' => 'R&D Kosmetik', 'name' => 'Ira Murtisari', 'external_id' => 'ira.m', 'email' => 'ira.m@galenium.com'],
+            ['department' => 'R&D Andev', 'name' => 'Dina Gantiha', 'external_id' => 'dina.g', 'email' => 'dina.g@galenium.com'],
+            ['department' => 'DSP-Ware House', 'name' => 'Kolter Sembiring', 'external_id' => 'k.sembiring', 'email' => 'k.sembiring@galenium.com'],
+            ['department' => 'Engineering', 'name' => 'Salomo P', 'external_id' => 'salomo.pm', 'email' => 'salomo.pm@galenium.com'],
+            ['department' => 'General Affair', 'name' => 'Angki P', 'external_id' => 'angki.p', 'email' => 'angki.p@galenium.com'],
+            ['department' => 'HSE', 'name' => 'Priyudi', 'external_id' => 'p.astrakusuma', 'email' => 'p.astrakusuma@galenium.com'],
+            ['department' => 'HSE', 'name' => 'Sanca Murabas', 'external_id' => 'sanca.m', 'email' => 'sanca.m@galenium.com'],
+            ['department' => 'HSE', 'name' => 'Hermawan', 'external_id' => 'hermawan', 'email' => 'hermawan@galenium.com'],
         ];
 
         foreach ($rows as $row) {
@@ -48,7 +51,7 @@ class UserSeeder extends Seeder
             ['external_id' => 'superadmin'],
             [
                 'name' => 'Super Admin',
-                'email' => 'superadmin@galenium.local',
+                'email' => 'superadmin@galenium.com',
                 'department_id' => Department::query()->where('name', 'General Affair')->value('id'),
                 'is_active' => true,
             ],
